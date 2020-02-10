@@ -1,0 +1,9 @@
+python_telegram_bot==12.2.0
+exchangelib==3.1.0
+jira==2.0.0
+PyMySQL==0.9.3
+peewee==3.10.0
+aiogram==2.6
+aiohttp==3.6.2
+emoji
+apscheduler

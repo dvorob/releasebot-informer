@@ -1,0 +1,59 @@
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: xerxes-informer
+  namespace: xerxes
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      name: informer
+      labels:
+        app: informer
+    spec:
+      containers:
+        - image: docker-ym.nexus.yamoney.ru/yamoney/xerxes-informer:0.1.406
+          name: xerxes-informer
+          volumeMounts:
+          - mountPath: /etc/xerxes/logging_informer_new.conf
+            name: log-config-informer-new
+            subPath: logging_informer_new.conf
+          - mountPath: /opt/YMreleasebot/informer/ssl
+            name: census
+            readOnly: true
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: '128m'
+            limits:
+              memory: 256Mi
+              cpu: '512m'
+          envFrom:
+            - prefix: secret_exchange_
+              secretRef:
+                name: exchange
+            - prefix: secret_jira_
+              secretRef:
+                name: jira
+            - prefix: secret_mysql_
+              secretRef:
+                name: mysql
+            - prefix: secret_staff_
+              secretRef:
+                name: staff
+            - prefix: secret_newbot_
+              secretRef:
+                name: newbot
+      nodeSelector:
+        node-role.kubernetes.io/node: "true"
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: log-config-informer-new
+          name: log-config-informer-new
+        - name: census
+          secret:
+            secretName: census
