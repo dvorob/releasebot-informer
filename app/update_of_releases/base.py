@@ -6,7 +6,7 @@ Realize jira methods
 import re
 import requests
 from aiogram.types import ParseMode
-from aiogram.utils.exceptions import ChatNotFound
+from aiogram.utils.exceptions import ChatNotFound, BotBlocked
 from app import config
 from app.utils.ioMysql import MysqlPool as mysql
 from app.jiraissues.base import JiraIssues
@@ -30,14 +30,14 @@ async def todo_tasks():
         issues_todo = JiraIssues().jira_search(config.waiting_assignee_releases)
 
         todo_id = []
-
         for issue in issues_todo:
             if issue.id not in todo_db:
-                for chat_id in mysql().db_get_rl():
+                for chatId_subscribed in mysql().db_get_rl():
                     msg_in_queue = f'[{issue.fields.summary}]' \
                                    f'(https://jira.yamoney.ru/browse/{issue.key}) ' \
                                    f'ищет согласующих.'
-                    await bot.send_message(chat_id=chat_id, text=msg_in_queue + how_many_is_working(),
+                    await bot.send_message(chat_id=chatId_subscribed,
+                                           text=msg_in_queue + how_many_is_working(),
                                            parse_mode=ParseMode.MARKDOWN)
 
                 request_chatid_api_v1 = requests.get(f'{config.api_chat_id}/{issue.key}')
@@ -45,37 +45,33 @@ async def todo_tasks():
                 logger.info('recipient_chatid: %s', request_chatid_api_v1.json())
                 # add isbakurskii chat_id for debug
                 recipient_chat_id.append('186263972')
+
                 jira_link = 'https://jira.yamoney.ru/browse/'
                 text_waiting = f'[{issue.fields.summary}]({jira_link}{issue.key}) ' \
                                f'с нетерпением ждет твоего согласования.\n' \
                                'Если вы не можете катить релиз сейчас, ' \
                                'воспользуйтесь кнопкой `Return task to the queue`'
-                # for chat_id in set(recipient_chat_id):
-                await bot.send_message(chat_id=186263972, text=text_waiting,
-                                       parse_mode=ParseMode.MARKDOWN)
-                logger.info('%s I sent notification looking forward (via api-v1) to: %s',
-                            issue.key, set(recipient_chat_id))
-
+                # Especially for case, when someone block or not added to bot..
+                try:
+                    for chat_id in set(recipient_chat_id):
+                        await bot.send_message(chat_id=chat_id, text=text_waiting,
+                                               parse_mode=ParseMode.MARKDOWN)
+                    logger.info('%s - sent notification looking forward (via api-v1) to: %s',
+                                issue.key, set(recipient_chat_id))
+                except BotBlocked:
+                    logger.info('YM release bot was blocked by %s', chat_id)
+                    await bot.send_message(chat_id=186263972, text=f'*YMReleaseBot '
+                                                                   f'was blocked by {chat_id}*')
+                except ChatNotFound:
+                    logger.error('Chat not found with: %s', chat_id)
+                    await bot.send_message(chat_id=186263972, text=f'*YMReleaseBot '
+                                                                   f'chat not found {chat_id}*')
             todo_id.append(issue.id)
-
-        # Сохраняем данные в БД
+        # Save data to db
         mysql().db_set_option('rl_todo', ' '.join(todo_id))
-    except ChatNotFound:
-        # blocked_by_whom = find_username_by_chat_id(chat_id)
-        # logger.error('Bot was blocked by: %s', blocked_by_whom)
-        await find_username_by_chat_id(chat_id)
+
     except Exception:
         logger.exception('todo_task')
-
-
-async def send_msg_all_subscribed(msg_to_send):
-    """
-
-    :return:
-    """
-    for tg_chat_id in mysql().db_get_rl():
-        await bot.send_message(chat_id=tg_chat_id, text=msg_to_send,
-                               parse_mode=ParseMode.MARKDOWN)
 
 
 def how_many_is_working() -> str:
@@ -122,10 +118,8 @@ async def start_update_releases():
 
             # Save data to db
             mysql().db_set_option(option_name, ' '.join(return_list_id))
-            # logger.debug('msg_sending BEFORE %s', msg_sending)
             if len(msg_sending) == 0:
                 msg_sending = 'No message'
-            # logger.info('msg_sending AFTER %s', msg_sending)
             return return_list_id, list_tasks_in_db, msg_sending
         except Exception:
             logger.exception('helper_func start_update_releases')
@@ -149,11 +143,11 @@ async def start_update_releases():
                                        parse_mode=ParseMode.MARKDOWN)
 
         ###
-        # Список новых выполненых задач
+        # List of new completed tasks
         for issue in now_db:
             if issue not in now_id:
                 j_issue = JiraIssues().jira_issue(int(issue))
-                logger.info('j_releases, j_issue: %s', j_issue)
+                logger.debug('j_releases, j_issue: %s', j_issue)
                 msg_done_new_task = f'[{j_issue.fields.summary}]' \
                                     f'(https://jira.yamoney.ru/browse/{j_issue.key}) ' \
                                     f'выполнена! ({j_issue.fields.resolution})'
@@ -210,28 +204,13 @@ async def start_update_releases():
                         # To the aerospike we write only successfully
                         # completed tasks
                         collect_success_releases(j_issue.fields.summary)
+    except BotBlocked:
+        logger.info('YM release bot was blocked by %s', chat_id)
     except ChatNotFound:
-        # blocked_by_whom = find_username_by_chat_id(chat_id)
-        # logger.error('Bot was blocked by: %s', blocked_by_whom)
-        await find_username_by_chat_id(chat_id)
-        await bot.send_message(chat_id=186263972, text=f'*YMReleaseBot was blocked by ..*')
+        logger.error('Chat not found with: %s', chat_id)
+        await bot.send_message(chat_id=186263972, text=f'*YMReleaseBot was blocked by {chat_id}*')
     except Exception:
         logger.exception('start_update_releases')
-
-
-async def find_username_by_chat_id(chat_id):
-    """
-        Find name, username by chat_id
-        :param chat_id:
-        :return:
-    """
-    try:
-        tg_information = await bot.get_chat_member(chat_id=chat_id, user_id=chat_id)
-        logger.info('find_username_by_chat_id %s', tg_information)
-        # username = '{0[first_name]} {0[last_name]} @{0[username]}'.format(tg_information["user"])
-        # return username
-    except Exception:
-        logger.exception('find_username_by_chat_id')
 
 
 def app_version(string) -> dict:

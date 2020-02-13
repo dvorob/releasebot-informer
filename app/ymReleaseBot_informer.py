@@ -598,7 +598,7 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
     """
     try:
         del callback_data
-        mysql().db_subscribe(query.message.chat.id, query.message.chat.type, 1)
+        mysql().db_subscribe(query.message.chat.id, query.message.chat.type, 0)
         logger.info('%s have unsubscribed to the releases', returnHelper.return_name(query))
         msg = 'You have unsubscribed to the releases.'
         await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)

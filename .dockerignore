@@ -1,0 +1,12 @@
+# Project
+.idea/
+.pylintrc
+.*ignore
+README.md
+
+# Cache
+*.py[cod]
+__pycache__
+
+Dockerfile
+*.yaml

@@ -4,6 +4,7 @@
 Realize jira methods
 """
 from jira import JIRA
+import jira.exceptions
 from app import config
 from app.utils import logging
 
@@ -65,4 +66,7 @@ class JiraIssues:
             211 -
             101 -
         """
-        self.jira.transition_issue(jira_issue_id, transition_id)
+        try:
+            self.jira.transition_issue(jira_issue_id, transition_id)
+        except jira.exceptions.JIRAError as err:
+            logger.error('transition_issue %s', err)
