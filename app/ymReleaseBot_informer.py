@@ -31,7 +31,7 @@ posts_cb = Filters.callback_filter()
 @dp.errors_handler()
 async def errors_handler(update: Update, exception: Exception):
     """
-
+        Errors handler
         :param update:
         :param exception:
         :return:
@@ -344,7 +344,7 @@ async def write_my_chat_id(message: types.Message):
 @dp.callback_query_handler(posts_cb.filter(action='duty'), Filters.restricted)
 async def duty_button(query: types.CallbackQuery, callback_data: str):
     """
-
+        Button with duty admin now
         :param query:
         :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
     """
@@ -393,7 +393,7 @@ async def main_menu(query: types.CallbackQuery, callback_data: str):
                            Filters.restricted, Filters.admin)
 async def admin_menu(query: types.CallbackQuery, callback_data: str):
     """
-
+        Open admin menu
         :param query:
         :param callback_data
     """
@@ -428,7 +428,7 @@ async def restart(query: types.CallbackQuery, callback_data: str):
                            Filters.restricted, Filters.admin)
 async def stop_bot(query: types.CallbackQuery, callback_data: str):
     """
-
+        Turn off bot
         :param query:
         :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
     """
@@ -443,7 +443,7 @@ async def stop_bot(query: types.CallbackQuery, callback_data: str):
                            Filters.restricted, Filters.admin)
 async def start_bot(query: types.CallbackQuery, callback_data: str):
     """
-
+        Turn on bot
         :param query:
         :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
     """
@@ -458,7 +458,7 @@ async def start_bot(query: types.CallbackQuery, callback_data: str):
                            Filters.restricted, Filters.admin)
 async def dont_touch_releases(query: types.CallbackQuery, callback_data: str):
     """
-
+        Don't touch releases on Jira board
         :param query:
         :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
     """
@@ -655,9 +655,8 @@ def setup_handlers(disp: Dispatcher):
 
 async def on_startup(dispatcher):
     """
-
+        Start up function
         :param dispatcher:
-        :return:
     """
     try:
         logger.info('Startup bot, hello!')

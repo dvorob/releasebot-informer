@@ -76,12 +76,10 @@ class MysqlPool:
 
     def db_subscribe(self, chat_id, chat_type, subscription):
         """
-            Дать каналу права на доступ к фичам YM
-
-            :param chat_id:
-            :param chat_type:
-            :param subscription:
-            :return:
+            Subscribe/unsubscribe employee to all bot notifications
+            :param chat_id: tg_chat_id
+            :param chat_type: private/group
+            :param subscription: 1 - subscribe, 0 - unsubscribe
         """
         try:
             self.db.connect()
@@ -95,8 +93,7 @@ class MysqlPool:
 
     def db_get_option(self, name):
         """
-            Получить значение параметра из БД
-
+            Get value from db key
             :param name:
             :return:
         """
@@ -113,11 +110,9 @@ class MysqlPool:
 
     def db_set_option(self, name, value):
         """
-            Установить значение параметра в БД
-
+            Set value to db
             :param name:
             :param value:
-            :return:
         """
         try:
             self.db.connect()
@@ -133,8 +128,8 @@ class MysqlPool:
 
     def db_get_rl(self) -> list:
         """
-            Получить список каналов для оповещения о релизе
-            :return:
+            Get list of employee who subscribed to events
+            :return: list of tg_chat_id
         """
         logger.debug('db_get_rl started')
         try:
