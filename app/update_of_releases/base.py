@@ -187,7 +187,7 @@ async def start_update_releases():
                     logger.info('Why not collect_success_releases? %s', j_issue.fields.resolution)
 
         ###
-        # Список задач выполненных быстро
+        # List of tasks completed quickly
         for issue in waiting_db:
             if issue not in waiting_id:
                 if issue not in now_id:
@@ -213,18 +213,17 @@ async def start_update_releases():
         logger.exception('start_update_releases')
 
 
-def app_version(string) -> dict:
+def app_version(issue_name) -> dict:
     """
-    Получить информацию о пакете
-
-    :param string: Заголовок задачи
-    :type string: str
-    :return: имя и версия приложения
-    :rtype: dict {'name': 'currency-storage', 'version': '1.3.1'}
+        Get name, version from Jira task name
+        :param issue_name: Jira task name
+        :type issue_name: str
+        :return: name, version of Jira task
+        :rtype: dict {'name': 'currency-storage', 'version': '1.3.1'}
     """
-    app = re.match('^([0-9a-z-]+)[+=]([0-9a-z-.]+)$', string.strip())
+    app = re.match('^([0-9a-z-]+)[+=]([0-9a-z-.]+)$', issue_name.strip())
 
-    output = {'name': app[1], 'version': app[2]} if app else {'name': string, 'version': False}
+    output = {'name': app[1], 'version': app[2]} if app else {'name': issue_name, 'version': False}
 
     return output
 
