@@ -89,7 +89,7 @@ class MysqlPool:
             db_chat.rl = subscription
             db_chat.save()
         except Exception:
-            logger.warning("MysqlPool, db_subscribe")
+            logger.exception("MysqlPool, db_subscribe")
         finally:
             self.db.close()
 
