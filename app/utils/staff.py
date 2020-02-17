@@ -28,7 +28,10 @@ def find_data_by_tg_username(tg_username):
         api_resp = r.json()
 
         if len(api_resp) == 0:
-            list_found.append('Ничего на стафе не найдено...')
+            list_found.append(f'Probably, you telegram username'
+                              f' {tg_username} doesn\'t match the specified tg username on '
+                              f'the staff.\n'
+                              f'Please compare them and try again send me /start.')
         else:
             list_found.append('Найдены:')
             for person in api_resp:

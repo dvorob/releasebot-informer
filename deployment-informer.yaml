@@ -15,7 +15,7 @@ spec:
         app: informer
     spec:
       containers:
-        - image: docker-ym.nexus.yamoney.ru/yamoney/xerxes-informer:0.1.418
+        - image: docker-ym.nexus.yamoney.ru/yamoney/xerxes-informer:0.1.421
           name: xerxes-informer
           volumeMounts:
           - mountPath: /etc/xerxes/logging_informer_new.conf
