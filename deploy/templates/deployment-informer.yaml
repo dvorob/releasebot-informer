@@ -1,0 +1,52 @@
+{{ $conf := .Values.ymreleasebot }}
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ $conf.name }}
+spec:
+  replicas: {{ $conf.count_replicas }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ $conf.name }}
+    spec:
+      containers:
+        - image: {{ $conf.image }}:{{ $conf.tag }}
+          name: {{ $conf.name }}
+          volumeMounts:
+          - mountPath: /etc/xerxes/logging_informer_new.conf
+            name: {{ $conf.logging.configmap_name }}
+            subPath: logging_informer_new.conf
+          - mountPath: /opt/YMreleasebot/informer/ssl
+            name: census
+            readOnly: true
+          resources:
+{{ toYaml $conf.resources| indent 12  }}
+          envFrom:
+            - prefix: secret_exchange_
+              secretRef:
+                name: {{ $conf.secrets.exchange.name }}
+            - prefix: secret_jira_
+              secretRef:
+                name: {{ $conf.secrets.jira.name }}
+            - prefix: secret_mysql_
+              secretRef:
+                name: {{ $conf.secrets.mysql.name }}
+            - prefix: secret_staff_
+              secretRef:
+                name: {{ $conf.secrets.staff.name }}
+            - prefix: secret_newbot_
+              secretRef:
+                name: {{ $conf.secrets.telegram.name }}
+      nodeSelector:
+        node-role.kubernetes.io/node: "true"
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: {{ $conf.logging.configmap_name }}
+          name: {{ $conf.logging.configmap_name }}
+        - name: census
+          secret:
+            secretName: census

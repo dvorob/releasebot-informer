@@ -20,13 +20,13 @@ ex_pass = getenv('secret_exchange_pass')
 ex_cal = 'adminsonduty@yamoney.ru'
 ex_tz = 'Europe/Moscow'
 
-db_host = 'mysql'
+db_host = 'mysql.xerxes.svc.ugr-base1.kube.yamoney.ru'
 db_user = getenv('secret_mysql_user')
 db_pass = getenv('secret_mysql_pass')
 db_name = 'xerxes'
 
-jenkins = 'http://leeroy:8080'
-api = 'http://api-v1/api-v1'
+jenkins = 'http://leeroy.xerxes.svc.ugr-base1.kube.yamoney.ru:8080'
+api = 'http://api-v1.xerxes.svc.ugr-base1.kube.yamoney.ru/api-v1'
 api_chat_id = f'{api}/chat-id'
 api_aerospike_read = f'{api}/aerospike/read'
 api_aerospike_write = f'{api}/aerospike/write'
@@ -55,4 +55,4 @@ issues_waiting = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
 issues_not_closed_resolved = 'project = ADMSYS AND issuetype = "Release (conf)" ' \
                            'AND status NOT IN (Closed, Resolved) ORDER BY Rank ASC'
 
-staff_url = 'https://census:8444'
+staff_url = 'https://census.xerxes.svc.ugr-base1.kube.yamoney.ru:8444'
