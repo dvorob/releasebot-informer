@@ -1,0 +1,14 @@
+{{ $conf := .Values.ymreleasebot }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $conf.api_v1.name }}
+spec:
+  ports:
+  - name: {{ $conf.api_v1.name }}
+    port: {{ $conf.api_v1.port }}
+    protocol: TCP
+    targetPort: {{ $conf.api_v1.targetport }}
+  selector:
+    app: {{ $conf.api_v1.name }}
+  type: LoadBalancer
