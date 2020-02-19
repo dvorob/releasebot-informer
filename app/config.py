@@ -20,7 +20,8 @@ ex_pass = getenv('secret_exchange_pass')
 ex_cal = 'adminsonduty@yamoney.ru'
 ex_tz = 'Europe/Moscow'
 
-db_host = 'api-v1-mysql'
+# db_host = 'api-v1-mysql'
+db_host = 'mysql'
 db_user = getenv('secret_mysql_user')
 db_pass = getenv('secret_mysql_pass')
 db_name = 'xerxes'

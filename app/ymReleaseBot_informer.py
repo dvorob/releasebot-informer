@@ -120,25 +120,34 @@ async def start(message: types.Message):
                 staff.find_data_by_tg_username(message.from_user.username)
             logger.info('info_from_staff_str: %s\n info_from_staff_json: %s',
                         info_from_staff_str, info_from_staff_json)
-            for info in info_from_staff_json:
-                mail_str = ''.join(info['emails'])
-                tg_user_str = ''.join(info['telegrams'])
-            # Add record to aerospike, for further private notifications
-            Spike.write(item=mail_str, aerospike_set='staff',
-                        bins={tg_user_str: '1'})
-            logger.info('I\'ve recorded to aerospike_set "staff" item: %s '
-                        'with value: {%s: str(1)}',
-                        mail_str, tg_user_str)
-            logger.debug('info_from_staff: %s', info_from_staff_str)
-            for record in info_from_staff_str:
-                msg += f'\n{record}'
-            hello_msg = 'Thanks for waiting, let\'s go!\n'
-            await message.answer(text=hello_msg + main_menu_message(),
-                                 reply_markup=keyboard.main_menu(),
-                                 parse_mode=ParseMode.MARKDOWN)
+            if len(info_from_staff_json) != 0:
+                for info in info_from_staff_json:
+                    mail_str = ''.join(info['emails'])
+                    tg_user_str = ''.join(info['telegrams'])
+                # Add record to aerospike, for further private notifications
+                Spike.write(item=mail_str, aerospike_set='staff',
+                            bins={tg_user_str: '1'})
+                logger.info('I\'ve recorded to aerospike_set "staff" item: %s '
+                            'with value: {%s: str(1)}',
+                            mail_str, tg_user_str)
+                logger.debug('info_from_staff: %s', info_from_staff_str)
+                for record in info_from_staff_str:
+                    msg += f'\n{record}'
+                hello_msg = 'Thanks for waiting, let\'s go!\n'
+                await message.answer(text=hello_msg + main_menu_message(),
+                                     reply_markup=keyboard.main_menu(),
+                                     parse_mode=ParseMode.MARKDOWN)
 
-            for admin in config.bot_master.values():
-                await message.bot.send_message(chat_id=admin, text=msg, parse_mode=ParseMode.HTML)
+                for admin in config.bot_master.values():
+                    await message.bot.send_message(chat_id=admin, text=msg,
+                                                   parse_mode=ParseMode.HTML)
+            else:
+                main_msg = ''.join(info_from_staff_str)
+                logger.warning('Error occur when try find info for @%s on a staff',
+                               message.from_user.username)
+                emojize_msg = emojize('Nothing found on the staff :white_frowning_face:\n ')
+                await message.answer(text=main_msg + emojize_msg,
+                                     parse_mode=ParseMode.MARKDOWN)
     except Exception:
         logger.exception('start')
 
@@ -181,17 +190,9 @@ async def duty_admin(message: types.Message):
         logger.debug('duty, in_text = %s', cli_args)
         if (len(cli_args) == 2 and int(cli_args[1]) > 0) or \
                 (len(cli_args) == 1 and int(datetime.today().strftime("%H")) < int(10)):
-            # moscow_timezone = EWSTimeZone.timezone('Europe/Moscow')
-            # now = EWSDateTime.now(tz=moscow_timezone)
             now = ExchangeConnect().timezone()
             if len(cli_args) == 1:
-                msg = '<strong>Приветствую!</strong>\n' \
-                      'Мне очень жаль, что тебе нужна информация в столь ранний час\n' \
-                      'Сейчас <strong>%s</strong> утра,\n' \
-                      'Прямо сейчас дежурят эти люди, но всё изменится в <strong>10:00</strong>\n' \
-                      'Посмотреть, кто сегодня дежурит после 10:00 можно командой ' \
-                      '<strong>/duty 1</strong>.\n\n' \
-                      % datetime.today().strftime("%H:%M")
+                msg = returnHelper.return_early_duty_msg(datetime.today().strftime("%H:%M"))
                 cal_start = now + timedelta(minutes=0)
                 cal_end = now + timedelta(minutes=1)
             else:
@@ -354,8 +355,10 @@ async def duty_button(query: types.CallbackQuery, callback_data: str):
         logger.debug('duty, query: %s', query)
         extra_msg = '\n\nЕсли вы хотите узнать дежурных через N дней,\n' \
                     'отправьте команду /duty N'
-        await query.message.answer(text=duty_admin_now() + extra_msg,
-                                   reply_markup=to_main_menu(),
+        msg = returnHelper.return_early_duty_msg(datetime.today().strftime("%H:%M")) \
+            if int(datetime.today().strftime("%H")) < int(10) \
+            else duty_admin_now() + extra_msg
+        await query.message.answer(text=msg, reply_markup=to_main_menu(),
                                    parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception('duty_button')
