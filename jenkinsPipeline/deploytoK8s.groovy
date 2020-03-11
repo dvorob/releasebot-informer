@@ -70,7 +70,7 @@ node('docker') {
 //                  helm upgrade --install  ${repoName} . --kubeconfig /opt/ymreleasebot/kube_config.yml -f values.yaml -f tag-values.yaml -f secret_values.yaml --debug -n ymreleasebot
 //                  '''
 //                  }
-//             }
+//             }/
         currentBuild.result = 'SUCCESS'
         currentBuild.displayName += " " + projectKey + "/" + repoName + ":" + branchName
         step([$class: 'StashNotifier'])
