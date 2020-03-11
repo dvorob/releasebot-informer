@@ -9,5 +9,4 @@ RUN pip3 install --no-cache-dir --trusted-host nexus.yamoney.ru -i https://nexus
 
 COPY app/ymReleaseBot_informer.py ./
 COPY app ./app
-
 CMD [ "python3", "./ymReleaseBot_informer.py" ]
