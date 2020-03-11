@@ -24,53 +24,52 @@ node('docker') {
         echo projectKey
         echo repoName
         try {
-//             stage('docker build && push') {
-//                 checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/deploy']],
-//                 extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'app_deploy']],
-//                 userRemoteConfigs: [[credentialsId: credentials.bitbucket,
-//                 url: 'ssh://git@bitbucket.yamoney.ru/ansible-playbooks/app_deploy.git']]]
-//                 //checkout scm
-//                 def commit_id = sh(script:"git rev-parse --short HEAD", returnStdout: true).trim()
-//                 def prepare_tag_yaml = ["ymreleasebot": ["tag": commit_id]]
-//                 writeYaml file: 'tag-values.yaml', data: prepare_tag_yaml
-//                 withDockerRegistry([ url: "https://${registry}", credentialsId: credentials.registryCredentialsId ]) {
-//                     def image_build = docker.build("${registry}/yamoney/${image}:${commit_id}", "-f Dockerfile --pull .")
-//                     image_build.push()
-//                 }
-//             }
-//             stage('get secret from vault') {
-//                 dir('ansible') {
-//                     git url: 'ssh://git@bitbucket.yamoney.ru/ansible-playbooks/ymreleasebot_get_secret.git',
-//                     credentialsId: credentials.bitbucket
-//                 }
-//                 ansiColor('xterm') {
-//                     ansiblePlaybook credentialsId: credentials.jenkins,
-//                         playbook: 'ansible/site.yml'
-//                 }
-//             }
-//             stage('helm lint') {
-//                 docker.image(helm_image).inside('-v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/ansible/secret_vars/values.yaml:/opt/ymreleasebot/secret_values.yaml -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/deploy/:/opt/ymreleasebot/ -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/tag-values.yaml:/opt/ymreleasebot/tag-values.yaml') {
-//                  sh '''
-//                  cd /opt/ymreleasebot &&
-//                  helm lint . --kubeconfig /opt/ymreleasebot/kube_config.yml -f values.yaml -f tag-values.yaml -f secret_values.yaml
-//                  '''
-//                  }
-//             }
-//             stage('verify existence ns') {
-//                 docker.image(helm_image).inside('-v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml') {
-//                 sh '''
-//                 kubectl --kubeconfig=/opt/ymreleasebot/kube_config.yml get namespace ymreleasebot || kubectl --kubeconfig=/opt/ymreleasebot/kube_config.yml create namespace ymreleasebot
-//                 '''
-//                 }
-//             }
-//             stage('helm install') {
-//                 docker.image(helm_image).inside('-v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/ansible/secret_vars/values.yaml:/opt/ymreleasebot/secret_values.yaml -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/deploy/:/opt/ymreleasebot/ -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/tag-values.yaml:/opt/ymreleasebot/tag-values.yaml') {
-//                  sh '''
-//                  cd /opt/ymreleasebot &&
-//                  helm upgrade --install  ${repoName} . --kubeconfig /opt/ymreleasebot/kube_config.yml -f values.yaml -f tag-values.yaml -f secret_values.yaml --debug -n ymreleasebot
-//                  '''
-//                  }
-//             }/
+            stage('docker build && push') {
+                checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/deploy']],
+                extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: '.']],
+                userRemoteConfigs: [[credentialsId: credentials.bitbucket, url: repoPath]]]
+                //checkout scm
+                def commit_id = sh(script:"git rev-parse --short HEAD", returnStdout: true).trim()
+                def prepare_tag_yaml = ["ymreleasebot": ["tag": commit_id]]
+                writeYaml file: 'tag-values.yaml', data: prepare_tag_yaml
+                withDockerRegistry([ url: "https://${registry}", credentialsId: credentials.registryCredentialsId ]) {
+                    def image_build = docker.build("${registry}/yamoney/${image}:${commit_id}", "-f Dockerfile --pull .")
+                    image_build.push()
+                }
+            }
+            stage('get secret from vault') {
+                dir('ansible') {
+                    git url: 'ssh://git@bitbucket.yamoney.ru/ansible-playbooks/ymreleasebot_get_secret.git',
+                    credentialsId: credentials.bitbucket
+                }
+                ansiColor('xterm') {
+                    ansiblePlaybook credentialsId: credentials.jenkins,
+                        playbook: 'ansible/site.yml'
+                }
+            }
+            stage('helm lint') {
+                docker.image(helm_image).inside('-v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/ansible/secret_vars/values.yaml:/opt/ymreleasebot/secret_values.yaml -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/deploy/:/opt/ymreleasebot/ -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/tag-values.yaml:/opt/ymreleasebot/tag-values.yaml') {
+                 sh '''
+                 cd /opt/ymreleasebot &&
+                 helm lint . --kubeconfig /opt/ymreleasebot/kube_config.yml -f values.yaml -f tag-values.yaml -f secret_values.yaml
+                 '''
+                 }
+            }
+            stage('verify existence ns') {
+                docker.image(helm_image).inside('-v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml') {
+                sh '''
+                kubectl --kubeconfig=/opt/ymreleasebot/kube_config.yml get namespace ymreleasebot || kubectl --kubeconfig=/opt/ymreleasebot/kube_config.yml create namespace ymreleasebot
+                '''
+                }
+            }
+            stage('helm install') {
+                docker.image(helm_image).inside('-v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/ansible/secret_vars/values.yaml:/opt/ymreleasebot/secret_values.yaml -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/deploy/:/opt/ymreleasebot/ -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/tag-values.yaml:/opt/ymreleasebot/tag-values.yaml') {
+                 sh '''
+                 cd /opt/ymreleasebot &&
+                 helm upgrade --install  ${repoName} . --kubeconfig /opt/ymreleasebot/kube_config.yml -f values.yaml -f tag-values.yaml -f secret_values.yaml --debug -n ymreleasebot
+                 '''
+                 }
+            }
         currentBuild.result = 'SUCCESS'
         currentBuild.displayName += " " + projectKey + "/" + repoName + ":" + branchName
         step([$class: 'StashNotifier'])
