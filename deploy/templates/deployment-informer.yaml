@@ -1,59 +1,52 @@
----
+{{ $conf := .Values.ymreleasebot }}
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
-  name: xerxes-informer
-  namespace: xerxes
+  name: {{ $conf.name }}
 spec:
-  replicas: 1
+  replicas: {{ $conf.count_replicas }}
   strategy:
-    type: Recreate
+    type: RollingUpdate
   template:
     metadata:
-      name: informer
       labels:
-        app: informer
+        app: {{ $conf.name }}
     spec:
       containers:
-        - image: docker-ym.nexus.yamoney.ru/yamoney/xerxes-informer:0.1.421
-          name: xerxes-informer
+        - image: {{ $conf.image }}:{{ $conf.tag }}
+          name: {{ $conf.name }}
           volumeMounts:
           - mountPath: /etc/xerxes/logging_informer_new.conf
-            name: log-config-informer-new
+            name: {{ $conf.logging.configmap_name }}
             subPath: logging_informer_new.conf
           - mountPath: /opt/YMreleasebot/informer/ssl
             name: census
             readOnly: true
           resources:
-            requests:
-              memory: 128Mi
-              cpu: '128m'
-            limits:
-              memory: 256Mi
-              cpu: '512m'
+{{ toYaml $conf.resources| indent 12  }}
           envFrom:
             - prefix: secret_exchange_
               secretRef:
-                name: exchange
+                name: {{ $conf.secrets.exchange.name }}
             - prefix: secret_jira_
               secretRef:
-                name: jira
+                name: {{ $conf.secrets.jira.name }}
             - prefix: secret_mysql_
               secretRef:
-                name: mysql
+                name: {{ $conf.secrets.mysql.name }}
             - prefix: secret_staff_
               secretRef:
-                name: staff
+                name: {{ $conf.secrets.staff.name }}
             - prefix: secret_newbot_
               secretRef:
-                name: newbot
+                name: {{ $conf.secrets.telegram.name }}
       nodeSelector:
         node-role.kubernetes.io/node: "true"
       volumes:
         - configMap:
             defaultMode: 420
-            name: log-config-informer-new
-          name: log-config-informer-new
+            name: {{ $conf.logging.configmap_name }}
+          name: {{ $conf.logging.configmap_name }}
         - name: census
           secret:
             secretName: census

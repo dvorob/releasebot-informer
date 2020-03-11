@@ -1,0 +1,53 @@
+## YMreleaseBot configuration
+
+ymreleasebot:
+  name: 'xerxes-informer'
+  count_replicas: 1
+  image: 'docker-ym.nexus.yamoney.ru/yamoney/xerxes-informer'
+  tag: <value>
+  api_v1:
+    name: 'api-v1'
+    port: 80
+    targetport: 8080
+  census:
+    name: 'census'
+    port: 8444
+  mysql:
+    name: mysql
+    port:
+      name: mysql-client
+      value: 3306
+    ip: 10.200.51.2
+  logging:
+    configmap_name: 'log-config-ymreleasebot-informer'
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 128m
+    limits:
+      memory: 256Mi
+      cpu: 512m
+  secrets:
+    staff:
+      name: 'staff'
+      token: <value>
+    mysql:
+      name: 'mysql'
+      pass: <value>
+      user: <value>
+    jira:
+      name: 'jira'
+      pass: <value>
+      user: <value>
+    exchange:
+      name: 'exchange'
+      pass: <value>
+      user: <value>
+    telegram:
+      name: 'newbot'
+      value: <value>
+    census:
+      name: 'census'
+      ca_pem: <value>
+      cert_pem: <value>
+      key_pem: <value>

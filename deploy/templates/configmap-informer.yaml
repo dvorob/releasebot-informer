@@ -1,9 +1,8 @@
----
+{{ $conf := .Values.ymreleasebot }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: log-config-informer-new
-  namespace: xerxes
+  name: {{ $conf.logging.configmap_name }}
 data:
   logging_informer_new.conf: |
     [loggers]
