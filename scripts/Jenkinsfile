@@ -19,14 +19,11 @@ node('docker') {
         def registry = 'docker-ym.nexus.yamoney.ru'
         def image = 'xerxes-informer'
         def home_dir = '/var/lib/jenkins/workspace/Common/YMreleaseBot-deploy'
-        echo repoPath
-        echo branchName
-        echo projectKey
-        echo repoName
+
         try {
             stage('docker build && push') {
                 echo 'Fetching repo'
-                checkout csm
+                checkout scm
 
                 echo 'Build & push docker image'
                 def commit_id = sh(script:"git rev-parse --short HEAD", returnStdout: true).trim()
@@ -66,12 +63,12 @@ node('docker') {
                 docker.image(helm_image).inside('-v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/ansible/secret_vars/values.yaml:/opt/ymreleasebot/secret_values.yaml -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/deploy/:/opt/ymreleasebot/ -v /var/lib/jenkins/workspace/Common/YMreleaseBot-deploy/tag-values.yaml:/opt/ymreleasebot/tag-values.yaml') {
                  sh '''
                  cd /opt/ymreleasebot &&
-                 helm upgrade --install  ${repoName} . --kubeconfig /opt/ymreleasebot/kube_config.yml -f values.yaml -f tag-values.yaml -f secret_values.yaml --debug -n ymreleasebot
+                 helm upgrade --install ymreleasebot-informer . --kubeconfig /opt/ymreleasebot/kube_config.yml -f values.yaml -f tag-values.yaml -f secret_values.yaml --debug -n ymreleasebot
                  '''
                  }
             }
         currentBuild.result = 'SUCCESS'
-        currentBuild.displayName += " " + projectKey + "/" + repoName + ":" + branchName
+        //currentBuild.displayName += " " + projectKey + "/" + repoName + ":" + branchName
         step([$class: 'StashNotifier'])
         } catch(Exception e) {
         println "Error: ${e.message}"
