@@ -49,7 +49,7 @@ search_issues_completed = 'project = ADMSYS AND issuetype = "Release (conf)" ' \
                           'AND status = Resolved ORDER BY Rank ASC'
 
 issues_waiting = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
-                 'status IN ("Open", "На согласовании", "Postponed", "Waiting release", "TO DO") ' \
+                 'status IN ("Open", "На согласовании", "Waiting release", "TO DO") ' \
                  'ORDER BY Rank ASC'
 
 issues_not_closed_resolved = 'project = ADMSYS AND issuetype = "Release (conf)" ' \
