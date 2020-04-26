@@ -5,13 +5,6 @@ ymreleasebot:
   count_replicas: 1
   image: 'docker-ym.nexus.yamoney.ru/yamoney/xerxes-informer'
   tag: <value>
-  api_v1:
-    name: 'api-v1'
-    port: 80
-    targetport: 8080
-  census:
-    name: 'census'
-    port: 8444
   mysql:
     name: mysql
     port:
