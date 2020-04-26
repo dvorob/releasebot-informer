@@ -37,7 +37,7 @@ spec:
             - prefix: secret_staff_
               secretRef:
                 name: {{ $conf.secrets.staff.name }}
-            - prefix: secret_newbot_
+            - prefix: secret_telegram_
               secretRef:
                 name: {{ $conf.secrets.telegram.name }}
       nodeSelector:

@@ -44,7 +44,7 @@ ymreleasebot:
       pass: <value>
       user: <value>
     telegram:
-      name: 'newbot'
+      name: 'telegram'
       value: <value>
     census:
       name: 'census'

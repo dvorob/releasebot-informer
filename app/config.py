@@ -3,7 +3,7 @@
 
 from os import getenv
 
-bot_token = getenv('secret_newbot_token')
+bot_token = getenv('secret_telegram_token')
 bot_master = {'bakurskii_telegram_id': 186263972,
               'vorobiev_telegram_id': 279933948,
               'reytsman_telegram_id': 254802165,
@@ -25,8 +25,8 @@ db_user = getenv('secret_mysql_user')
 db_pass = getenv('secret_mysql_pass')
 db_name = 'xerxes'
 
-jenkins = 'http://leeroy.xerxes.svc.ugr-base1.kube.yamoney.ru:8080'
-api = 'http://api-v1.xerxes.svc.ugr-base1.kube.yamoney.ru/api-v1'
+jenkins = 'http://xerxes-leeroy:8080'
+api = 'http://xerxes-api-v1/api-v1'
 api_chat_id = f'{api}/chat-id'
 api_aerospike_read = f'{api}/aerospike/read'
 api_aerospike_write = f'{api}/aerospike/write'
