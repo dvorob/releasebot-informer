@@ -20,6 +20,10 @@ node('docker') {
         def image = 'xerxes-informer'
         def home_dir = '/var/lib/jenkins/workspace/Common/YMreleaseBot/YMreleaseBot-informer'
 
+        Date date = new Date()
+        String datePart = date.format("yyyy-MM-dd")
+        String timePart = date.format("HH-mm")
+
         try {
             stage('docker build && push') {
                 echo 'Fetching repo'
