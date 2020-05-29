@@ -26,11 +26,16 @@ async def todo_tasks():
     try:
         db_result_todo = mysql().db_get_option('rl_todo')
         todo_db = db_result_todo.split() if isinstance(db_result_todo, str) else []
-
+        logger.info('DB Releases (in mysql): %s', todo_db)
+        
         issues_todo = JiraIssues().jira_search(config.waiting_assignee_releases)
-
+        logger.info('Jira releases: %s', issues_todo)
+        
         todo_id = []
         for issue in issues_todo:
+            logger.info('Working with issue: %s', issue) 
+            todo_id.append(issue.id)
+
             if issue.id not in todo_db:
                 for chatId_subscribed in mysql().db_get_rl():
                     msg_in_queue = f'[{issue.fields.summary}]' \
@@ -52,21 +57,21 @@ async def todo_tasks():
                                'Если вы не можете катить релиз сейчас, ' \
                                'воспользуйтесь кнопкой `Return task to the queue`'
                 # Especially for case, when someone block or not added to bot..
-                try:
-                    for chat_id in set(recipient_chat_id):
+                for chat_id in set(recipient_chat_id):
+                    try:
                         await bot.send_message(chat_id=chat_id, text=text_waiting,
                                                parse_mode=ParseMode.MARKDOWN)
-                    logger.info('%s - sent notification looking forward (via api-v1) to: %s',
-                                issue.key, set(recipient_chat_id))
-                except BotBlocked:
-                    logger.info('YM release bot was blocked by %s', chat_id)
-                    await bot.send_message(chat_id=186263972, text=f'*YMReleaseBot '
-                                                                   f'was blocked by {chat_id}*')
-                except ChatNotFound:
-                    logger.error('Chat not found with: %s', chat_id)
-                    await bot.send_message(chat_id=186263972, text=f'*YMReleaseBot '
-                                                                   f'chat not found {chat_id}*')
-            todo_id.append(issue.id)
+                    except BotBlocked:
+                        logger.info('YM release bot was blocked by %s', chat_id)
+                        await bot.send_message(chat_id=186263972, text=f'*YMReleaseBot '
+                                                                       f'was blocked by {chat_id}*')
+                    except ChatNotFound:
+                        logger.error('Chat not found with: %s', chat_id)
+                        await bot.send_message(chat_id=186263972, text=f'*YMReleaseBot '
+                                                                       f'chat not found {chat_id}*')
+
+                logger.info('%s - sent notification looking forward (via api-v1) to: %s',
+                            issue.key, set(recipient_chat_id))
         # Save data to db
         mysql().db_set_option('rl_todo', ' '.join(todo_id))
 
