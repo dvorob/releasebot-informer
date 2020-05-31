@@ -4,8 +4,7 @@
 from os import getenv
 
 bot_token = getenv('secret_telegram_token')
-bot_master = {'bakurskii_telegram_id': 186263972,
-              'vorobiev_telegram_id': 279933948,
+bot_master = {'vorobiev_telegram_id': 279933948,
               'reytsman_telegram_id': 254802165,
               'spiridonov_telegram_id': 104632759,
               'krepyshev_telegram_id': 132381920,

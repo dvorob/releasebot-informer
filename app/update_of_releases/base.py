@@ -33,11 +33,11 @@ async def todo_tasks():
         
         todo_id = []
         for issue in issues_todo:
-            logger.info('Working with issue: %s', issue) 
+            logger.info('Working with issue: %s', issue)
             todo_id.append(issue.id)
 
             if issue.id not in todo_db:
-                for chatId_subscribed in mysql().db_get_rl():
+                for chatId_subscribed in mysql().db_get_rl():а
                     msg_in_queue = f'[{issue.fields.summary}]' \
                                    f'(https://jira.yamoney.ru/browse/{issue.key}) ' \
                                    f'ищет согласующих.'
@@ -45,11 +45,10 @@ async def todo_tasks():
                                            text=msg_in_queue + how_many_is_working(),
                                            parse_mode=ParseMode.MARKDOWN)
 
-                request_chatid_api_v1 = requests.get(f'{config.api_chat_id}/{issue.key}')
+                # Personal notification 
+                request_chatid_api_v1 = await requests.get(f'{config.api_chat_id}/{issue.key}')
                 recipient_chat_id = list(request_chatid_api_v1.json())
                 logger.info('recipient_chatid: %s', request_chatid_api_v1.json())
-                # add isbakurskii chat_id for debug
-                recipient_chat_id.append('186263972')
 
                 jira_link = 'https://jira.yamoney.ru/browse/'
                 text_waiting = f'[{issue.fields.summary}]({jira_link}{issue.key}) ' \
@@ -63,11 +62,11 @@ async def todo_tasks():
                                                parse_mode=ParseMode.MARKDOWN)
                     except BotBlocked:
                         logger.info('YM release bot was blocked by %s', chat_id)
-                        await bot.send_message(chat_id=186263972, text=f'*YMReleaseBot '
+                        await bot.send_message(chat_id=279933948, text=f'*YMReleaseBot '
                                                                        f'was blocked by {chat_id}*')
                     except ChatNotFound:
                         logger.error('Chat not found with: %s', chat_id)
-                        await bot.send_message(chat_id=186263972, text=f'*YMReleaseBot '
+                        await bot.send_message(chat_id=279933948, text=f'*YMReleaseBot '
                                                                        f'chat not found {chat_id}*')
 
                 logger.info('%s - sent notification looking forward (via api-v1) to: %s',
@@ -213,7 +212,7 @@ async def start_update_releases():
         logger.info('YM release bot was blocked by %s', chat_id)
     except ChatNotFound:
         logger.error('Chat not found with: %s', chat_id)
-        await bot.send_message(chat_id=186263972, text=f'*YMReleaseBot was blocked by {chat_id}*')
+        await bot.send_message(chat_id=279933948, text=f'*YMReleaseBot was blocked by {chat_id}*')
     except Exception:
         logger.exception('start_update_releases')
 
