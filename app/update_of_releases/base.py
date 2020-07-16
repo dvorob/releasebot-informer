@@ -125,7 +125,7 @@ async def start_update_releases():
                                   f'{action_of_task}.'
 
                 return_list_id.append(issues.id)
-            
+
             logger.debug('List of jira id to DB %s', return_list_id)
             # Save data to db
             mysql().db_set_option(option_name, ' '.join(return_list_id))
