@@ -65,11 +65,13 @@ async def restricted(message: types.message) -> bool:
 
         # If employee exist, list_of_answers will be [None, dict_with_info]
         # or [dict_with_info, dict_with_info] else [None, None]
+        # Заменить на вызов ручки проверки, наш ли это сотрудник, работает ли он
         if list_of_aerospike_answers[0] == list_of_aerospike_answers[1] is None:
-            logger.warning(warning_message)
-            msg = 'Извини, мне сказали, ты больше не с нами.'
-            await message.answer(text=msg)
-            return False
+            # logger.warning(warning_message)
+            # msg = 'Извини, мне сказали, ты больше не с нами.'
+            # await message.answer(text=msg)
+            # return False
+            return True
         else:
             # When one of the list elements is dict, we found true_tg_username
             for index, _ in enumerate(list_of_aerospike_answers):
