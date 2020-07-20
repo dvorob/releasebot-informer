@@ -14,7 +14,8 @@ bot_master = {'vorobiev_telegram_id': 279933948,
               'igoshin_telegram_id': 153780462,
               'batuto_telegram_id': 124171502,
               'titov_telegram_id': 81194573,
-              'gromov_telegram_id': 390182439       
+              'grachev_telegram_id': 170541899,
+              'gromov_telegram_id': 390182439
               }
 
 tz_name = 'Europe/Moscow'
