@@ -335,10 +335,12 @@ async def write_my_chat_id(message: types.Message):
         Using for private notifications
     """
     logger.info('write_my_chat_id started from: %s', returnHelper.return_name(message))
+    logger.info('write_my_chat_id: %s', message)
     bins = {'@' + message.from_user.username: message.chat.id}
     Spike.write(item='@' + message.from_user.username,
                 bins=bins, aerospike_set='informer')
     msg = emojize('Ok, done. :ok_hand:')
+    req_tg = requests.post(config.api_sign_up, json=message)
     await message.reply(text=msg)
 
 
