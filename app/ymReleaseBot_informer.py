@@ -172,6 +172,26 @@ def main_menu_message() -> str:
     return msg
 
 
+async def write_my_chat_id(message: types.Message):
+    """
+        Will write to aerospike set 'informer' to item @tg_username
+        {@tg_username: tg_chat_id}
+        Using for private notifications
+    """
+    try:
+        logger.info('write_my_chat_id started from: %s', returnHelper.return_name(message))
+        logger.info('Go to api: %s', config.api_sign_up)
+        logger.info('write_my_chat_id: %s %s %s', message.from_user.username, message.from_user.id, message.chat.id)
+        headers = {'tg_login': str(message.from_user.username), 'tg_user_id': str(message.from_user.id), 'tg_chat_id': str(message.chat.id)}
+        req_tg = requests.post(config.api_sign_up, headers=headers)
+        logger.info('write_my_chat_id response %s', req_tg)
+        bins = {'@' + message.from_user.username: message.chat.id}
+        Spike.write(item='@' + message.from_user.username,
+                    bins=bins, aerospike_set='informer')
+        msg = emojize('Ok, done. :ok_hand:')
+    except Exception:
+        logger.exception('exception in write_my_chat_id')
+
 async def duty_admin(message: types.Message):
     """
         Info about current or future duty admin
@@ -326,23 +346,6 @@ async def get_min_inf_board_button(query: types.CallbackQuery, callback_data: st
                                    parse_mode=ParseMode.MARKDOWN)
     except Exception:
         logger.exception('get_min_inf_board_button')
-
-
-async def write_my_chat_id(message: types.Message):
-    """
-        Will write to aerospike set 'informer' to item @tg_username
-        {@tg_username: tg_chat_id}
-        Using for private notifications
-    """
-    logger.info('write_my_chat_id started from: %s', returnHelper.return_name(message))
-    logger.info('write_my_chat_id: %s', message)
-    bins = {'@' + message.from_user.username: message.chat.id}
-    Spike.write(item='@' + message.from_user.username,
-                bins=bins, aerospike_set='informer')
-    msg = emojize('Ok, done. :ok_hand:')
-    req_tg = requests.post(config.api_sign_up, json=message)
-    await message.reply(text=msg)
-
 
 @dp.callback_query_handler(posts_cb.filter(action='duty'), Filters.restricted)
 async def duty_button(query: types.CallbackQuery, callback_data: str):
