@@ -180,7 +180,6 @@ async def write_my_chat_id(message: types.Message):
     """
     try:
         logger.info('write_my_chat_id started from: %s', returnHelper.return_name(message))
-        logger.info('Go to api: %s', config.api_sign_up)
         logger.info('write_my_chat_id: %s %s %s', message.from_user.username, message.from_user.id, message.chat.id)
         headers = {'tg_login': str(message.from_user.username), 'tg_user_id': str(message.from_user.id), 'tg_chat_id': str(message.chat.id)}
         req_tg = requests.post(config.api_sign_up, headers=headers)

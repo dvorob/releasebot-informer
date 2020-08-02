@@ -19,7 +19,7 @@ data:
     handlers=consoleHandler
 
     [logger_informer]
-    level=DEBUG
+    level=INFO
     handlers=consoleHandler
     qualname=informer
 
