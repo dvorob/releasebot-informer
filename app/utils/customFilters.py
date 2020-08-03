@@ -8,6 +8,8 @@ from aiogram.utils.callback_data import CallbackData
 from app.utils import logging
 from app.utils import ioAerospike as Spike
 from app.utils import returnHelper
+import aiohttp
+import asyncio
 import app.config as config
 import warnings
 import sys
@@ -15,6 +17,9 @@ import requests
 
 logger = logging.setup()
 
+async def get_session():
+    session = aiohttp.ClientSession()
+    return session
 
 def callback_filter() -> CallbackData:
     """
@@ -51,17 +56,24 @@ async def restricted(message: types.message) -> bool:
     try:
         tg_username = message.from_user.username
         headers = {'username': str(message.from_user.username)}
-        req_user = (requests.get(config.api_get_user_info, headers=headers)).json()
-        logger.info('restricted check for : %s , response from api %s', tg_username, req_user)
-        warning_message = f'Unauthorized access denied: {returnHelper.return_name(message)}'
 
-        # if False:
-        #     logger.warning(warning_message)
-        #     msg = 'Извини, мне сказали, ты больше не с нами.'
-        #     await message.answer(text=msg)
-        #     # End decorator if it falls under the condition
-        #     return False
-        # else:
-        #     return True
+        session = await get_session()
+        async with session.get(config.api_get_user_info, headers=headers) as resp:
+            req_user = await resp.json()
+
+            logger.info('restricted check for : %s , response from api %s', tg_username, req_user)
+            warning_message = f'Unauthorized access denied: {returnHelper.return_name(message)}'
+
+            if req_user:
+                if 'account_name' in req_user:
+                    logger.info('restricted allow for %s', req_user['account_name'])
+                    return False
+                else:
+                    logger.info('restricted user not found %s %s', tg_username, warning_message)
+                    await message.answer(text='Извини, мне сказали, ты больше не с нами.')
+                    # End decorator if it falls under the condition
+                    return True
+            else:
+                logger.info('restricted no req_user')
     except Exception:
-        logger.exception('restricted')
+        logger.exception('exception in restricted')
