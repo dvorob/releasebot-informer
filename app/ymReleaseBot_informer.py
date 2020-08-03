@@ -346,7 +346,7 @@ async def get_min_inf_board_button(query: types.CallbackQuery, callback_data: st
     except Exception:
         logger.exception('get_min_inf_board_button')
 
-@dp.callback_query_handler(posts_cb.filter(action='duty'), Filters.restricted)
+@dp.callback_query_handler(posts_cb.filter(action='duty_button'), Filters.restricted)
 async def duty_button(query: types.CallbackQuery, callback_data: str):
     """
         Button with duty admin now
@@ -653,11 +653,9 @@ def setup_handlers(disp: Dispatcher):
     disp.register_message_handler(start, Filters.restricted, commands='start')
     disp.register_message_handler(help_description, Filters.restricted, commands='help')
     disp.register_message_handler(duty_admin, Filters.restricted, commands='duty')
-    disp.register_message_handler(find_employee_by_tg, Filters.restricted,
-                                  commands='find_employee_by_tg')
+    disp.register_message_handler(find_employee_by_tg, Filters.restricted, commands='find_employee_by_tg')
     disp.register_message_handler(write_my_chat_id, Filters.restricted, commands='write_my_chat_id')
-    disp.register_message_handler(unknown_message, Filters.restricted,
-                                  content_types=ContentType.ANY)
+    disp.register_message_handler(unknown_message, Filters.restricted, content_types=ContentType.ANY)
 
 
 async def on_startup(dispatcher):

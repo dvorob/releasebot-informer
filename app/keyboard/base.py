@@ -48,7 +48,7 @@ def main_menu() -> types.InlineKeyboardMarkup:
         url_wiki = 'https://wiki.yamoney.ru/x/03AAD'
         button_list = [
             types.InlineKeyboardButton(text="Show duty admin",
-                                       callback_data=posts_cb.new(action='duty', issue='1')),
+                                       callback_data=posts_cb.new(action='duty_button', issue='1')),
             types.InlineKeyboardButton("Open release board",
                                        url=url_jira_board),
             types.InlineKeyboardButton("Open documentation", url=url_wiki),
