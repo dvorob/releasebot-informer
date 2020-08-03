@@ -9,7 +9,9 @@ from app.utils import logging
 from app.utils import ioAerospike as Spike
 from app.utils import returnHelper
 import app.config as config
-
+import warnings
+import sys
+import requests
 
 logger = logging.setup()
 
@@ -48,10 +50,9 @@ async def restricted(message: types.message) -> bool:
     """
     try:
         tg_username = message.from_user.username
-        headers = {'tg_login': str(message.from_user.username)}
-        req_tg = requests.post(config.api_get_user_info, headers=headers)
-        logger.info('restricted %s', req_tg)
-        logger.info('restricted check for : %s', tg_username)
+        headers = {'username': str(message.from_user.username)}
+        req_user = (requests.get(config.api_get_user_info, headers=headers)).json()
+        logger.info('restricted check for : %s , response from api %s', tg_username, req_user)
         warning_message = f'Unauthorized access denied: {returnHelper.return_name(message)}'
 
         # if False:
