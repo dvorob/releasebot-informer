@@ -207,9 +207,10 @@ async def duty_admin(message: types.Message):
                                      action=ChatActions.typing)
         cli_args = message.text.split()
         logger.debug('duty, in_text = %s', cli_args)
-        if (len(cli_args) == 2 and int(cli_args[1]) > 0) or \
-                (len(cli_args) == 1 and int(datetime.today().strftime("%H")) < int(10)):
+        # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов но вызван до 10 часов утра
+        if (len(cli_args) == 2 and int(cli_args[1]) > 0):
             now = ExchangeConnect().timezone()
+            dict_duty_adm = Spike.read(item='duty', aerospike_set='duty_admin')
             if len(cli_args) == 1:
                 msg = returnHelper.return_early_duty_msg(datetime.today().strftime("%H:%M"))
                 cal_start = now + timedelta(minutes=0)
@@ -224,6 +225,11 @@ async def duty_admin(message: types.Message):
         else:
             dict_duty_adm = Spike.read(item='duty', aerospike_set='duty_admin')
             today = datetime.today().strftime("%Y-%m-%d")
+            # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
+            if int(datetime.today().strftime("%H")) < int(10):
+                today = (datetime.today() - timedelta(1)).strftime("%Y-%m-%d")
+            else:
+                today = datetime.today().strftime("%Y-%m-%d")
 
             logger.debug('dict_duty_adm, today = %s\n%s', dict_duty_adm, today)
 
