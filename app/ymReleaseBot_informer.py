@@ -230,13 +230,11 @@ async def duty_admin(message: types.Message):
                 today = (datetime.today() - timedelta(1)).strftime("%Y-%m-%d")
             else:
                 today = datetime.today().strftime("%Y-%m-%d")
-
-            logger.debug('dict_duty_adm, today = %s\n%s', dict_duty_adm, today)
+            logger.debug('dict_duty_adm = %s', dict_duty_adm)
 
             if today in dict_duty_adm.keys():
                 msg = dict_duty_adm[today]
-                logger.info('I find info about duty_admin in aerospike, without '
-                            'using exchange!')
+                logger.info('I find duty_admin for date %s %s', today, msg)
             else:
                 logger.error('Today is %s and i did\'t find info in aerospike '
                              'look at assistant pod logs', today)
@@ -647,9 +645,17 @@ async def get_user_info(message: types.Message):
         try:
             user_info = await get_username_from_db(incoming[1])
             logger.info('get user info found %s', user_info)
-            msg = ''
-            for rec in user_info:
-                msg += f'\n{rec}'
+            if len(user_info) > 0:
+                msg = 'Found the User:'
+                msg += f'\n Account name: <strong>{user_info[0]["account_name"]}</strong>'
+                msg += f'\n Full name: <strong>{user_info[0]["full_name"]}</strong>'
+                msg += f'\n Email: <strong>{user_info[0]["email"]}</strong>'
+                msg += f'\n Telegram login: <strong>{user_info[0]["tg_login"]}</strong>'
+                msg += f'\n Telegram ID: <strong>{user_info[0]["tg_id"]}</strong>'
+                msg += f'\n Working status: <strong>{user_info[0]["working_status"]}</strong>'
+                msg += f'\n Notification: <strong>{user_info[0]["notification"]}</strong>'
+            else:
+               msg = 'Didn\'t find any users'
         except Exception:
             logger.exception('exception in get_user_info')
     else:

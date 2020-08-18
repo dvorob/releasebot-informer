@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from os import getenv
+from playhouse.pool import PooledMySQLDatabase
 
 bot_token = getenv('secret_telegram_token')
 bot_master = {'vorobiev_telegram_id': 279933948,
@@ -26,10 +27,13 @@ ex_pass = getenv('secret_exchange_pass')
 ex_cal = 'adminsonduty@yamoney.ru'
 ex_tz = 'Europe/Moscow'
 
-db_host = 'mysql.xerxes.svc.ugr-base1.kube.yamoney.ru'
-db_user = getenv('secret_mysql_user')
-db_pass = getenv('secret_mysql_pass')
-db_name = 'xerxes'
+mysql = PooledMySQLDatabase(
+    'xerxes',
+    host='mysql.xerxes.svc.ugr-base1.kube.yamoney.ru',
+    user=getenv('secret_mysql_user'),
+    passwd=getenv('secret_mysql_pass'),
+    max_connections=8,
+    stale_timeout=300)
 
 jenkins = 'http://xerxes-leeroy:8080'
 api = 'http://xerxes-api-v1/api-v1'

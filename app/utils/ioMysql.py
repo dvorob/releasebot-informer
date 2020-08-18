@@ -6,26 +6,15 @@ Input/output for mysql
 from datetime import datetime
 from app.utils import logging
 import app.config as config
-from playhouse.pool import PooledMySQLDatabase
 from peewee import *
 
 logger = logging.setup()
 
 __all__ = ['MysqlPool']
 
-db = PooledMySQLDatabase(
-    config.db_name,
-    host=config.db_host,
-    user=config.db_user,
-    passwd=config.db_pass,
-    max_connections=8,
-    stale_timeout=300)
-
-
 class BaseModel(Model):
     class Meta:
-        database = db
-
+        database = config.mysql
 
 class Chat(BaseModel):
     """
@@ -78,7 +67,7 @@ class DutyList(BaseModel):
 class MysqlPool:
 
     def __init__(self):
-        self.db = config_mysql
+        self.db = config.mysql
 
     def db_subscribe(self, chat_id, chat_type, subscription):
         """
