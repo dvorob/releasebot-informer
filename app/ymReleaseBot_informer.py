@@ -635,10 +635,43 @@ async def find_employee_by_tg(message: types.Message):
         else:
             msg = 'Please, try again, example: /find_employee_by_tg my_awesome_tg_username'
         await message.answer(text=msg)
-
     except Exception:
         logger.exception('find_employee_by_tg')
 
+# Ручки поиска по БД. Светят наружу в API
+# Выдать информацию по пользователю из таблицы xerxes.users
+async def get_user_info(message: types.Message):
+    logger.info('get_user_info started by %s', returnHelper.return_name(message))
+    incoming = message.text.split()
+    if len(incoming) == 2:
+        try:
+            user_info = await get_username_from_db(incoming[1])
+            logger.info('get user info found %s', user_info)
+            msg = ''
+            for rec in user_info:
+                msg += f'\n{rec}'
+        except Exception:
+            logger.exception('exception in get_user_info')
+    else:
+        msg = 'Please, try again, example: /get_user_info username'
+    await message.answer(text=msg)
+
+# Вытащить пользователя из БД. Задается юзернейм, поиск ведется по полям account_name и tg_name
+async def get_username_from_db(username):
+    # Получили username, который может быть логином в AD или в ТГ. Проверим по обоим полям, запишем непустые объекты в массив 
+    # Вернем первого члена массива (если в БД всплывут дубли, например, где у одного tg_login = account_name другого, надо что-то придумать)
+    logger.info('Mysql: trying to get users from Users table')
+    users_array = []
+    user_from_db = mysql().db_get_users('account_name', username)
+    users_array.append(user_from_db) if len(user_from_db) > 0 else logger.info('Nothing found in Users for %s as account_name', username)
+
+    user_from_db = mysql().db_get_users('tg_login', username)
+    users_array.append(user_from_db) if len(user_from_db) > 0 else logger.info('Nothing found in Users for %s as tg_login', username)
+    if len(users_array) > 0:
+        users_array = users_array[0]
+    else:
+        users_array = []
+    return(users_array)
 
 async def unknown_message(message: types.Message):
     """
@@ -659,7 +692,7 @@ def setup_handlers(disp: Dispatcher):
     disp.register_message_handler(start, Filters.restricted, commands='start')
     disp.register_message_handler(help_description, Filters.restricted, commands='help')
     disp.register_message_handler(duty_admin, Filters.restricted, commands='duty')
-    disp.register_message_handler(find_employee_by_tg, Filters.restricted, commands='find_employee_by_tg')
+    disp.register_message_handler(get_user_info, Filters.restricted, commands='get_user_info')
     disp.register_message_handler(write_my_chat_id, Filters.restricted, commands='write_my_chat_id')
     disp.register_message_handler(unknown_message, Filters.restricted, content_types=ContentType.ANY)
 

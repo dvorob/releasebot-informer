@@ -55,24 +55,30 @@ class Chat(BaseModel):
             (('id', 'type'), True)
         )
 
-
 class Option(BaseModel):
     name = CharField(unique=True)
     value = CharField()
 
+class Users(BaseModel):
+    id = IntegerField()
+    account_name = CharField(unique=True)
+    full_name = CharField()
+    tg_login = CharField()
+    working_status = CharField()
+    notification = CharField(default='none')
+    admin = IntegerField(default=0)
+    tg_id = CharField()
+    email = CharField()
+
+class DutyList(BaseModel):
+    duty_date = DateField(unique=True)
+    message = CharField()
+    duty_chat_list = CharField()
 
 class MysqlPool:
-    """
 
-    """
     def __init__(self):
-        self.db = PooledMySQLDatabase(
-            config.db_name,
-            host=config.db_host,
-            user=config.db_user,
-            passwd=config.db_pass,
-            max_connections=8,
-            stale_timeout=300)
+        self.db = config_mysql
 
     def db_subscribe(self, chat_id, chat_type, subscription):
         """
@@ -143,5 +149,71 @@ class MysqlPool:
             return result
         except Exception:
             logger.exception('db_get_rl')
+        finally:
+            self.db.close()
+
+    def db_set_users(self, account_name, full_name, tg_login, working_status, tg_id, email):
+        # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
+        # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
+        # Если передадим tg_id для существующего пользователя, заполнится только это поле
+        logger.debug('db set users started for %s %s %s %s %s ', account_name, full_name, tg_login, working_status, tg_id, email)
+        try:
+            self.db.connect()
+            db_users, _ = Users.get_or_create(account_name=account_name)
+            if full_name:
+                db_users.full_name = full_name
+            if tg_login:
+                db_users.tg_login = tg_login
+            if working_status:
+                db_users.working_status = working_status
+            if tg_id:
+                db_users.tg_id = tg_id
+            if email:
+                db_users.email = email
+            db_users.save()
+        except Exception:
+            logger.exception('exception in db_set_users')
+        finally:
+            self.db.close()
+
+    def db_get_users(self, field, value) -> list:
+        # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
+        # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
+        # всех админов - запросом db_get_users('admin', 1)
+        logger.info('db_get_users param1 param2 %s %s', field, value)
+        result = []
+        try:
+            self.db.connect()
+            db_users = Users.select().where(getattr(Users, field) == value)
+            for v in db_users:
+                result.append((vars(v))['__data__'])
+            return result
+        except Exception:
+            logger.exception('exception in db get users')
+            return result
+        finally:
+            self.db.close()
+
+    def db_set_duty(self, duty_date, message, duty_chat_list):
+        # Записать дежурных на сегодня
+        logger.debug('db set duty started for %s %s %s ', duty_date, message, duty_chat_list)
+        try:
+            self.db.connect()
+            db_users, _ = DutyList.get_or_create(duty_date=duty_date)
+            db_users.message = message
+            db_users.duty_chat_list = duty_chat_list
+            db_users.save()
+        except Exception:
+            logger.exception('exception in db_get_users')
+        finally:
+            self.db.close()
+
+    def db_get_duty(self, duty_date) -> list:
+        # Сходить в таблицу xerxes.duty_list за дежурными на заданную дату
+        try:
+            self.db.connect()
+            return DutyList.get(DutyList.duty_date == duty_date)
+        except Exception:
+            logger.exception('exception in db get duty')
         finally:
             self.db.close()
