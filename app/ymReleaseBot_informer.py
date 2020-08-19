@@ -9,8 +9,7 @@ import requests
 import sys
 import warnings
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from aiogram import Dispatcher
-from aiogram import executor, types
+from aiogram import Dispatcher, executor, types
 from aiogram.types import ParseMode, ChatActions, Update, ContentType
 from aiogram.utils.markdown import bold
 from aiogram.utils.emoji import emojize
@@ -28,7 +27,6 @@ from exchangelib.protocol import BaseProtocol, NoVerifyHTTPAdapter
 
 dp, bot = initializeBot.initialization()
 posts_cb = Filters.callback_filter()
-
 
 @dp.errors_handler()
 async def errors_handler(update: Update, exception: Exception):
@@ -662,12 +660,13 @@ async def get_username_from_db(username):
         users_array = []
     return(users_array)
 
-async def send_to_users(request):
+def send_to_users(request):
     """
         {'chat_id': [list of chat_id], 'text': msg}
     """
+    logger.info('SEND TO USER WORKS!')
     try:
-        data_json = await json.loads(request.text())
+        data_json = json.loads(request.text())
         logger.info('send to user caught message : %s', data_json)
         parse_mode_in_json = data_json.get('type', None)
         parse_mode = telegram.ParseMode.MARKDOWN if not parse_mode_in_json else telegram.ParseMode.HTML
@@ -686,6 +685,9 @@ async def send_to_users(request):
         return web.json_response()
     except Exception:
         logger.exception('tg_send')
+
+def hi_man():
+    logger.info('hi man!')
 
 async def unknown_message(message: types.Message):
     """
@@ -748,8 +750,6 @@ if __name__ == '__main__':
 
     app = web.Application()
 
-    app.add_routes([
-        web.post('/send', send_to_users)
-    ])
+    app.add_routes([web.post('/send', send_to_users)])
 
     web.run_app(app, port=8080)
