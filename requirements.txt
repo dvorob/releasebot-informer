@@ -6,3 +6,4 @@ aiogram==2.6
 aiohttp==3.6.2
 emoji
 apscheduler
+python_telegram_bot==12.0.0

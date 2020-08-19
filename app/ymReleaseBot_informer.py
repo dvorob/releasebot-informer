@@ -3,26 +3,28 @@
 """
 Telegram bot for employee of Yandex.Money
 """
-from datetime import timedelta, datetime
-import warnings
-import sys
+import app.config as config
+import json
 import requests
+import sys
+import warnings
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram import Dispatcher
 from aiogram import executor, types
 from aiogram.types import ParseMode, ChatActions, Update, ContentType
 from aiogram.utils.markdown import bold
 from aiogram.utils.emoji import emojize
-from exchangelib.protocol import BaseProtocol, NoVerifyHTTPAdapter
-from app.jiraissues.base import JiraIssues
+from aiohttp import web
 from app.exchanges.duty import ExchangeConnect
-import app.config as config
+from app.jiraissues.base import JiraIssues
+from app.keyboard import base as keyboard
 from app.utils import ioAerospike as Spike
 from app.utils import logging, returnHelper, initializeBot, staff
 from app.utils import customFilters as Filters
-from app.keyboard import base as keyboard
 from app.utils.ioMysql import MysqlPool as mysql
 from app.update_of_releases.base import start_update_releases, todo_tasks
+from datetime import timedelta, datetime
+from exchangelib.protocol import BaseProtocol, NoVerifyHTTPAdapter
 
 dp, bot = initializeBot.initialization()
 posts_cb = Filters.callback_filter()
@@ -54,7 +56,7 @@ async def help_description(message: types.Message):
                   f'\nDescription of commands via <strong>/</strong>\n'
                   f'/start: Start working with bot\n'
                   f'/duty N: Will show duty admins after N days\n'
-                  f'/find_employee_by_tg <strong>tg_username</strong>: Will find information about '
+                  f'/who <strong>username</strong>: Will find information about user; works with tg_login or AD_accountname '
                   f'this employee on staff.yandex-team.ru\n'
                   f'/write_my_chat_id: Will write your telegram chat_id to bot database '
                   f'(using for private notifications). Should be used only '
@@ -617,25 +619,6 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
         logger.exception("unsubscribe_all")
 
 
-async def find_employee_by_tg(message: types.Message):
-    """
-        Will find employee information based on tg username
-        :param message:
-    """
-    try:
-        logger.info('find_employee_by_tg started by %s', returnHelper.return_name(message))
-        incoming = message.text.split()
-        if len(incoming) == 2:
-            info_from_staff_str, _ = staff.find_data_by_tg_username(incoming[1])
-            msg = ''
-            for record in info_from_staff_str:
-                msg += f'\n{record}'
-        else:
-            msg = 'Please, try again, example: /find_employee_by_tg my_awesome_tg_username'
-        await message.answer(text=msg)
-    except Exception:
-        logger.exception('find_employee_by_tg')
-
 # Ручки поиска по БД. Светят наружу в API
 # Выдать информацию по пользователю из таблицы xerxes.users
 async def get_user_info(message: types.Message):
@@ -657,10 +640,10 @@ async def get_user_info(message: types.Message):
             else:
                msg = 'Didn\'t find any users'
         except Exception:
-            logger.exception('exception in get_user_info')
+            logger.exception('exception in get user info')
     else:
-        msg = 'Please, try again, example: /get_user_info username'
-    await message.answer(text=msg)
+        msg = 'Please, try again, example: /who username'
+    await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
 # Вытащить пользователя из БД. Задается юзернейм, поиск ведется по полям account_name и tg_name
 async def get_username_from_db(username):
@@ -678,6 +661,31 @@ async def get_username_from_db(username):
     else:
         users_array = []
     return(users_array)
+
+async def send_to_users(request):
+    """
+        {'chat_id': [list of chat_id], 'text': msg}
+    """
+    try:
+        data_json = await json.loads(request.text())
+        logger.info('send to user caught message : %s', data_json)
+        parse_mode_in_json = data_json.get('type', None)
+        parse_mode = telegram.ParseMode.MARKDOWN if not parse_mode_in_json else telegram.ParseMode.HTML
+        set_of_chat_id = set(data_json.get('chat_id'))
+        for chat_id in set_of_chat_id:
+            try:
+                bot.send_message(chat_id=chat_id, text=data_json['text'],
+                                 parse_mode=parse_mode)
+            except telegram.error.Unauthorized:
+                blocked_by_whom = find_username_by_chat_id(chat_id)
+                logger.error('Bot was blocked by: %s', blocked_by_whom)
+                bot.send_message(chat_id=279933948,
+                                 text=f'*Xerxes was blocked by {blocked_by_whom}*',
+                                 parse_mode=telegram.ParseMode.MARKDOWN)
+
+        return web.json_response()
+    except Exception:
+        logger.exception('tg_send')
 
 async def unknown_message(message: types.Message):
     """
@@ -698,7 +706,7 @@ def setup_handlers(disp: Dispatcher):
     disp.register_message_handler(start, Filters.restricted, commands='start')
     disp.register_message_handler(help_description, Filters.restricted, commands='help')
     disp.register_message_handler(duty_admin, Filters.restricted, commands='duty')
-    disp.register_message_handler(get_user_info, Filters.restricted, commands='get_user_info')
+    disp.register_message_handler(get_user_info, Filters.restricted, commands='who')
     disp.register_message_handler(write_my_chat_id, Filters.restricted, commands='write_my_chat_id')
     disp.register_message_handler(unknown_message, Filters.restricted, content_types=ContentType.ANY)
 
@@ -738,3 +746,11 @@ if __name__ == '__main__':
 
     BaseProtocol.HTTP_ADAPTER_CLS = NoVerifyHTTPAdapter
     executor.start_polling(dp, on_startup=on_startup, on_shutdown=on_shutdown)
+
+    app = web.Application()
+
+    app.add_routes([
+        web.post('/send', send_to_users)
+    ])
+
+    web.run_app(app, port=8080)

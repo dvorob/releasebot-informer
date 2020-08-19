@@ -42,7 +42,6 @@ api_aerospike_read = f'{api}/aerospike/read'
 api_aerospike_write = f'{api}/aerospike/write'
 api_get_user_info = f'{api}/get_user_info'
 api_get_duty_info = f'{api}/api_get_duty_info'
-api_tg_send = f'{api}/tg_new/send'
 api_sign_up = f'{api}/sign_up'
 
 jira_host = 'https://jira.yamoney.ru'
