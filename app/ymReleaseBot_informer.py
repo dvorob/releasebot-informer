@@ -19,14 +19,13 @@ from app.jiraissues.base import JiraIssues
 from app.keyboard import base as keyboard
 from app.utils import ioAerospike as Spike
 from app.utils import logging, returnHelper, initializeBot, staff
+from app.utils.initializeBot import dp
 from app.utils import customFilters as Filters
 from app.utils.ioMysql import MysqlPool as mysql
 from app.update_of_releases.base import start_update_releases, todo_tasks
+from app.keyboard.base import posts_cb
 from datetime import timedelta, datetime
 from exchangelib.protocol import BaseProtocol, NoVerifyHTTPAdapter
-
-dp, bot = initializeBot.initialization()
-posts_cb = Filters.callback_filter()
 
 @dp.errors_handler()
 async def errors_handler(update: Update, exception: Exception):
@@ -741,6 +740,7 @@ async def on_shutdown(dispatcher):
 
 if __name__ == '__main__':
 
+    posts_cb = Filters.callback_filter()
     # Disable insecure SSL Warnings
     warnings.filterwarnings('ignore')
     logger = logging.setup()

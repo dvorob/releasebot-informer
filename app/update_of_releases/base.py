@@ -12,9 +12,9 @@ from app.utils.ioMysql import MysqlPool as mysql
 from app.jiraissues.base import JiraIssues
 from app.utils import logging, initializeBot
 from app.utils import ioAerospike as Spike
+from app.utils.initializeBot import dp, bot
 
 logger = logging.setup()
-_, bot = initializeBot.initialization()
 
 
 async def todo_tasks():

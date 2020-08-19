@@ -6,12 +6,5 @@ Initialization of bot
 from aiogram import Bot, Dispatcher
 import app.config as config
 
-
-def initialization() -> tuple:
-    """
-        Initialization of bot
-        :return: tuple dispatcher, bot
-    """
-    token = config.bot_token
-    bot = Bot(token=token)
-    return Dispatcher(bot), bot
+bot = Bot(token=config.bot_token)
+dp = Dispatcher(bot)
