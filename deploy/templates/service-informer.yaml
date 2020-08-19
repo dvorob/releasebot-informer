@@ -1,0 +1,14 @@
+{{ $conf := .Values.ymreleasebot }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $conf.name }}
+spec:
+  ports:
+  - name: {{ $conf.name }}
+    port: {{ $conf.service_port }}
+    protocol: TCP
+    targetPort: {{ $conf.service_port }}
+  selector:
+    app: {{ $conf.name }}
+  type: ClusterIP

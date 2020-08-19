@@ -720,10 +720,9 @@ async def on_startup(dispatcher):
         logger.info('Startup bot, hello!')
         setup_handlers(dispatcher)
         scheduler = AsyncIOScheduler(timezone=config.tz_name)
-        scheduler.add_job(start_update_releases, 'cron', day='*',
-                          hour='*', minute='*', second='30')
-        scheduler.add_job(todo_tasks, 'cron', day='*',
-                          hour='*', minute='*', second='20')
+        scheduler.add_job(start_update_releases, 'cron', day='*', hour='*', minute='*', second='30')
+        scheduler.add_job(todo_tasks, 'cron', day='*', hour='*', minute='*', second='20')
+        scheduler.add_job(hi_man, 'cron', day='*', hour='*', minute='*')
         scheduler.start()
     except Exception:
         logger.exception('on_startup')
