@@ -4,6 +4,7 @@
 Telegram bot for employee of Yandex.Money
 """
 import app.config as config
+import app.keyboard as keyboard
 import json
 import requests
 import sys
@@ -14,20 +15,13 @@ from aiogram.types import ParseMode, ChatActions, Update, ContentType
 from aiogram.utils.markdown import bold
 from aiogram.utils.emoji import emojize
 from aiohttp import web
-from app.exchanges.duty import ExchangeConnect
-from app.jiraissues.base import JiraIssues
-from app.keyboard import base as keyboard
-from app.utils import ioAerospike as Spike
-from app.utils import logging, returnHelper, initializeBot, staff
-from app.utils.initializeBot import dp
-from app.utils import customFilters as Filters
+from app.jiratools import JiraTools
+from app.utils import aero, logging, returnHelper, initializeBot, filters
 from app.utils.ioMysql import MysqlPool as mysql
-from app.update_of_releases.base import start_update_releases, todo_tasks
-from app.keyboard.base import posts_cb
+from app.releaseboard_checker import start_update_releases, todo_tasks
 from datetime import timedelta, datetime
-from exchangelib.protocol import BaseProtocol, NoVerifyHTTPAdapter
 
-@dp.errors_handler()
+@initializeBot.dp.errors_handler()
 async def errors_handler(update: Update, exception: Exception):
     """
         Errors handler
@@ -89,7 +83,8 @@ async def start(message: types.Message):
     try:
         logger.info('start function by %s', returnHelper.return_name(message))
         tg_username = f'@{message.from_user.username}'
-        if Spike.read(item=tg_username, aerospike_set='informer'):
+        user_info = await get_username_from_db(tg_username)
+        if len(user_info) > 0:
             # user already exist in aerospike, we don't need some additional actions
             await message.reply(text=start_menu_message(message),
                                 reply_markup=keyboard.main_menu(),
@@ -106,47 +101,7 @@ async def start(message: types.Message):
                                        f'[documentation](https://wiki.yamoney.ru/x/03AAD), '
                                        f'please read.')
             await message.reply(text=not_familiar_msg, parse_mode=ParseMode.MARKDOWN)
-            # user doesn't exist in aerospike, we need to get information about him for further work
-            # Write {@username: chat_id} to @username item in informer set
-            # It's necessary for private notifications
-            bins = {tg_username: message.chat.id}
-            Spike.write(item=tg_username, bins=bins, aerospike_set='informer')
 
-            msg = f'I\'ve received request from {message.from_user.full_name} ' \
-                  f'tg_chat_id: {message.chat.id}'
-
-            info_from_staff_str, info_from_staff_json = \
-                staff.find_data_by_tg_username(message.from_user.username)
-            logger.info('info_from_staff_str: %s\n info_from_staff_json: %s',
-                        info_from_staff_str, info_from_staff_json)
-            if len(info_from_staff_json) != 0:
-                for info in info_from_staff_json:
-                    mail_str = ''.join(info['emails'])
-                    tg_user_str = ''.join(info['telegrams'])
-                # Add record to aerospike, for further private notifications
-                Spike.write(item=mail_str, aerospike_set='staff',
-                            bins={tg_user_str: '1'})
-                logger.info('I\'ve recorded to aerospike_set "staff" item: %s '
-                            'with value: {%s: str(1)}',
-                            mail_str, tg_user_str)
-                logger.debug('info_from_staff: %s', info_from_staff_str)
-                for record in info_from_staff_str:
-                    msg += f'\n{record}'
-                hello_msg = 'Thanks for waiting, let\'s go!\n'
-                await message.answer(text=hello_msg + main_menu_message(),
-                                     reply_markup=keyboard.main_menu(),
-                                     parse_mode=ParseMode.MARKDOWN)
-
-                for admin in config.bot_master.values():
-                    await message.bot.send_message(chat_id=admin, text=msg,
-                                                   parse_mode=ParseMode.HTML)
-            else:
-                main_msg = ''.join(info_from_staff_str)
-                logger.warning('Error occur when try find info for @%s on a staff',
-                               message.from_user.username)
-                emojize_msg = emojize('Nothing found on the staff :white_frowning_face:\n ')
-                await message.answer(text=main_msg + emojize_msg,
-                                     parse_mode=ParseMode.MARKDOWN)
     except Exception:
         logger.exception('start')
 
@@ -171,31 +126,29 @@ def main_menu_message() -> str:
     return msg
 
 
-async def write_my_chat_id(message: types.Message):
+async def write_chat_id(message: types.Message):
     """
         Will write to aerospike set 'informer' to item @tg_username
         {@tg_username: tg_chat_id}
         Using for private notifications
     """
+    logger.info('write chat id started for : %s %s %s', message.from_user.username, message.from_user.id, message.chat.id)
+    headers = {'tg_login': str(message.from_user.username), 'tg_user_id': str(message.from_user.id), 'tg_chat_id': str(message.chat.id)}
     try:
-        logger.info('write_my_chat_id started from: %s', returnHelper.return_name(message))
-        logger.info('write_my_chat_id: %s %s %s', message.from_user.username, message.from_user.id, message.chat.id)
-        headers = {'tg_login': str(message.from_user.username), 'tg_user_id': str(message.from_user.id), 'tg_chat_id': str(message.chat.id)}
-        req_tg = requests.post(config.api_sign_up, headers=headers)
-        logger.info('write_my_chat_id response %s', req_tg)
-        bins = {'@' + message.from_user.username: message.chat.id}
-        Spike.write(item='@' + message.from_user.username,
-                    bins=bins, aerospike_set='informer')
-        msg = emojize('Ok, done. :ok_hand:')
+        user_info = await get_username_from_db(str(message.from_user.username))
+        if len(user_info) > 0:
+            logger.info('write my chat id found user info %s', user_info)
+            message.from_user.username: message.chat.id
+            mysql().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.chat.id), email=None)
+            logger.info('wirhte my chat id done for %s %s', str(message.from_user.id), str(message.chat.id))
     except Exception:
-        logger.exception('exception in write_my_chat_id')
+        logger.exception('write chat id exception')
 
 async def duty_admin(message: types.Message):
     """
         Info about current or future duty admin
         Description:
-        /duty N - go to exchange, receives info about duty admin after N days.
-        /duty - go to aerospike for info (it does by assistant at 10 a.m.)
+        /duty N (optional) - go to aerospike for info (it does by assistant at 10 a.m.) about duties (*after N days)
         If current time between 00.00 and 10.00, got to the exchange
         and will write explanatory message.
         :param message:
@@ -207,36 +160,21 @@ async def duty_admin(message: types.Message):
         cli_args = message.text.split()
         logger.debug('duty, in_text = %s', cli_args)
         # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов но вызван до 10 часов утра
-        if (len(cli_args) == 2 and int(cli_args[1]) > 0):
-            now = ExchangeConnect().timezone()
-            dict_duty_adm = Spike.read(item='duty', aerospike_set='duty_admin')
-            if len(cli_args) == 1:
-                msg = returnHelper.return_early_duty_msg(datetime.today().strftime("%H:%M"))
-                cal_start = now + timedelta(minutes=0)
-                cal_end = now + timedelta(minutes=1)
-            else:
-                msg = 'Дежурят через <strong>%s</strong> дней:\n\n' % cli_args[1]
-                delta = int(cli_args[1]) * 24 * 60
-                logger.debug('len ==2, delta = %s', delta)
-                cal_start = now + timedelta(minutes=delta)
-                cal_end = now + timedelta(minutes=delta + 1)
-            msg += ExchangeConnect().find_duty_exchange(cal_start, cal_end)
+        after_days = cli_args[1] if (len(cli_args) == 2 and int(cli_args[1]) > 0) else 0
+        dict_duty_adm = aero.read(item='duty', aerospike_set='duty_admin')
+        # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
+        if int(datetime.today().strftime("%H")) < int(10):
+            today = (datetime.today() - timedelta(1) + timedelta(after_days)).strftime("%Y-%m-%d")
         else:
-            dict_duty_adm = Spike.read(item='duty', aerospike_set='duty_admin')
-            today = datetime.today().strftime("%Y-%m-%d")
-            # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
-            if int(datetime.today().strftime("%H")) < int(10):
-                today = (datetime.today() - timedelta(1)).strftime("%Y-%m-%d")
-            else:
-                today = datetime.today().strftime("%Y-%m-%d")
-            logger.debug('dict_duty_adm = %s', dict_duty_adm)
+            today = (datetime.today() + timedelta(after_days)).strftime("%Y-%m-%d")
+        logger.debug('dict_duty_adm = %s', dict_duty_adm)
 
-            if today in dict_duty_adm.keys():
-                msg = dict_duty_adm[today]
-                logger.info('I find duty_admin for date %s %s', today, msg)
-            else:
-                logger.error('Today is %s and i did\'t find info in aerospike '
-                             'look at assistant pod logs', today)
+        if today in dict_duty_adm.keys():
+            msg = dict_duty_adm[today]
+            logger.info('I find duty_admin for date %s %s', today, msg)
+        else:
+            logger.error('Today is %s and i did\'t find info in aerospike '
+                         'look at assistant pod logs', today)
         await message.answer(msg, reply_markup=to_main_menu(),
                              parse_mode=ParseMode.HTML)
     except Exception:
@@ -250,15 +188,14 @@ def duty_admin_now() -> str:
     """
     try:
         logger.info('duty_admin_now started')
-        dict_duty_adm = Spike.read(item='duty', aerospike_set='duty_admin')
+        dict_duty_adm = aero.read(item='duty', aerospike_set='duty_admin')
         today = datetime.today().strftime("%Y-%m-%d")
 
         logger.debug('dict_duty_adm, today = %s\n%s', dict_duty_adm, today)
 
         if today in dict_duty_adm.keys():
             msg = dict_duty_adm[today]
-            logger.info('I find info about duty_admin in aerospike, without '
-                        'using exchange!')
+            logger.info('I find info about duty_admin in aerospike')
         else:
             msg = 'Error'
             logger.error('Today is %s and i did\'t find info in aerospike '
@@ -268,12 +205,12 @@ def duty_admin_now() -> str:
         logger.exception(duty_admin_now)
 
 
-@dp.callback_query_handler(posts_cb.filter(action='get_ext_inf_board'), Filters.restricted)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='get_ext_inf_board'), filters.restricted)
 async def get_ext_inf_board_button(query: types.CallbackQuery, callback_data: str) -> str:
     """
         Get full information from Admsys release board
         :param query:
-        :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
+        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     del callback_data
     try:
@@ -287,7 +224,7 @@ async def get_ext_inf_board_button(query: types.CallbackQuery, callback_data: st
                 Create msg with Jira task based on incoming filter
                 :return: string with issues or empty str
             """
-            issues = JiraIssues().jira_search(jira_filter)
+            issues = JiraTools().jira_search(jira_filter)
             if len(issues) > 0:
                 list_of_issues = []
                 for issue in issues:
@@ -318,14 +255,14 @@ async def get_ext_inf_board_button(query: types.CallbackQuery, callback_data: st
         logger.exception('get_ext_inf_board')
 
 
-@dp.callback_query_handler(posts_cb.filter(action='get_min_inf_board'), Filters.restricted)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='get_min_inf_board'), filters.restricted)
 async def get_min_inf_board_button(query: types.CallbackQuery, callback_data: str) -> str:
     """
         Create msg with releases in the progress and in the Admsys queue
     """
     del callback_data
     try:
-        logger.info('get_min_inf started from: %s', returnHelper.return_name(query))
+        logger.info('get_min_inf аed from: %s', returnHelper.return_name(query))
         await returnHelper.return_one_second(query)
 
         async def count_issues() -> str:
@@ -333,9 +270,9 @@ async def get_min_inf_board_button(query: types.CallbackQuery, callback_data: st
                 Request to Jira and format msg
                 :return: msg for tg
             """
-            issues_releases_progress = JiraIssues().jira_search(config.search_issues_work)
+            issues_releases_progress = JiraTools().jira_search(config.search_issues_work)
 
-            issues_admsys = JiraIssues().jira_search(
+            issues_admsys = JiraTools().jira_search(
                 'project = ADMSYS AND issuetype = "Release (conf)" AND '
                 'status IN (Open, "Waiting release") ORDER BY Rank ASC'
             )
@@ -349,12 +286,12 @@ async def get_min_inf_board_button(query: types.CallbackQuery, callback_data: st
     except Exception:
         logger.exception('get_min_inf_board_button')
 
-@dp.callback_query_handler(posts_cb.filter(action='duty_button'), Filters.restricted)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='duty_button'), filters.restricted)
 async def duty_button(query: types.CallbackQuery, callback_data: str):
     """
         Button with duty admin now
         :param query:
-        :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
+        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     del callback_data
     try:
@@ -377,17 +314,17 @@ def to_main_menu() -> types.InlineKeyboardMarkup:
         :return: InlineKeyboardMarkup object
     """
     keyboard_main_menu = [[types.InlineKeyboardButton('Main menu',
-                                                      callback_data=posts_cb.new(action='main',
+                                                      callback_data=keyboard.posts_cb.new(action='main',
                                                                                  issue='1'))]]
     return types.InlineKeyboardMarkup(inline_keyboard=keyboard_main_menu)
 
 
-@dp.callback_query_handler(posts_cb.filter(action='main'), Filters.restricted)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='main'), filters.restricted)
 async def main_menu(query: types.CallbackQuery, callback_data: str):
     """
         Main menu
         :param query:
-        :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
+        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     del callback_data
     try:
@@ -399,8 +336,8 @@ async def main_menu(query: types.CallbackQuery, callback_data: str):
         logger.exception('main_menu_message')
 
 
-@dp.callback_query_handler(posts_cb.filter(action='admin_menu'),
-                           Filters.restricted, Filters.admin)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='admin_menu'),
+                           filters.restricted, filters.admin)
 async def admin_menu(query: types.CallbackQuery, callback_data: str):
     """
         Open admin menu
@@ -417,13 +354,13 @@ async def admin_menu(query: types.CallbackQuery, callback_data: str):
         logger.exception('admin_menu')
 
 
-@dp.callback_query_handler(posts_cb.filter(action='restart'),
-                           Filters.restricted, Filters.admin)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='restart'),
+                           filters.restricted, filters.admin)
 async def restart(query: types.CallbackQuery, callback_data: str):
     """
         Restart pod with bot
         :param query:
-        :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
+        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     try:
         del callback_data
@@ -434,54 +371,54 @@ async def restart(query: types.CallbackQuery, callback_data: str):
     except Exception:
         logger.exception('restart')
 
-@dp.callback_query_handler(posts_cb.filter(action='turn_off'),
-                           Filters.restricted, Filters.admin)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='turn_off'),
+                           filters.restricted, filters.admin)
 async def stop_bot(query: types.CallbackQuery, callback_data: str):
     """
         Turn off bot
         :param query:
-        :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
+        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     del callback_data
     logger.warning('%s stopped bot', returnHelper.return_name(query))
     bins = {'run': 0}
-    Spike.write(item='deploy', bins=bins, aerospike_set='remaster')
+    aero.write(item='deploy', bins=bins, aerospike_set='remaster')
     await query.answer('Bot was stopped, Bye!')
 
 
-@dp.callback_query_handler(posts_cb.filter(action='turn_on'),
-                           Filters.restricted, Filters.admin)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='turn_on'),
+                           filters.restricted, filters.admin)
 async def start_bot(query: types.CallbackQuery, callback_data: str):
     """
         Turn on bot
         :param query:
-        :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
+        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     del callback_data
     logger.warning('%s started bot', returnHelper.return_name(query))
     bins = {'run': 2}
-    Spike.write(item='deploy', bins=bins, aerospike_set='remaster')
+    aero.write(item='deploy', bins=bins, aerospike_set='remaster')
     await query.answer('Bot was started, Go!')
 
 
-@dp.callback_query_handler(posts_cb.filter(action='dont_touch'),
-                           Filters.restricted, Filters.admin)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='dont_touch'),
+                           filters.restricted, filters.admin)
 async def dont_touch_releases(query: types.CallbackQuery, callback_data: str):
     """
         Don't touch releases on Jira board
         :param query:
-        :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
+        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     del callback_data
     logger.warning('%s pressed button Don\'t touch new release',
                    returnHelper.return_name(query))
     bins = {'run': 1}
-    Spike.write(item='deploy', bins=bins, aerospike_set='remaster')
+    aero.write(item='deploy', bins=bins, aerospike_set='remaster')
     await query.answer('Ok, I won\'t touch new releases by myself.')
 
 
-@dp.callback_query_handler(posts_cb.filter(action='return_queue'),
-                           Filters.restricted)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='return_queue'),
+                           filters.restricted)
 async def return_to_queue(query: types.CallbackQuery, callback_data: str):
     """
         Create menu with Jira task which can be returned or will write msg
@@ -490,7 +427,7 @@ async def return_to_queue(query: types.CallbackQuery, callback_data: str):
     del callback_data
     try:
         await returnHelper.return_one_second(query)
-        if waiting_assignee_issues := JiraIssues().jira_search(config.waiting_assignee_releases):
+        if waiting_assignee_issues := JiraTools().jira_search(config.waiting_assignee_releases):
             msg = 'This is Jira task, which may be returned to the queue'
             markup = keyboard.return_queue_menu(waiting_assignee_issues)
             await query.message.reply(text=msg,
@@ -505,8 +442,8 @@ async def return_to_queue(query: types.CallbackQuery, callback_data: str):
         logger.exception('return_to_queue')
 
 
-@dp.callback_query_handler(posts_cb.filter(action='return_release'),
-                           Filters.restricted)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='return_release'),
+                           filters.restricted)
 async def process_return_queue_callback(query: types.CallbackQuery, callback_data: str):
     """
         Based on callback_data["issue"] (received from keyboard.return_queue_menu)
@@ -515,7 +452,7 @@ async def process_return_queue_callback(query: types.CallbackQuery, callback_dat
         will stop the Jenkins job, del assignee from task, return to the queue, write msg.
         Else, will write "You are not in assignee list"
         :param query:
-        :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
+        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     try:
         await returnHelper.return_one_second(query)
@@ -529,7 +466,7 @@ async def process_return_queue_callback(query: types.CallbackQuery, callback_dat
             msg = f'Returned back to the queue  **{jira_issue_id}**, ' \
                   'come back when you are ready.'
             # delete assignee from task
-            jira_object = JiraIssues()
+            jira_object = JiraTools()
             jira_object.assign_issue(jira_issue_id, None)
             # 321 - transition identifier from looking_for_assignee
             # to waiting_release_master
@@ -543,7 +480,7 @@ async def process_return_queue_callback(query: types.CallbackQuery, callback_dat
             logger.info(msg_who_returned)
 
             # jenkins stop task
-            all_return_queue_task = Spike.read(item='return_to_queue',
+            all_return_queue_task = aero.read(item='return_to_queue',
                                                aerospike_set='jenkins_args')
             jenkins_args_for_stop = all_return_queue_task[jira_issue_id]
             logger.info('jenkins_args_for_stop: %s', all_return_queue_task[jira_issue_id])
@@ -560,14 +497,14 @@ async def process_return_queue_callback(query: types.CallbackQuery, callback_dat
     except Exception:
         logger.exception('process_return_queue_callback')
 
-@dp.callback_query_handler(posts_cb.filter(action='subscribe'),
-                           Filters.restricted)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='subscribe'),
+                           filters.restricted)
 async def subscribe_events(query: types.CallbackQuery, callback_data: str):
     """
         Subscribe to events
 
         :param query:
-        :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
+        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     del callback_data
     try:
@@ -580,13 +517,13 @@ async def subscribe_events(query: types.CallbackQuery, callback_data: str):
     except Exception:
         logger.exception("subscribe")
 
-@dp.callback_query_handler(posts_cb.filter(action='subscribe_all'),
-                           Filters.restricted)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='subscribe_all'),
+                           filters.restricted)
 async def subscribe_all(query: types.CallbackQuery, callback_data: str):
     """
         Push 1 to some db table, you will subscribed
         :param query:
-        :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
+        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     try:
         del callback_data
@@ -598,13 +535,13 @@ async def subscribe_all(query: types.CallbackQuery, callback_data: str):
         logger.exception("subscribe_all")
 
 
-@dp.callback_query_handler(posts_cb.filter(action='unsubscribe_all'),
-                           Filters.restricted)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='unsubscribe_all'),
+                           filters.restricted)
 async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
     """
         Push 0 to some db table, you will unsubscribed
         :param query:
-        :param callback_data: {"action": value, "issue": value} (based on posts_cb.filter)
+        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     try:
         del callback_data
@@ -704,12 +641,12 @@ def setup_handlers(disp: Dispatcher):
         Setup handlers for bot
         :param disp:
     """
-    disp.register_message_handler(start, Filters.restricted, commands='start')
-    disp.register_message_handler(help_description, Filters.restricted, commands='help')
-    disp.register_message_handler(duty_admin, Filters.restricted, commands='duty')
-    disp.register_message_handler(get_user_info, Filters.restricted, commands='who')
-    disp.register_message_handler(write_my_chat_id, Filters.restricted, commands='write_my_chat_id')
-    disp.register_message_handler(unknown_message, Filters.restricted, content_types=ContentType.ANY)
+    disp.register_message_handler(start, filters.restricted, commands='start')
+    disp.register_message_handler(help_description, filters.restricted, commands='help')
+    disp.register_message_handler(duty_admin, filters.restricted, commands='duty')
+    disp.register_message_handler(get_user_info, filters.restricted, commands='who')
+    disp.register_message_handler(write_chat_id, filters.restricted, commands='write_my_chat_id')
+    disp.register_message_handler(unknown_message, filters.restricted, content_types=ContentType.ANY)
 
 
 async def on_startup(dispatcher):
@@ -720,7 +657,7 @@ async def on_startup(dispatcher):
     try:
         logger.info('Startup bot, hello!')
         setup_handlers(dispatcher)
-        scheduler = AsyncIOScheduler(timezone=config.tz_name)
+        scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
         scheduler.add_job(start_update_releases, 'cron', day='*', hour='*', minute='*', second='30')
         scheduler.add_job(todo_tasks, 'cron', day='*', hour='*', minute='*', second='20')
         scheduler.add_job(hi_man, 'cron', day='*', hour='*', minute='*')
@@ -740,13 +677,12 @@ async def on_shutdown(dispatcher):
 
 if __name__ == '__main__':
 
-    posts_cb = Filters.callback_filter()
+    keyboard.posts_cb = filters.callback_filter()
     # Disable insecure SSL Warnings
     warnings.filterwarnings('ignore')
     logger = logging.setup()
 
-    BaseProtocol.HTTP_ADAPTER_CLS = NoVerifyHTTPAdapter
-    executor.start_polling(dp, on_startup=on_startup, on_shutdown=on_shutdown)
+    executor.start_polling(initializeBot.dp, on_startup=on_startup, on_shutdown=on_shutdown)
 
     app = web.Application()
 

@@ -5,9 +5,7 @@ Defence filters
 """
 from aiogram import types
 from aiogram.utils.callback_data import CallbackData
-from app.utils import logging
-from app.utils import ioAerospike as Spike
-from app.utils import returnHelper
+from app.utils import logging, returnHelper
 import aiohttp
 import asyncio
 import app.config as config
@@ -81,4 +79,3 @@ async def restricted(message: types.message) -> bool:
                 return False
     except Exception:
         logger.exception('exception in restricted')
-

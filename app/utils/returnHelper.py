@@ -4,7 +4,6 @@
 Return helper
 """
 
-
 def return_name(message) -> str:
     """
         Return the name, username of the person who started the conversation

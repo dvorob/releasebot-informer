@@ -4,11 +4,10 @@
 Input/output for aerospike
 """
 import requests
-from app.utils import logging
 import app.config as config
+from app.utils import logging
 
 logger = logging.setup()
-
 
 def read(item, aerospike_set) -> dict:
     """

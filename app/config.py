@@ -19,14 +19,6 @@ bot_master = {'vorobiev_telegram_id': 279933948,
               'gromov_telegram_id': 390182439
               }
 
-tz_name = 'Europe/Moscow'
-
-ex_host = 'mail-mx10.yamoney.ru'
-ex_user = getenv('secret_exchange_user')
-ex_pass = getenv('secret_exchange_pass')
-ex_cal = 'adminsonduty@yamoney.ru'
-ex_tz = 'Europe/Moscow'
-
 mysql = PooledMySQLDatabase(
     'xerxes',
     host='mysql.xerxes.svc.ugr-base1.kube.yamoney.ru',
