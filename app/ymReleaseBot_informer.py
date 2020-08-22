@@ -92,12 +92,11 @@ async def start(message: types.Message):
                                 parse_mode=ParseMode.MARKDOWN)
         else:
             not_familiar_msg = emojize(f'Здравствуй, {bold(message.from_user.full_name)}!\n'
-                                       f'Я не нашел записи с твоим телеграмм-аккаунтом в своей базе.\n'
-                                       f':confused:\n'
-                                       f'Пожалуйста, обратись к системным администраторам.\n'
-                                       f'Подробнее обо мне можно прочесть здесь:\n'
-                                       f'https://wiki.yamoney.ru/display/admins/CD_Bot.HowTo.User')
-            await message.reply(text=not_familiar_msg, parse_mode=ParseMode.MARKDOWN)
+                                       f'Я не нашел записи с твоим телеграмм-аккаунтом в своей базе. :confused:\n'
+                                       f'Пожалуйста, обратись к системным администраторам группы admsys@\n'
+                                       f'На всякий случай, подробнее обо мне можно прочесть здесь:\n'
+                                       f'wiki.yamoney.ru/display/admins/CD_Bot.HowTo.User')
+            await message.reply(text=not_familiar_msg)
 
     except Exception:
         logger.exception('start')
