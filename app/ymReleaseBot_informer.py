@@ -82,24 +82,21 @@ async def start(message: types.Message):
     """
     try:
         logger.info('start function by %s', returnHelper.return_name(message))
-        tg_username = f'@{message.from_user.username}'
-        user_info = await get_username_from_db(tg_username)
+        user_info = await get_username_from_db(message.from_user.username)
         if len(user_info) > 0:
+            if user_info[0]["tg_id"] != str(message.from_user.id):
+                mysql().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), email=None)
             # user already exist in aerospike, we don't need some additional actions
             await message.reply(text=start_menu_message(message),
                                 reply_markup=keyboard.main_menu(),
                                 parse_mode=ParseMode.MARKDOWN)
         else:
-            not_familiar_msg = emojize(f'Hello, {bold(message.from_user.full_name)}! '
-                                       f':raised_hand:\n'
-                                       f'It\'s look like we are not familiar with you yet '
+            not_familiar_msg = emojize(f'Здравствуй, {bold(message.from_user.full_name)}!\n'
+                                       f'Я не нашел записи с твоим телеграмм-аккаунтом в своей базе.\n'
                                        f':confused:\n'
-                                       f'Give me :hourglass_flowing_sand: for gathering all '
-                                       f'needed information '
-                                       f'for further succeeding work.\n'
-                                       f'Here is my '
-                                       f'[documentation](https://wiki.yamoney.ru/x/03AAD), '
-                                       f'please read.')
+                                       f'Пожалуйста, обратись к системным администраторам.\n'
+                                       f'Подробнее обо мне можно прочесть здесь:\n'
+                                       f'https://wiki.yamoney.ru/display/admins/CD_Bot.HowTo.User')
             await message.reply(text=not_familiar_msg, parse_mode=ParseMode.MARKDOWN)
 
     except Exception:
@@ -133,7 +130,6 @@ async def write_chat_id(message: types.Message):
         Using for private notifications
     """
     logger.info('write chat id started for : %s %s %s', message.from_user.username, message.from_user.id, message.chat.id)
-    headers = {'tg_login': str(message.from_user.username), 'tg_user_id': str(message.from_user.id), 'tg_chat_id': str(message.chat.id)}
     try:
         user_info = await get_username_from_db(str(message.from_user.username))
         if len(user_info) > 0:
@@ -622,9 +618,6 @@ def send_to_users(request):
     except Exception:
         logger.exception('tg_send')
 
-def hi_man():
-    logger.info('hi man!')
-
 async def unknown_message(message: types.Message):
     """
         If a employee tries to send smth, that unregistered in dispatcher, answer him.
@@ -660,7 +653,6 @@ async def on_startup(dispatcher):
         scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
         scheduler.add_job(start_update_releases, 'cron', day='*', hour='*', minute='*', second='30')
         scheduler.add_job(todo_tasks, 'cron', day='*', hour='*', minute='*', second='20')
-        scheduler.add_job(hi_man, 'cron', day='*', hour='*', minute='*')
         scheduler.start()
     except Exception:
         logger.exception('on_startup')
