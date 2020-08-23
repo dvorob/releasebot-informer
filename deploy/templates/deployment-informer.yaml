@@ -22,24 +22,15 @@ spec:
           - mountPath: /etc/xerxes/logging_informer_new.conf
             name: {{ $conf.logging.configmap_name }}
             subPath: logging_informer_new.conf
-          - mountPath: /opt/YMreleasebot/informer/ssl
-            name: census
-            readOnly: true
           resources:
 {{ toYaml $conf.resources| indent 12  }}
           envFrom:
-            - prefix: secret_exchange_
-              secretRef:
-                name: {{ $conf.secrets.exchange.name }}
             - prefix: secret_jira_
               secretRef:
                 name: {{ $conf.secrets.jira.name }}
             - prefix: secret_mysql_
               secretRef:
                 name: {{ $conf.secrets.mysql.name }}
-            - prefix: secret_staff_
-              secretRef:
-                name: {{ $conf.secrets.staff.name }}
             - prefix: secret_telegram_
               secretRef:
                 name: {{ $conf.secrets.telegram.name }}
@@ -50,6 +41,3 @@ spec:
             defaultMode: 420
             name: {{ $conf.logging.configmap_name }}
           name: {{ $conf.logging.configmap_name }}
-        - name: census
-          secret:
-            secretName: census

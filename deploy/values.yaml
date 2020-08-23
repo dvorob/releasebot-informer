@@ -22,9 +22,6 @@ ymreleasebot:
       memory: 256Mi
       cpu: 512m
   secrets:
-    staff:
-      name: 'staff'
-      token: <value>
     mysql:
       name: 'mysql'
       pass: <value>
@@ -33,15 +30,6 @@ ymreleasebot:
       name: 'jira'
       pass: <value>
       user: <value>
-    exchange:
-      name: 'exchange'
-      pass: <value>
-      user: <value>
     telegram:
       name: 'telegram'
       value: <value>
-    census:
-      name: 'census'
-      ca_pem: <value>
-      cert_pem: <value>
-      key_pem: <value>

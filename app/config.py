@@ -58,5 +58,3 @@ issues_waiting = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
 
 issues_not_closed_resolved = 'project = ADMSYS AND issuetype = "Release (conf)" ' \
                            'AND status NOT IN (Closed, Resolved) ORDER BY Rank ASC'
-
-staff_url = 'https://census.xerxes.svc.ugr-base1.kube.yamoney.ru:8444'
