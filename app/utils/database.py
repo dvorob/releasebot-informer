@@ -184,7 +184,7 @@ class MysqlPool:
             self.db.close()
 
     # Вытащить пользователя из БД. Задается юзернейм, поиск ведется по полям account_name и tg_name. Обёртка вокруг db_get_user
-    async def get_username_from_db(username):
+    async def get_username_from_db(self, username):
         # Получили username, который может быть логином в AD или в ТГ. Проверим по обоим полям, запишем непустые объекты в массив 
         # Вернем первого члена массива (если в БД всплывут дубли, например, где у одного tg_login = account_name другого, надо что-то придумать)
         logger.info('Mysql: trying to get users from Users table')

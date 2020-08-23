@@ -52,7 +52,7 @@ async def restricted(message: types.message) -> bool:
         :param message: main function
         :return: Error msg to telegram or main function
     """
-    logger.debug('restricted was called from %s for %s', sys._getframe().f_back.f_code.co_name, str(message.from_user.username))
+    logger.info('restricted was called from %s for %s', sys._getframe().f_back.f_code.co_name, str(message.from_user.username))
     tg_username = message.from_user.username
 
     try:

@@ -3,6 +3,7 @@
 """
 Realize jira methods
 """
+import asyncio
 import re
 import requests
 from aiogram.types import ParseMode
@@ -140,10 +141,11 @@ async def start_update_releases():
         )
         if msg_queed != 'No message':
             # await send_msg_all_subscribed(msg_queed)
-            for chat_id in db().db_get_rl():
+            loop = asyncio.get_event_loop()
+            for chat_id in loop.run_until_complete(db().db_get_rl()):
                 await bot.send_message(chat_id=chat_id, text=msg_queed + how_many_is_working(),
                                        parse_mode=ParseMode.MARKDOWN)
-
+            loop.close()
         now_id, now_db, msg_in_work = helper_func(
             'rl_now', config.search_issues_work, 'в работе!'
         )
