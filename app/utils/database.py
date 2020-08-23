@@ -69,7 +69,7 @@ class MysqlPool:
     def __init__(self):
         self.db = config.mysql
 
-    def db_subscribe(self, chat_id, chat_type, subscription):
+    async def db_subscribe(self, chat_id, chat_type, subscription):
         """
             Subscribe/unsubscribe employee to all bot notifications
             :param chat_id: tg_chat_id
@@ -86,7 +86,7 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    def db_get_option(self, name):
+    async def db_get_option(self, name):
         """
             Get value from db key
             :param name:
@@ -103,7 +103,7 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    def db_set_option(self, name, value):
+    async def db_set_option(self, name, value):
         """
             Set value to db
             :param name:
@@ -121,7 +121,7 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    def db_get_rl(self) -> list:
+    async def db_get_rl(self) -> list:
         """
             Get list of employee who subscribed to events
             :return: list of tg_chat_id
@@ -141,7 +141,7 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    def db_set_users(self, account_name, full_name, tg_login, working_status, tg_id, email):
+    async def db_set_users(self, account_name, full_name, tg_login, working_status, tg_id, email):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
@@ -165,7 +165,7 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    def db_get_users(self, field, value) -> list:
+    async def db_get_users(self, field, value) -> list:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
         # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
         # всех админов - запросом db_get_users('admin', 1)
@@ -183,7 +183,24 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    def db_set_duty(self, duty_date, message, duty_chat_list):
+    # Вытащить пользователя из БД. Задается юзернейм, поиск ведется по полям account_name и tg_name. Обёртка вокруг db_get_user
+    async def get_username_from_db(username):
+        # Получили username, который может быть логином в AD или в ТГ. Проверим по обоим полям, запишем непустые объекты в массив 
+        # Вернем первого члена массива (если в БД всплывут дубли, например, где у одного tg_login = account_name другого, надо что-то придумать)
+        logger.info('Mysql: trying to get users from Users table')
+        users_array = []
+        user_from_db = mysql().db_get_users('account_name', username)
+        users_array.append(user_from_db) if len(user_from_db) > 0 else logger.info('Nothing found in Users for %s as account_name', username)
+
+        user_from_db = mysql().db_get_users('tg_login', username)
+        users_array.append(user_from_db) if len(user_from_db) > 0 else logger.info('Nothing found in Users for %s as tg_login', username)
+        if len(users_array) > 0:
+            users_array = users_array[0]
+        else:
+            users_array = []
+        return(users_array)
+
+    async def db_set_duty(self, duty_date, message, duty_chat_list):
         # Записать дежурных на сегодня
         logger.debug('db set duty started for %s %s %s ', duty_date, message, duty_chat_list)
         try:
@@ -197,7 +214,7 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    def db_get_duty(self, duty_date) -> list:
+    async def db_get_duty(self, duty_date) -> list:
         # Сходить в таблицу xerxes.duty_list за дежурными на заданную дату
         try:
             self.db.connect()

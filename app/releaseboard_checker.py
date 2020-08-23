@@ -8,7 +8,7 @@ import requests
 from aiogram.types import ParseMode
 from aiogram.utils.exceptions import ChatNotFound, BotBlocked
 from app import config
-from app.utils.ioMysql import MysqlPool as mysql
+from app.utils.database import MysqlPool as db
 from app.jiratools import JiraTools
 from app.utils import logging, initializeBot
 from app.utils import aero
@@ -23,7 +23,7 @@ async def todo_tasks():
     """
     logger.debug('todo_tasks started')
     try:
-        db_result_todo = mysql().db_get_option('rl_todo')
+        db_result_todo = db().db_get_option('rl_todo')
         todo_db = db_result_todo.split() if isinstance(db_result_todo, str) else []
         logger.info('DB Releases (in mysql): %s', todo_db)
 
@@ -36,7 +36,7 @@ async def todo_tasks():
             todo_id.append(issue.id)
 
             if issue.id not in todo_db:
-                for chatId_subscribed in mysql().db_get_rl():
+                for chatId_subscribed in db().db_get_rl():
                     msg_in_queue = f'[{issue.fields.summary}]' \
                                    f'(https://jira.yamoney.ru/browse/{issue.key}) ' \
                                    f'ищет согласующих.'
@@ -76,7 +76,7 @@ async def todo_tasks():
                             issue.key, set(recipient_chat_id))
             
             # Save data to db
-            mysql().db_set_option('rl_todo', ' '.join(todo_id))
+            db().db_set_option('rl_todo', ' '.join(todo_id))
 
     except Exception:
         logger.exception('todo_task')
@@ -110,7 +110,7 @@ async def start_update_releases():
         msg_sending = ''
         try:
             logger.debug('helper is start_update_releases for %s started', option_name)
-            db_result = mysql().db_get_option(option_name)
+            db_result = db().db_get_option(option_name)
             logger.debug('db_result_waiting %s', db_result)
             list_tasks_in_db = db_result.split() if isinstance(db_result, str) else []
             jira_tasks = JiraTools().jira_search(jira_filter)
@@ -127,7 +127,7 @@ async def start_update_releases():
 
             logger.debug('List of jira id to DB %s', return_list_id)
             # Save data to db
-            mysql().db_set_option(option_name, ' '.join(return_list_id))
+            db().db_set_option(option_name, ' '.join(return_list_id))
             if len(msg_sending) == 0:
                 msg_sending = 'No message'
             return return_list_id, list_tasks_in_db, msg_sending
@@ -140,7 +140,7 @@ async def start_update_releases():
         )
         if msg_queed != 'No message':
             # await send_msg_all_subscribed(msg_queed)
-            for chat_id in mysql().db_get_rl():
+            for chat_id in db().db_get_rl():
                 await bot.send_message(chat_id=chat_id, text=msg_queed + how_many_is_working(),
                                        parse_mode=ParseMode.MARKDOWN)
 
@@ -148,7 +148,7 @@ async def start_update_releases():
             'rl_now', config.search_issues_work, 'в работе!'
         )
         if msg_in_work != 'No message':
-            for chat_id in mysql().db_get_rl():
+            for chat_id in db().db_get_rl():
                 await bot.send_message(chat_id=chat_id, text=msg_in_work + how_many_is_working(),
                                        parse_mode=ParseMode.MARKDOWN)
 
@@ -161,7 +161,7 @@ async def start_update_releases():
                 msg_done_new_task = f'[{j_issue.fields.summary}]' \
                                     f'(https://jira.yamoney.ru/browse/{j_issue.key}) ' \
                                     f'выполнена! ({j_issue.fields.resolution})'
-                for chat_id in mysql().db_get_rl():
+                for chat_id in db().db_get_rl():
                     await bot.send_message(chat_id=chat_id,
                                            text=msg_done_new_task + how_many_is_working(),
                                            parse_mode=ParseMode.MARKDOWN)
@@ -202,7 +202,7 @@ async def start_update_releases():
             if issue not in waiting_id:
                 if issue not in now_id:
                     j_issue = JiraTools().jira_issue(int(issue))
-                    for chat_id in mysql().db_get_rl():
+                    for chat_id in db().db_get_rl():
                         msg_done = f'[{j_issue.fields.summary}]' \
                                    f'(https://jira.yamoney.ru/browse/{j_issue.key}) ' \
                                    f'выполнена! ({j_issue.fields.resolution})'

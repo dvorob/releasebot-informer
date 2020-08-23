@@ -17,7 +17,7 @@ from aiogram.utils.emoji import emojize
 from aiohttp import web
 from app.jiratools import JiraTools
 from app.utils import aero, logging, returnHelper, initializeBot, filters
-from app.utils.ioMysql import MysqlPool as mysql
+from app.utils.database import MysqlPool as db
 from app.releaseboard_checker import start_update_releases, todo_tasks
 from datetime import timedelta, datetime
 
@@ -73,7 +73,6 @@ async def help_description(message: types.Message):
     await message.reply(text=msg, reply_markup=to_main_menu(),
                         parse_mode=ParseMode.HTML)
 
-
 async def start(message: types.Message):
     """
         Start function, handled by /start
@@ -82,10 +81,10 @@ async def start(message: types.Message):
     """
     try:
         logger.info('start function by %s', returnHelper.return_name(message))
-        user_info = await get_username_from_db(message.from_user.username)
+        user_info = await db().get_username_from_db(message.from_user.username)
         if len(user_info) > 0:
             if user_info[0]["tg_id"] != str(message.from_user.id):
-                mysql().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), email=None)
+                db().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), email=None)
             # user already exist in aerospike, we don't need some additional actions
             await message.reply(text=start_menu_message(message),
                                 reply_markup=keyboard.main_menu(),
@@ -130,11 +129,11 @@ async def write_chat_id(message: types.Message):
     """
     logger.info('write chat id started for : %s %s %s', message.from_user.username, message.from_user.id, message.chat.id)
     try:
-        user_info = await get_username_from_db(str(message.from_user.username))
+        user_info = await db().get_username_from_db(str(message.from_user.username))
         if len(user_info) > 0:
             logger.info('write my chat id found user info %s', user_info)
             message.from_user.username: message.chat.id
-            mysql().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.chat.id), email=None)
+            db().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.chat.id), email=None)
             logger.info('wirhte my chat id done for %s %s', str(message.from_user.id), str(message.chat.id))
     except Exception:
         logger.exception('write chat id exception')
@@ -522,7 +521,7 @@ async def subscribe_all(query: types.CallbackQuery, callback_data: str):
     """
     try:
         del callback_data
-        mysql().db_subscribe(query.message.chat.id, query.message.chat.type, 1)
+        db().db_subscribe(query.message.chat.id, query.message.chat.type, 1)
         logger.info('%s have subscribed to the releases', returnHelper.return_name(query))
         msg = 'You have subscribed to the releases.'
         await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)
@@ -540,7 +539,7 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
     """
     try:
         del callback_data
-        mysql().db_subscribe(query.message.chat.id, query.message.chat.type, 0)
+        db().db_subscribe(query.message.chat.id, query.message.chat.type, 0)
         logger.info('%s have unsubscribed to the releases', returnHelper.return_name(query))
         msg = 'You have unsubscribed to the releases.'
         await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)
@@ -555,7 +554,7 @@ async def get_user_info(message: types.Message):
     incoming = message.text.split()
     if len(incoming) == 2:
         try:
-            user_info = await get_username_from_db(incoming[1])
+            user_info = await db().get_username_from_db(incoming[1])
             logger.info('get user info found %s', user_info)
             if len(user_info) > 0:
                 msg = 'Found the User:'
@@ -574,22 +573,7 @@ async def get_user_info(message: types.Message):
         msg = 'Please, try again, example: /who username'
     await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
-# Вытащить пользователя из БД. Задается юзернейм, поиск ведется по полям account_name и tg_name
-async def get_username_from_db(username):
-    # Получили username, который может быть логином в AD или в ТГ. Проверим по обоим полям, запишем непустые объекты в массив 
-    # Вернем первого члена массива (если в БД всплывут дубли, например, где у одного tg_login = account_name другого, надо что-то придумать)
-    logger.info('Mysql: trying to get users from Users table')
-    users_array = []
-    user_from_db = mysql().db_get_users('account_name', username)
-    users_array.append(user_from_db) if len(user_from_db) > 0 else logger.info('Nothing found in Users for %s as account_name', username)
 
-    user_from_db = mysql().db_get_users('tg_login', username)
-    users_array.append(user_from_db) if len(user_from_db) > 0 else logger.info('Nothing found in Users for %s as tg_login', username)
-    if len(users_array) > 0:
-        users_array = users_array[0]
-    else:
-        users_array = []
-    return(users_array)
 
 def send_to_users(request):
     """
