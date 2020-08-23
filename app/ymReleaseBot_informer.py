@@ -559,8 +559,6 @@ async def get_user_info(message: types.Message):
         msg = 'Please, try again, example: /who username'
     await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
-
-
 def send_to_users(request):
     """
         {'chat_id': [list of chat_id], 'text': msg}
@@ -592,10 +590,14 @@ async def unknown_message(message: types.Message):
         If a employee tries to send smth, that unregistered in dispatcher, answer him.
         :param message:
     """
-    msg = emojize(f'{bold(message.from_user.full_name)}, are you sure?\n'
-                  f'I don\'t know what to do with {message.text} :astonished:\n'
-                  'Try send /help')
-    await message.reply(msg, parse_mode=ParseMode.MARKDOWN)
+    is_restricted = await filters.restricted(message)
+    if is_restricted:
+        msg = emojize(f'{bold(message.from_user.full_name)}, are you sure?\n'
+                      f'I don\'t know what to do with {message.text} :astonished:\n'
+                      'Try send /help')
+        await message.reply(msg, parse_mode=ParseMode.MARKDOWN)
+    else:
+        logger.info('Unauthorized access')
 
 async def on_startup(dispatcher):
     """
@@ -609,7 +611,7 @@ async def on_startup(dispatcher):
         dispatcher.register_message_handler(duty_admin, filters.restricted, commands='duty')
         dispatcher.register_message_handler(get_user_info, filters.restricted, commands='who')
         dispatcher.register_message_handler(write_chat_id, filters.restricted, commands='write_my_chat_id')
-        #dispatcher.register_message_handler(unknown_message, filters.restricted, content_types=ContentType.ANY)
+        #dispatcher.register_message_handler(unknown_message, content_types=ContentType.ANY)
 
         scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
         scheduler.add_job(start_update_releases, 'cron', day='*', hour='*', minute='*', second='30')
