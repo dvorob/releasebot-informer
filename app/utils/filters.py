@@ -57,16 +57,16 @@ async def restricted(message: types.message) -> bool:
 
     try:
         user_info = await db().get_username_from_db(str(message.from_user.username))
-        logger.info('restriction check for : %s , response from api %s', tg_username, req_user)
+        logger.info('restriction check for : %s , found in users table %s', tg_username, user_info)
         warning_message = f'Unauthorized access denied: {returnHelper.return_name(message)}'
 
             # Две проверки: 1 - что у нас в принципе есть ответ, если нет, напишем пользователю, что мы его не наши. 
             #               2 - что у найденного пользователя есть account_name в AD
         if len(user_info) > 0:
-            logger.info('restricted allow for %s', req_user[0]['account_name'])
+            logger.info('restricted allow for %s', user_info[0]['account_name'])
             return True
         else:
-            logger.info('restricted user not found %s %s %s ', tg_username, req_user, warning_message)
+            logger.info('restricted user not found %s %s ', tg_username, warning_message)
             await message.answer(text='Ваш telegram-логин не найден в базе пользователей компании. Обратитесь к администраторам.')
             return False
     except Exception:

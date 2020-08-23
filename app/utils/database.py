@@ -189,10 +189,10 @@ class MysqlPool:
         # Вернем первого члена массива (если в БД всплывут дубли, например, где у одного tg_login = account_name другого, надо что-то придумать)
         logger.info('Mysql: trying to get users from Users table')
         users_array = []
-        user_from_db = mysql().db_get_users('account_name', username)
+        user_from_db = await self.db_get_users('account_name', username)
         users_array.append(user_from_db) if len(user_from_db) > 0 else logger.info('Nothing found in Users for %s as account_name', username)
 
-        user_from_db = mysql().db_get_users('tg_login', username)
+        user_from_db = await self.db_get_users('tg_login', username)
         users_array.append(user_from_db) if len(user_from_db) > 0 else logger.info('Nothing found in Users for %s as tg_login', username)
         if len(users_array) > 0:
             users_array = users_array[0]

@@ -37,11 +37,12 @@ async def todo_tasks():
             todo_id.append(issue.id)
 
             if issue.id not in todo_db:
-                for chatId_subscribed in db().db_get_rl():
+                release_list = await db().db_get_rl()
+                for chat_id in release_list:
                     msg_in_queue = f'[{issue.fields.summary}]' \
                                    f'(https://jira.yamoney.ru/browse/{issue.key}) ' \
                                    f'ищет согласующих.'
-                    await bot.send_message(chat_id=chatId_subscribed,
+                    await bot.send_message(chat_id=chat_id,
                                            text=msg_in_queue + how_many_is_working(),
                                            parse_mode=ParseMode.MARKDOWN)
 
@@ -141,16 +142,16 @@ async def start_update_releases():
         )
         if msg_queed != 'No message':
             # await send_msg_all_subscribed(msg_queed)
-            loop = asyncio.get_event_loop()
-            for chat_id in loop.run_until_complete(db().db_get_rl()):
+            release_list = await db().db_get_rl()
+            for chat_id in release_list:
                 await bot.send_message(chat_id=chat_id, text=msg_queed + how_many_is_working(),
                                        parse_mode=ParseMode.MARKDOWN)
-            loop.close()
         now_id, now_db, msg_in_work = helper_func(
             'rl_now', config.search_issues_work, 'в работе!'
         )
         if msg_in_work != 'No message':
-            for chat_id in db().db_get_rl():
+            release_list = await db().db_get_rl()
+            for chat_id in release_list:
                 await bot.send_message(chat_id=chat_id, text=msg_in_work + how_many_is_working(),
                                        parse_mode=ParseMode.MARKDOWN)
 
@@ -163,7 +164,8 @@ async def start_update_releases():
                 msg_done_new_task = f'[{j_issue.fields.summary}]' \
                                     f'(https://jira.yamoney.ru/browse/{j_issue.key}) ' \
                                     f'выполнена! ({j_issue.fields.resolution})'
-                for chat_id in db().db_get_rl():
+                release_list = await db().db_get_rl()
+                for chat_id in release_list:
                     await bot.send_message(chat_id=chat_id,
                                            text=msg_done_new_task + how_many_is_working(),
                                            parse_mode=ParseMode.MARKDOWN)
@@ -204,7 +206,8 @@ async def start_update_releases():
             if issue not in waiting_id:
                 if issue not in now_id:
                     j_issue = JiraTools().jira_issue(int(issue))
-                    for chat_id in db().db_get_rl():
+                    release_list = await db().db_get_rl()
+                    for chat_id in release_list:
                         msg_done = f'[{j_issue.fields.summary}]' \
                                    f'(https://jira.yamoney.ru/browse/{j_issue.key}) ' \
                                    f'выполнена! ({j_issue.fields.resolution})'
