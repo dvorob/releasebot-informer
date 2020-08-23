@@ -24,10 +24,6 @@ from datetime import timedelta, datetime
 @initializeBot.dp.errors_handler()
 async def errors_handler(update: Update, exception: Exception):
     """
-        Errors handler
-        :param update:
-        :param exception:
-        :return:
     """
     try:
         raise exception
@@ -330,8 +326,7 @@ async def main_menu(query: types.CallbackQuery, callback_data: str):
         logger.exception('main_menu_message')
 
 
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='admin_menu'),
-                           filters.restricted, filters.admin)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='admin_menu'), filters.restricted, filters.admin)
 async def admin_menu(query: types.CallbackQuery, callback_data: str):
     """
         Open admin menu
@@ -348,8 +343,7 @@ async def admin_menu(query: types.CallbackQuery, callback_data: str):
         logger.exception('admin_menu')
 
 
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='restart'),
-                           filters.restricted, filters.admin)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='restart'), filters.restricted, filters.admin)
 async def restart(query: types.CallbackQuery, callback_data: str):
     """
         Restart pod with bot
@@ -365,8 +359,7 @@ async def restart(query: types.CallbackQuery, callback_data: str):
     except Exception:
         logger.exception('restart')
 
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='turn_off'),
-                           filters.restricted, filters.admin)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='turn_off'), filters.restricted, filters.admin)
 async def stop_bot(query: types.CallbackQuery, callback_data: str):
     """
         Turn off bot
@@ -380,8 +373,7 @@ async def stop_bot(query: types.CallbackQuery, callback_data: str):
     await query.answer('Bot was stopped, Bye!')
 
 
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='turn_on'),
-                           filters.restricted, filters.admin)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='turn_on'), filters.restricted, filters.admin)
 async def start_bot(query: types.CallbackQuery, callback_data: str):
     """
         Turn on bot
@@ -395,8 +387,7 @@ async def start_bot(query: types.CallbackQuery, callback_data: str):
     await query.answer('Bot was started, Go!')
 
 
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='dont_touch'),
-                           filters.restricted, filters.admin)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='dont_touch'), filters.restricted, filters.admin)
 async def dont_touch_releases(query: types.CallbackQuery, callback_data: str):
     """
         Don't touch releases on Jira board
@@ -411,8 +402,7 @@ async def dont_touch_releases(query: types.CallbackQuery, callback_data: str):
     await query.answer('Ok, I won\'t touch new releases by myself.')
 
 
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='return_queue'),
-                           filters.restricted)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='return_queue'), filters.restricted)
 async def return_to_queue(query: types.CallbackQuery, callback_data: str):
     """
         Create menu with Jira task which can be returned or will write msg
@@ -436,8 +426,7 @@ async def return_to_queue(query: types.CallbackQuery, callback_data: str):
         logger.exception('return_to_queue')
 
 
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='return_release'),
-                           filters.restricted)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='return_release'), filters.restricted)
 async def process_return_queue_callback(query: types.CallbackQuery, callback_data: str):
     """
         Based on callback_data["issue"] (received from keyboard.return_queue_menu)
@@ -491,8 +480,7 @@ async def process_return_queue_callback(query: types.CallbackQuery, callback_dat
     except Exception:
         logger.exception('process_return_queue_callback')
 
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='subscribe'),
-                           filters.restricted)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='subscribe'), filters.restricted)
 async def subscribe_events(query: types.CallbackQuery, callback_data: str):
     """
         Subscribe to events
@@ -511,8 +499,7 @@ async def subscribe_events(query: types.CallbackQuery, callback_data: str):
     except Exception:
         logger.exception("subscribe")
 
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='subscribe_all'),
-                           filters.restricted)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='subscribe_all'), filters.restricted)
 async def subscribe_all(query: types.CallbackQuery, callback_data: str):
     """
         Push 1 to some db table, you will subscribed
@@ -529,8 +516,7 @@ async def subscribe_all(query: types.CallbackQuery, callback_data: str):
         logger.exception("subscribe_all")
 
 
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='unsubscribe_all'),
-                           filters.restricted)
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='unsubscribe_all'), filters.restricted)
 async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
     """
         Push 0 to some db table, you will unsubscribed
@@ -611,28 +597,20 @@ async def unknown_message(message: types.Message):
                   'Try send /help')
     await message.reply(msg, parse_mode=ParseMode.MARKDOWN)
 
-
-def setup_handlers(disp: Dispatcher):
-    """
-        Setup handlers for bot
-        :param disp:
-    """
-    disp.register_message_handler(start, filters.restricted, commands='start')
-    disp.register_message_handler(help_description, filters.restricted, commands='help')
-    disp.register_message_handler(duty_admin, filters.restricted, commands='duty')
-    disp.register_message_handler(get_user_info, filters.restricted, commands='who')
-    disp.register_message_handler(write_chat_id, filters.restricted, commands='write_my_chat_id')
-    disp.register_message_handler(unknown_message, filters.restricted, content_types=ContentType.ANY)
-
-
 async def on_startup(dispatcher):
     """
         Start up function
         :param dispatcher:
     """
     try:
-        logger.info('Startup bot, hello!')
-        setup_handlers(dispatcher)
+        logger.info('- - - - Start bot - - - - -')
+        dispatcher.register_message_handler(start, filters.restricted, commands='start')
+        dispatcher.register_message_handler(help_description, filters.restricted, commands='help')
+        dispatcher.register_message_handler(duty_admin, filters.restricted, commands='duty')
+        dispatcher.register_message_handler(get_user_info, filters.restricted, commands='who')
+        dispatcher.register_message_handler(write_chat_id, filters.restricted, commands='write_my_chat_id')
+        #dispatcher.register_message_handler(unknown_message, filters.restricted, content_types=ContentType.ANY)
+
         scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
         scheduler.add_job(start_update_releases, 'cron', day='*', hour='*', minute='*', second='30')
         scheduler.add_job(todo_tasks, 'cron', day='*', hour='*', minute='*', second='20')

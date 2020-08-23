@@ -52,12 +52,9 @@ async def restricted(message: types.message) -> bool:
         :param message: main function
         :return: Error msg to telegram or main function
     """
-    logger.info('restricted was called from %s for %s', sys._getframe().f_back.f_code.co_name, str(message.from_user.username))
-    tg_username = message.from_user.username
-
     try:
         user_info = await db().get_username_from_db(str(message.from_user.username))
-        logger.info('restriction check for : %s , found in users table %s', tg_username, user_info)
+        logger.info('restriction check for : %s ,\n from %s ,\n found in users table %s', message.from_user.username, sys._getframe().f_back.f_code.co_name, user_info)
         warning_message = f'Unauthorized access denied: {returnHelper.return_name(message)}'
 
             # Две проверки: 1 - что у нас в принципе есть ответ, если нет, напишем пользователю, что мы его не наши. 
@@ -66,7 +63,7 @@ async def restricted(message: types.message) -> bool:
             logger.info('restricted allow for %s', user_info[0]['account_name'])
             return True
         else:
-            logger.info('restricted user not found %s %s ', tg_username, warning_message)
+            logger.info('restricted user not found %s %s ', message.from_user.username, warning_message)
             await message.answer(text='Ваш telegram-логин не найден в базе пользователей компании. Обратитесь к администраторам.')
             return False
     except Exception:
