@@ -84,7 +84,7 @@ async def start(message: types.Message):
         user_info = await db().get_username_from_db(message.from_user.username)
         if len(user_info) > 0:
             if user_info[0]["tg_id"] != str(message.from_user.id):
-                db().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), email=None)
+                await db().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), email=None)
             # user already exist in aerospike, we don't need some additional actions
             await message.reply(text=start_menu_message(message),
                                 reply_markup=keyboard.main_menu(),
@@ -133,7 +133,7 @@ async def write_chat_id(message: types.Message):
         if len(user_info) > 0:
             logger.info('write my chat id found user info %s', user_info)
             message.from_user.username: message.chat.id
-            db().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.chat.id), email=None)
+            await db().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.chat.id), email=None)
             logger.info('wirhte my chat id done for %s %s', str(message.from_user.id), str(message.chat.id))
     except Exception:
         logger.exception('write chat id exception')
@@ -521,7 +521,7 @@ async def subscribe_all(query: types.CallbackQuery, callback_data: str):
     """
     try:
         del callback_data
-        db().db_subscribe(query.message.chat.id, query.message.chat.type, 1)
+        await db().db_subscribe(query.message.chat.id, query.message.chat.type, 1)
         logger.info('%s have subscribed to the releases', returnHelper.return_name(query))
         msg = 'You have subscribed to the releases.'
         await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)
@@ -539,7 +539,7 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
     """
     try:
         del callback_data
-        db().db_subscribe(query.message.chat.id, query.message.chat.type, 0)
+        await db().db_subscribe(query.message.chat.id, query.message.chat.type, 0)
         logger.info('%s have unsubscribed to the releases', returnHelper.return_name(query))
         msg = 'You have unsubscribed to the releases.'
         await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)

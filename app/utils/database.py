@@ -134,7 +134,7 @@ class MysqlPool:
 
             for line in db_chat:
                 result.append(line.id)
-            logger.info('db_get_rl, result: %s', result)
+            logger.debug('db_get_rl, result: %s', result)
             return result
         except Exception:
             logger.exception('db_get_rl')
