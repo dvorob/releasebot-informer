@@ -6,11 +6,12 @@ Telegram bot for employee of Yandex.Money
 import app.config as config
 import app.keyboard as keyboard
 import json
+import re
 import requests
 import sys
 import warnings
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from aiogram import Dispatcher, executor, types
+from aiogram import Dispatcher, executor, types, filters as filtersAiogram
 from aiogram.types import ParseMode, ChatActions, Update, ContentType
 from aiogram.utils.markdown import bold
 from aiogram.utils.emoji import emojize
@@ -31,7 +32,7 @@ async def errors_handler(update: Update, exception: Exception):
         logger.exception("Cause exception {e} in update {update}", e=e, update=update)
     return True
 
-
+@initializeBot.dp.message_handler(filters.restricted, commands=['help'])
 async def help_description(message: types.Message):
     """
         Will show description all commands, handled by /help
@@ -69,6 +70,7 @@ async def help_description(message: types.Message):
     await message.reply(text=msg, reply_markup=to_main_menu(),
                         parse_mode=ParseMode.HTML)
 
+@initializeBot.dp.message_handler(filters.restricted, commands=['start'])
 async def start(message: types.Message):
     """
         Start function, handled by /start
@@ -116,7 +118,7 @@ def main_menu_message() -> str:
                   'Here :point_down: you can see what I can')
     return msg
 
-
+@initializeBot.dp.message_handler(filters.restricted, commands=['write_my_chat_id'])
 async def write_chat_id(message: types.Message):
     """
         Will write to aerospike set 'informer' to item @tg_username
@@ -134,6 +136,7 @@ async def write_chat_id(message: types.Message):
     except Exception:
         logger.exception('write chat id exception')
 
+@initializeBot.dp.message_handler(filters.restricted, commands=['duty'])
 async def duty_admin(message: types.Message):
     """
         Info about current or future duty admin
@@ -535,6 +538,7 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
 
 # Ручки поиска по БД. Светят наружу в API
 # Выдать информацию по пользователю из таблицы xerxes.users
+@initializeBot.dp.message_handler(filters.restricted, commands=['who'])
 async def get_user_info(message: types.Message):
     logger.info('get_user_info started by %s', returnHelper.return_name(message))
     incoming = message.text.split()
@@ -585,19 +589,17 @@ def send_to_users(request):
     except Exception:
         logger.exception('tg_send')
 
+@initializeBot.dp.message_handler(filtersAiogram.RegexpCommandsFilter(regexp_commands=['^duty']))
 async def unknown_message(message: types.Message):
     """
-        If a employee tries to send smth, that unregistered in dispatcher, answer him.
-        :param message:
     """
+    logger.info('unknown message start')
     is_restricted = await filters.restricted(message)
     if is_restricted:
         msg = emojize(f'{bold(message.from_user.full_name)}, are you sure?\n'
                       f'I don\'t know what to do with {message.text} :astonished:\n'
                       'Try send /help')
         await message.reply(msg, parse_mode=ParseMode.MARKDOWN)
-    else:
-        logger.info('Unauthorized access')
 
 async def on_startup(dispatcher):
     """
@@ -606,12 +608,13 @@ async def on_startup(dispatcher):
     """
     try:
         logger.info('- - - - Start bot - - - - -')
-        dispatcher.register_message_handler(start, filters.restricted, commands='start')
-        dispatcher.register_message_handler(help_description, filters.restricted, commands='help')
-        dispatcher.register_message_handler(duty_admin, filters.restricted, commands='duty')
-        dispatcher.register_message_handler(get_user_info, filters.restricted, commands='who')
-        dispatcher.register_message_handler(write_chat_id, filters.restricted, commands='write_my_chat_id')
-        #dispatcher.register_message_handler(unknown_message, content_types=ContentType.ANY)
+
+        # Зарегистрировать команды, ведущие в конкретные функции
+        #dispatcher.register_message_handler(start, filters.restricted, commands='start')
+        #dispatcher.register_message_handler(help_description, filters.restricted, commands='help')
+        #dispatcher.register_message_handler(duty_admin, filters.restricted, commands='duty')
+        #dispatcher.register_message_handler(get_user_info, filters.restricted, commands='who')
+        #dispatcher.register_message_handler(write_chat_id, filters.restricted, commands='write_my_chat_id')
 
         scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
         scheduler.add_job(start_update_releases, 'cron', day='*', hour='*', minute='*', second='30')
