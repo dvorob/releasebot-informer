@@ -543,8 +543,11 @@ async def get_user_info(message: types.Message):
     logger.info('get_user_info started by %s', returnHelper.return_name(message))
     incoming = message.text.split()
     if len(incoming) == 2:
+        # Уберем почту с конца строки, затем уберем @ если был задан тг-логин с собакой
+        probably_username = re.sub('@yamoney.ru', '', incoming[1])
+        probably_username = re.sub('@', '', probably_username)
         try:
-            user_info = await db().get_username_from_db(incoming[1])
+            user_info = await db().get_username_from_db(probably_username)
             logger.info('get user info found %s', user_info)
             if len(user_info) > 0:
                 msg = 'Found the User:'
