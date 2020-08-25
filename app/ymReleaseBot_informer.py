@@ -387,7 +387,11 @@ async def lock_app_release(message: types.Message):
     logger.info('lock app release started by %s %s', returnHelper.return_name(message), message.get_full_command())
     incoming = message.text.split()
     if len(incoming) == 2:
-        locked_app = {"lock": incoming[1], "unlock": ""}
+        if message.get_full_command()[0].find('lock') == 1:
+            locked_app = {"lock": incoming[1], "unlock": ""}
+        elif message.get_full_command()[0].find('unlock') == 1:
+            locked_app = {"lock": "", "unlock": incoming[1]}
+
         logger.info('lock app release sent %s', locked_app)
         try:
             session = await get_session()
