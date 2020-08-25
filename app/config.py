@@ -16,7 +16,8 @@ bot_master = {'vorobiev_telegram_id': 279933948,
               'batuto_telegram_id': 124171502,
               'titov_telegram_id': 81194573,
               'grachev_telegram_id': 170541899,
-              'gromov_telegram_id': 390182439
+              'gromov_telegram_id': 390182439,
+              'avdonin_telegram_id': 145902753
               }
 
 mysql = PooledMySQLDatabase(
@@ -35,6 +36,7 @@ api_aerospike_write = f'{api}/aerospike/write'
 api_get_user_info = f'{api}/get_user_info'
 api_get_duty_info = f'{api}/api_get_duty_info'
 api_sign_up = f'{api}/sign_up'
+api_lock_unlock = f'{api}/tasks/lock_unlock'
 
 jira_host = 'https://jira.yamoney.ru'
 jira_user = getenv('secret_jira_user')

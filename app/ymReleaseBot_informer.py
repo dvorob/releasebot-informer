@@ -3,6 +3,7 @@
 """
 Telegram bot for employee of Yandex.Money
 """
+import aiohttp
 import app.config as config
 import app.keyboard as keyboard
 import json
@@ -11,7 +12,7 @@ import requests
 import sys
 import warnings
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from aiogram import Dispatcher, executor, types, filters as filtersAiogram
+from aiogram import Dispatcher, executor, types
 from aiogram.types import ParseMode, ChatActions, Update, ContentType
 from aiogram.utils.markdown import bold
 from aiogram.utils.emoji import emojize
@@ -376,6 +377,32 @@ async def stop_bot(query: types.CallbackQuery, callback_data: str):
     await query.answer('Bot was stopped, Bye!')
 
 
+@initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['lock', 'unlock'])
+async def lock_app_release(message: types.Message):
+    """
+        Turn off bot
+        :param query:
+        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
+    """
+    logger.info('lock app release started by %s %s', returnHelper.return_name(message), message.get_full_command())
+    incoming = message.text.split()
+    if len(incoming) == 2:
+        locked_app = {"lock": incoming[1], "unlock": ""}
+        logger.info('lock app release sent %s', locked_app)
+        try:
+            session = await get_session()
+            async with session.post(config.api_lock_unlock, headers=locked_app) as resp:
+                await resp.json()
+                logger.info('lock send locked app to api, status is: %s', resp.status)
+            get_app = aero.read(item='deploy', aerospike_set='remaster')
+            logger.info('lock app release %s ', get_app["apps"][incoming[1]])
+            msg = f'lock app release {get_app["apps"][incoming[1]]}'
+            await message.answer(text=msg)
+        except Exception as exc:
+            logger.exception('lock_unlock_task')
+            return web.json_response({'status': 'error', 'message': str(exc)})
+
+
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='turn_on'), filters.restricted, filters.admin)
 async def start_bot(query: types.CallbackQuery, callback_data: str):
     """
@@ -592,7 +619,7 @@ def send_to_users(request):
     except Exception:
         logger.exception('tg_send')
 
-@initializeBot.dp.message_handler(filtersAiogram.RegexpCommandsFilter(regexp_commands=['^duty']))
+@initializeBot.dp.message_handler()
 async def unknown_message(message: types.Message):
     """
     """
@@ -635,6 +662,14 @@ async def on_shutdown(dispatcher):
     """
     del dispatcher
     logger.info('Shutdown')
+
+async def get_session():
+    """
+        Create aiohttp Client Session
+        :return: client session object
+    """
+    session = aiohttp.ClientSession()
+    return session
 
 if __name__ == '__main__':
 

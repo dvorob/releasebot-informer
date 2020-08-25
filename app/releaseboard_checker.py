@@ -74,7 +74,7 @@ async def todo_tasks():
                         await bot.send_message(chat_id=279933948, text=f'*YMReleaseBot '
                                                                        f'chat not found {chat_id}*')
 
-                logger.info('%s - sent notification looking forward (via api-v1) to: %s',
+                logger.info('%s - sent notification from to_do functon (via api-v1) to: %s',
                             issue.key, set(recipient_chat_id))
             
             # Save data to db
