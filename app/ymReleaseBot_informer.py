@@ -33,6 +33,35 @@ async def errors_handler(update: Update, exception: Exception):
         logger.exception("Cause exception {e} in update {update}", e=e, update=update)
     return True
 
+@initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['promo'])
+async def marketing_send(message: types.Message):
+    """
+        Will show description all commands, handled by /help
+        :param message: _ContextInstanceMixin__context_instance
+    """
+    logger.info('Marketing send was started')
+    msg = emojize(f'Привет :raised_hand:!\n'
+                  f'Я переехал на свою внутреннюю базу данных пользователей.\n'
+                  f'Все телеграм-логины и id (есть и такая сущность), которые мне были известны, тоже переехали в неё.\n'
+                  f'Если вы получили это сообщение, значит, у вас всё в порядке.\n'
+                  f'Если кому-то из ваших коллег не приходят уведомления, отправьте им эту инструкцию.\n'
+                  f'--------------------------\n'
+                  f'1. Спросите у меня <b>/who "nickname" </b>,\n'
+                  f'(вместо "nickname" можно подставить тг-логин, AD-логин или корпоративную почту).\n'
+                  f'Если я вас узнаю, я выдам сообщение с заполненными параметрами, среди которых обязательно нужны два:\n'
+                  f'<b>Telegram Login</b> и <b>Telegram ID </b>:\n'
+                  f'2. Если что-то среди этих параметров не заполнено, нажмите <b>/start</b> и затем спросите <b>/who ...</b> еще раз.\n'
+                  f'3. Если это не помогло, зайдите, пожалуйста, в Диму Воробьёва -- @dvorob .\n'
+                  f'--------------------------\n'
+                  f'Хорошего дня!\n')
+    chats = ['279933948']
+    for chat_id in chats:
+        try:
+            logger.info('Marketing send to %s', chat_id)
+            await initializeBot.bot.send_message(chat_id=chat_id, text=msg, parse_mode=ParseMode.HTML)
+        except Exception as exc:
+            logger.exception('Marketing send error %s %s ', chat_id, str(exc))
+
 @initializeBot.dp.message_handler(filters.restricted, commands=['help'])
 async def help_description(message: types.Message):
     """
@@ -642,13 +671,6 @@ async def on_startup(dispatcher):
     """
     try:
         logger.info('- - - - Start bot - - - - -')
-
-        # Зарегистрировать команды, ведущие в конкретные функции
-        #dispatcher.register_message_handler(start, filters.restricted, commands='start')
-        #dispatcher.register_message_handler(help_description, filters.restricted, commands='help')
-        #dispatcher.register_message_handler(duty_admin, filters.restricted, commands='duty')
-        #dispatcher.register_message_handler(get_user_info, filters.restricted, commands='who')
-        #dispatcher.register_message_handler(write_chat_id, filters.restricted, commands='write_my_chat_id')
 
         scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
         scheduler.add_job(start_update_releases, 'cron', day='*', hour='*', minute='*', second='30')
