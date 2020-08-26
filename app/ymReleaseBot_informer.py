@@ -40,7 +40,7 @@ async def marketing_send(message: types.Message):
         :param message: _ContextInstanceMixin__context_instance
     """
     logger.info('Marketing send was started')
-    msg = emojize(f'Привет :raised_hand:!\n'
+    msg = emojize(f'Привет! :raised_hand:\n'
                   f'Я переехал на свою внутреннюю базу данных пользователей.\n'
                   f'Все телеграм-логины и id (есть и такая сущность), которые мне были известны, тоже переехали в неё.\n'
                   f'Если вы получили это сообщение -- у вас всё в порядке и уведомляния работают.\n'
@@ -54,16 +54,15 @@ async def marketing_send(message: types.Message):
                   f'3. Если это не помогло, зайдите, пожалуйста, в Диму Воробьёва -- @dvorob .\n'
                   f'--------------------------\n'
                   f'Хорошего дня!\n')
-    chats = await db().db_get_users_with_tg_id()
-    logger.info(chats)
+    chats = []
+    #chats = await db().db_get_users_with_tg_id()
+    logger.debug(chats)
     for chat_id in chats:
         try:
-            logger.info('Marketing send to %s', chat_id["tg_id"])
-            if chat_id["admin"] == 1:
-                logger.info('ADMINADMINADMIN %s', chat_id["tg_id"])
-            #await initializeBot.bot.send_message(chat_id=chat_id, text=msg, parse_mode=ParseMode.HTML)
+            #if chat_id["admin"] == 1:
+            await initializeBot.bot.send_message(chat_id=chat_id["tg_id"], text=msg, parse_mode=ParseMode.HTML)
         except Exception as exc:
-            logger.exception('Marketing send error %s %s ', chat_id, str(exc))
+            logger.exception('Marketing sending error %s %s ', chat_id, str(exc))
 
 @initializeBot.dp.message_handler(filters.restricted, commands=['help'])
 async def help_description(message: types.Message):
@@ -71,37 +70,35 @@ async def help_description(message: types.Message):
         Will show description all commands, handled by /help
         :param message: _ContextInstanceMixin__context_instance
     """
-    logger.info('help function by %s', returnHelper.return_name(message))
-    msg = emojize(f'Hello, <b>{message.from_user.full_name}</b> :raised_hand:!\n'
-                  f'Here :point_down: you can read description of all my commands.\n'
-                  f'\nDescription of commands via <strong>/</strong>\n'
-                  f'/start: Start working with bot\n'
-                  f'/duty N: Will show duty admins after N days\n'
-                  f'/who <strong>username</strong>: Will find information about user; works with tg_login or AD_accountname '
-                  f'this employee on staff.yandex-team.ru\n'
-                  f'/write_my_chat_id: Will write your telegram chat_id to bot database '
-                  f'(using for private notifications). Should be used only '
-                  f'in case of problems with private notifications. '
-                  f'By default, you don\'t need it.\n'
-                  f'\nDescription of buttons:\n'
-                  f'<u><b>Show duty admin</b></u>: Will show now duty admins\n'
-                  f'<u><b>Open release board</b></u>: Will open Admsys release board\n'
-                  f'<u><b>Open documentation</b></u>: Will open Wiki page with documentation '
-                  f'of bot\n'
-                  f'<u><b>Open logs page</b></u>: Will open Kibana page with bot logs\n'
-                  f'<u><b>Open admin menu</b></u>: Extended commands, only for some sysops\n'
-                  f'<u><b>Return task to the queue</b></u>: Will show you which Jira task '
-                  f'can be returned to the queue now\n'
-                  f'<u><b>Subscribe to events</b></u>: Here you can subscribe to all'
-                  f' notifications about all releases from bot or unsubscribe at all.\n'
-                  f'<u><b>Get minimum information from release board</b></u>: Will show '
-                  f'some like this:\n'
-                  f'<code>- Releases in the progress: 1\n'
-                  f'- In AdmSYS queue: 5\n</code>'
-                  f'<u><b>Get extended information from release board</b></u>: Will show '
-                  f'previous message in extended mode, example:\n')
-    await message.reply(text=msg, reply_markup=to_main_menu(),
-                        parse_mode=ParseMode.HTML)
+    logger.info('help function was called by %s', returnHelper.return_name(message))
+    logger.info(vars(query.message))
+    msg = emojize(f'Привет, <b>{message.from_user.full_name}</b>! :raised_hand:\n'
+                  f'\nЧтобы начать со мной взаимодействовать, нужно быть сотрудником компании.\n'
+                  f'Если ты с нами, скорее всего, мы уже знакомы. Проверить это можно, спрсив меня:\n'
+                  f'<b>/who мой_никнейм</b>, в качестве никнейма можно использовать как логин в ТГ, так и корпоративную учетку.\n'
+                  f'Если в ответе ты видишь корректный логин, всё Ок.\n'
+                  f'Если Telegram ID не заполнен, нажми <u><b>/start</b></u> .\n'
+                  f'Во всех остальных случаях обратись к администраторам группы Admsys.\n'
+                  f'\nВот список всего, что я умею:\n'
+                  f'<u>/start</u> -- запишет твой Telegram-ID в базу (нужно, чтобы отправлять тебе уведомления от бота).\n'
+                  f'<u>/duty </u><b>N</b> -- покажет дежурных через N дней; N задавать необязательно, по умолчанию отобразятся деурные на сегодня.\n'
+                  f'<u>/who </u><b>username</b> -- найдет инфо о пользователе; работает с ТГ-логином, аккаунтом или почтой.\n'
+                  f'\nОписание кнопок:\n'
+                  f'<u><b>Show duty admin</b></u> -- показать дежурных админов.\n'
+                  f'<u><b>Open release board</b></u> -- открыть релизную доску Admsys.\n'
+                  f'<u><b>Open documentation</b></u> -- открыть Wiki с документацией по боту.\n'
+                  f'<u><b>Open logs page</b></u> -- открыть Kibana с логами бота.\n'
+                  f'<u><b>Open admin menu</b></u> -- админское меню, доступно только администраторам.\n'
+                  f'<u><b>Return task to the queue</b></u> -- вернет список Jira-тасок, которые можно вернуть в начало релизной очереди.\n'
+                  f'<u><b>Subscribe to events</b></u> -- подписаться на все уведомления от бота.\n'
+                  f'Там же можно и отписаться от уведомлений.\n'
+                  f'<b>Важно:</b> на персональные уведомления (о своих релизах) подписывться не нужно -- они работают по умолчанию.\n'
+                  f'<u><b>Get minimum information from release board</b></u> -- покажет статистику о текущем состоянии релизной доски.\n'
+                  f'<u><b>Get extended information from release board</b></u> -- то же, но в расширенном варианте.\n')
+    try:
+        await message.reply(text=msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+    except Exception as exc:
+        logger.exception('Help sending error %s %s ', msg, str(exc))
 
 @initializeBot.dp.message_handler(filters.restricted, commands=['start'])
 async def start(message: types.Message):

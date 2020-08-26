@@ -123,7 +123,7 @@ class MysqlPool:
 
     async def db_get_rl(self) -> list:
         """
-            Get list of employee who subscribed to events
+            Get list of Employee and Chats who subscribed to events
             :return: list of tg_chat_id
         """
         logger.debug('db_get_rl started')
