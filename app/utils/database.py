@@ -183,6 +183,24 @@ class MysqlPool:
         finally:
             self.db.close()
 
+    async def db_get_users_with_tg_id(self) -> list:
+        # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
+        # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
+        # всех админов - запросом db_get_users('admin', 1)
+        logger.info('db_get_users param1 param2 %s %s', field, value)
+        result = []
+        try:
+            self.db.connect()
+            db_users = Users.select().where(Users.tg_id.is_null(False))
+            for v in db_users:
+                result.append((vars(v))['__data__'])
+            return result
+        except Exception:
+            logger.exception('exception in db get users with tg id')
+            return result
+        finally:
+            self.db.close()
+
     # Вытащить пользователя из БД. Задается юзернейм, поиск ведется по полям account_name и tg_name. Обёртка вокруг db_get_user
     async def get_username_from_db(self, username):
         # Получили username, который может быть логином в AD или в ТГ. Проверим по обоим полям, запишем непустые объекты в массив 

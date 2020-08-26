@@ -43,22 +43,23 @@ async def marketing_send(message: types.Message):
     msg = emojize(f'Привет :raised_hand:!\n'
                   f'Я переехал на свою внутреннюю базу данных пользователей.\n'
                   f'Все телеграм-логины и id (есть и такая сущность), которые мне были известны, тоже переехали в неё.\n'
-                  f'Если вы получили это сообщение, значит, у вас всё в порядке.\n'
-                  f'Если кому-то из ваших коллег не приходят уведомления, отправьте им эту инструкцию.\n'
+                  f'Если вы получили это сообщение -- у вас всё в порядке и уведомляния работают.\n'
+                  f'Если кому-то из ваших коллег не приходят уведомления, отправьте им эту инструкцию:\n'
                   f'--------------------------\n'
                   f'1. Спросите у меня <b>/who "nickname" </b>,\n'
                   f'(вместо "nickname" можно подставить тг-логин, AD-логин или корпоративную почту).\n'
-                  f'Если я вас узнаю, я выдам сообщение с заполненными параметрами, среди которых обязательно нужны два:\n'
+                  f'Если я вас узнаю, я верну сообщение с заполненными параметрами, среди которых должны быть заполнены:\n'
                   f'<b>Telegram Login</b> и <b>Telegram ID </b>:\n'
                   f'2. Если что-то среди этих параметров не заполнено, нажмите <b>/start</b> и затем спросите <b>/who ...</b> еще раз.\n'
                   f'3. Если это не помогло, зайдите, пожалуйста, в Диму Воробьёва -- @dvorob .\n'
                   f'--------------------------\n'
                   f'Хорошего дня!\n')
-    chats = ['279933948']
+    chats = await db().db_get_users_with_tg_id()
+    logger.info(chats)
     for chat_id in chats:
         try:
             logger.info('Marketing send to %s', chat_id)
-            await initializeBot.bot.send_message(chat_id=chat_id, text=msg, parse_mode=ParseMode.HTML)
+            #await initializeBot.bot.send_message(chat_id=chat_id, text=msg, parse_mode=ParseMode.HTML)
         except Exception as exc:
             logger.exception('Marketing send error %s %s ', chat_id, str(exc))
 
