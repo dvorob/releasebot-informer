@@ -58,7 +58,9 @@ async def marketing_send(message: types.Message):
     logger.info(chats)
     for chat_id in chats:
         try:
-            logger.info('Marketing send to %s', chat_id)
+            logger.info('Marketing send to %s', chat_id["tg_id"])
+            if chat_id["admin"] == 1:
+                logger.info('ADMINADMINADMIN %s', chat_id["tg_id"])
             #await initializeBot.bot.send_message(chat_id=chat_id, text=msg, parse_mode=ParseMode.HTML)
         except Exception as exc:
             logger.exception('Marketing send error %s %s ', chat_id, str(exc))
