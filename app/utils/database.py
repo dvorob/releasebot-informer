@@ -123,7 +123,7 @@ class MysqlPool:
 
     async def db_get_rl(self) -> list:
         """
-            Get list of Employee and Chats who subscribed to events
+            Get list of employee and Chats who subscribed to events
             :return: list of tg_chat_id
         """
         logger.debug('db_get_rl started')
@@ -141,7 +141,7 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    async def db_set_users(self, account_name, full_name, tg_login, working_status, tg_id, email):
+    async def db_set_users(self, account_name, full_name, tg_login, working_status, tg_id, notification, email):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
@@ -157,6 +157,8 @@ class MysqlPool:
                 db_users.working_status = working_status
             if tg_id:
                 db_users.tg_id = tg_id
+            if notification:
+                db_users.notification = notification
             if email:
                 db_users.email = email
             db_users.save()
@@ -183,7 +185,7 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    async def db_get_users_with_tg_id(self) -> list:
+    async def get_all_tg_id(self) -> list:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
         # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
         # всех админов - запросом db_get_users('admin', 1)

@@ -55,7 +55,7 @@ async def marketing_send(message: types.Message):
                   f'--------------------------\n'
                   f'Хорошего дня!\n')
     chats = []
-    #chats = await db().db_get_users_with_tg_id()
+    #chats = await db().get_all_tg_id()
     logger.debug(chats)
     for chat_id in chats:
         try:
@@ -113,7 +113,7 @@ async def start(message: types.Message):
         user_info = await db().get_username_from_db(message.from_user.username)
         if len(user_info) > 0:
             if user_info[0]["tg_id"] != str(message.from_user.id):
-                await db().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), email=None)
+                await db().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), notification=None, email=None)
             # user already exist in aerospike, we don't need some additional actions
             await message.reply(text=start_menu_message(message),
                                 reply_markup=keyboard.main_menu(),
@@ -572,9 +572,15 @@ async def subscribe_all(query: types.CallbackQuery, callback_data: str):
     """
     try:
         del callback_data
-        await db().db_subscribe(query.message.chat.id, query.message.chat.type, 1)
-        logger.info('%s have subscribed to the releases', returnHelper.return_name(query))
-        msg = 'You have subscribed to the releases.'
+        logger.info('Subscribe a %s chat %s ', query.message.chat.type, query.message.chat.id)
+        if (query.message.chat.type == 'private'):
+            user_from_db = await db().db_get_users('tg_id', query.message.chat.id)
+            await db().db_set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='All', email=None)
+        elif (query.message.chat.type == 'group'):
+            await db().db_subscribe(query.message.chat.id, query.message.chat.type, 1)
+        else:
+            logger.info('Subscribe got something undefined %s', query.message.chat.id)
+        msg = 'Вы подписаны на сообщения обо всех релизах'
         await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)
     except Exception:
         logger.exception("subscribe_all")
