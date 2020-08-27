@@ -44,6 +44,15 @@ class Chat(BaseModel):
             (('id', 'type'), True)
         )
 
+class Chats(BaseModel):
+    id = IntegerField()
+    tg_id = CharField()
+    title = CharField()
+    started_by = CharField()
+    date_start = DateTimeField(default=datetime.now)
+    notification = CharField(default='none')
+    description = CharField()
+
 class Option(BaseModel):
     name = CharField(unique=True)
     value = CharField()
@@ -83,6 +92,23 @@ class MysqlPool:
             db_chat.save()
         except Exception:
             logger.exception("MysqlPool, db_subscribe")
+        finally:
+            self.db.close()
+
+    async def set_chats(self, tg_id, title, started_by, notification):
+        """
+        """
+        logger.info('sret chat called for %s %s %s notification %s', tg_id, title, started_by, notification)
+        try:
+            self.db.connect()
+            db_chat, _ = Chats.get_or_create(tg_id=tg_id)
+            logger.info('a chat object is %s', db_chat)
+            db_chat.title = title
+            db_chat.started_by = started_by
+            db_chat.notification = notification
+            db_chat.save()
+        except Exception:
+            logger.exception("set chats error")
         finally:
             self.db.close()
 
@@ -130,10 +156,13 @@ class MysqlPool:
         try:
             self.db.connect()
             db_chat = Chat.select(Chat.id).where(Chat.rl == '1')
+            db_chats = Chats.select(Chats.tg_id).where(Chats.notification == 'all')
             result = []
 
             for line in db_chat:
                 result.append(line.id)
+            for line in db_chats:
+                result.append(line.tg_id)
             logger.debug('db_get_rl, result: %s', result)
             return result
         except Exception:

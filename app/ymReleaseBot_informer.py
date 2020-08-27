@@ -572,15 +572,15 @@ async def subscribe_all(query: types.CallbackQuery, callback_data: str):
     """
     try:
         del callback_data
-        logger.info('Subscribe a %s chat %s ', query.message.chat.type, query.message.chat.id)
+        logger.info('Subscribe a %s chat %s ', query.message.chat.type, query.message.chat)
         if (query.message.chat.type == 'private'):
             user_from_db = await db().db_get_users('tg_id', query.message.chat.id)
-            await db().db_set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='All', email=None)
+            await db().db_set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='all', email=None)
         elif (query.message.chat.type == 'group'):
-            await db().db_subscribe(query.message.chat.id, query.message.chat.type, 1)
+            await db().set_chats(query.message.chat.id, title=query.message.chat.title, started_by=query.message.from_user.username, notification='all')
         else:
             logger.info('Subscribe got something undefined %s', query.message.chat.id)
-        msg = 'Вы подписаны на сообщения обо всех релизах'
+        msg = 'Вы подписаны на сообщения обо всех релизах.'
         await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)
     except Exception:
         logger.exception("subscribe_all")
@@ -595,9 +595,15 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
     """
     try:
         del callback_data
-        await db().db_subscribe(query.message.chat.id, query.message.chat.type, 0)
-        logger.info('%s have unsubscribed to the releases', returnHelper.return_name(query))
-        msg = 'You have unsubscribed to the releases.'
+        logger.info('Unsubscribe a %s chat %s ', query.message.chat.type, query.message.chat)
+        if (query.message.chat.type == 'private'):
+            user_from_db = await db().db_get_users('tg_id', query.message.chat.id)
+            await db().db_set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='none', email=None)
+        elif (query.message.chat.type == 'group'):
+            await db().set_chats(query.message.chat.id, title=query.message.chat.title, started_by=query.message.from_user.username, notification='none')
+        else:
+            logger.info('Subscribe got something undefined %s', query.message.chat.id)
+        msg = 'Вы отписались от сообщений о релизах.'
         await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)
     except Exception:
         logger.exception("unsubscribe_all")
