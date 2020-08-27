@@ -71,11 +71,12 @@ async def help_description(message: types.Message):
         :param message: _ContextInstanceMixin__context_instance
     """
     logger.info('help function was called by %s', returnHelper.return_name(message))
-    logger.info(vars(query.message))
+    logger.info('Message %s', vars(message.from_user))
+    logger.info('Message %s', vars(message.chat))
     msg = emojize(f'Привет, <b>{message.from_user.full_name}</b>! :raised_hand:\n'
                   f'\nЧтобы начать со мной взаимодействовать, нужно быть сотрудником компании.\n'
-                  f'Если ты с нами, скорее всего, мы уже знакомы. Проверить это можно, спрсив меня:\n'
-                  f'<b>/who мой_никнейм</b>, в качестве никнейма можно использовать как логин в ТГ, так и корпоративную учетку.\n'
+                  f'Если ты с нами, скорее всего, мы уже знакомы. Проверить это можно, спросив меня:\n'
+                  f'<b>/who мой_никнейм</b> (вместо мой_никней можно указать логин в ТГ или корпоративную учетку).\n'
                   f'Если в ответе ты видишь корректный логин, всё Ок.\n'
                   f'Если Telegram ID не заполнен, нажми <u><b>/start</b></u> .\n'
                   f'Во всех остальных случаях обратись к администраторам группы Admsys.\n'
@@ -96,7 +97,7 @@ async def help_description(message: types.Message):
                   f'<u><b>Get minimum information from release board</b></u> -- покажет статистику о текущем состоянии релизной доски.\n'
                   f'<u><b>Get extended information from release board</b></u> -- то же, но в расширенном варианте.\n')
     try:
-        await message.reply(text=msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+        await message.answer(text=msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as exc:
         logger.exception('Help sending error %s %s ', msg, str(exc))
 
