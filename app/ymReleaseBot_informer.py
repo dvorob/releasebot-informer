@@ -182,7 +182,7 @@ async def duty_admin(message: types.Message):
         message.bot.send_chat_action(chat_id=message.chat.id,
                                      action=ChatActions.typing)
         cli_args = message.text.split()
-        logger.debug('duty, in_text = %s', cli_args)
+        logger.info('duty, in_text = %s', cli_args)
         # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов но вызван до 10 часов утра
         after_days = cli_args[1] if (len(cli_args) == 2 and int(cli_args[1]) > 0) else 0
         dict_duty_adm = aero.read(item='duty', aerospike_set='duty_admin')

@@ -16,34 +16,6 @@ class BaseModel(Model):
     class Meta:
         database = config.mysql
 
-class Chat(BaseModel):
-    """
-        Create mysql table Chat
-        id - tg chat_id
-        type - group/private
-        username - tg_username
-        lastname - tg_lastname
-        started - time
-        last - time
-        ym -
-        rl - подписка на все сообщения бота
-        digest
-    """
-    id = CharField()
-    type = CharField()
-    username = CharField()
-    lastname = CharField()
-    started = DateTimeField(default=datetime.now)
-    last = DateTimeField(default=datetime.now)
-    ym = BooleanField(default=False)
-    rl = BooleanField(default=False)
-    digest = BooleanField(default=False)
-
-    class Meta:
-        indexes = (
-            (('id', 'type'), True)
-        )
-
 class Chats(BaseModel):
     id = IntegerField()
     tg_id = CharField()
@@ -62,38 +34,24 @@ class Users(BaseModel):
     account_name = CharField(unique=True)
     full_name = CharField()
     tg_login = CharField()
+    tg_id = CharField()
     working_status = CharField()
+    email = CharField()
     notification = CharField(default='none')
     admin = IntegerField(default=0)
-    tg_id = CharField()
-    email = CharField()
+    date_update = DateTimeField()
 
 class DutyList(BaseModel):
-    duty_date = DateField(unique=True)
-    message = CharField()
-    duty_chat_list = CharField()
+    date_duty = DateField(index=True)
+    area = CharField()
+    full_name = CharField()
+    account_name = CharField()
+    full_text = CharField()
 
 class MysqlPool:
 
     def __init__(self):
         self.db = config.mysql
-
-    async def db_subscribe(self, chat_id, chat_type, subscription):
-        """
-            Subscribe/unsubscribe employee to all bot notifications
-            :param chat_id: tg_chat_id
-            :param chat_type: private/group
-            :param subscription: 1 - subscribe, 0 - unsubscribe
-        """
-        try:
-            self.db.connect()
-            db_chat = Chat.get(id=chat_id, type=chat_type)
-            db_chat.rl = subscription
-            db_chat.save()
-        except Exception:
-            logger.exception("MysqlPool, db_subscribe")
-        finally:
-            self.db.close()
 
     async def set_chats(self, tg_id, title, started_by, notification):
         """
@@ -142,31 +100,31 @@ class MysqlPool:
             db_option.save()
             if value:
                 logger.debug('saved %s to %s', value, name)
-        except Exception:
-            logger.exception('db_set_option')
+        except Exception as e:
+            logger.exception('db set option %s', str(e))
         finally:
             self.db.close()
 
-    async def db_get_rl(self) -> list:
+    async def get_subscribers_to_everything(self) -> list:
         """
             Get list of employee and Chats who subscribed to events
             :return: list of tg_chat_id
         """
-        logger.debug('db_get_rl started')
         try:
             self.db.connect()
-            db_chat = Chat.select(Chat.id).where(Chat.rl == '1')
-            db_chats = Chats.select(Chats.tg_id).where(Chats.notification == 'all')
+            db_chats = Chats.select(Chats.tg_id).where(Chats.notification == 'all', Chats.tg_id.is_null(False))
+            db_users = Users.select(Users.tg_id).where(Users.notification == 'all', Users.tg_id.is_null(False))
+            logger.info('db chats = %s   db users = %s', db_chats, db_users)
             result = []
 
-            for line in db_chat:
-                result.append(line.id)
             for line in db_chats:
                 result.append(line.tg_id)
-            logger.debug('db_get_rl, result: %s', result)
+            for line in db_users:
+                result.append(line.tg_id)
+            logger.debug('get_subscribers_to_everything, result: %s', result)
             return result
-        except Exception:
-            logger.exception('db_get_rl')
+        except Exception as e:
+            logger.exception('get subscribers to everything error %s', str(e))
         finally:
             self.db.close()
 
@@ -174,7 +132,7 @@ class MysqlPool:
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
-        logger.debug('db set users started for %s %s %s %s %s ', account_name, full_name, tg_login, working_status, tg_id, email)
+        logger.debug('db set users started for %s', account_name)
         try:
             self.db.connect()
             db_users, _ = Users.get_or_create(account_name=account_name)
@@ -210,6 +168,29 @@ class MysqlPool:
             return result
         except Exception:
             logger.exception('exception in db get users')
+            return result
+        finally:
+            self.db.close()
+
+    def get_users_by_fullname(self, value) -> list:
+        # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
+        # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
+        # всех админов - запросом db_get_users('admin', 1)
+        result = []
+        try:
+            self.db.connect()
+            #db_users = Users.select().where(getattr(Users, field) == value)
+            full_name = re.split(' ', value)
+            if len(full_name) > 1:
+                db_users = Users.select().where(Users.full_name.startswith(full_name[0]) & Users.full_name.endswith(full_name[1]))
+            elif len(full_name) = 1:
+                db_users = Users.select().where(Users.full_name.endswith(full_name[0]))
+            else:
+                db_users = ['Nobody']
+            for v in db_users:
+                result.append((vars(v))['__data__'])
+            return result
+        except Exception:
             return result
         finally:
             self.db.close()
