@@ -190,7 +190,7 @@ async def duty_admin(message: types.Message):
         if int(datetime.today().strftime("%H")) < int(10):
             today = (datetime.today() - timedelta(1) + timedelta(after_days)).strftime("%Y-%m-%d")
         else:
-            today = (datetime.today() + timedelta(after_days)).strftime("%Y-%m-%d")
+            today = (datetime.today() + timedelta(int(after_days))).strftime("%Y-%m-%d")
         logger.debug('dict_duty_adm = %s', dict_duty_adm)
 
         if today in dict_duty_adm.keys():
@@ -201,8 +201,8 @@ async def duty_admin(message: types.Message):
                          'look at assistant pod logs', today)
         await message.answer(msg, reply_markup=to_main_menu(),
                              parse_mode=ParseMode.HTML)
-    except Exception:
-        logger.exception('h_duty-tg_send')
+    except Exception as e:
+        logger.exception('error in duty admin %s', str(e))
 
 
 def duty_admin_now() -> str:

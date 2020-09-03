@@ -183,7 +183,7 @@ class MysqlPool:
             full_name = re.split(' ', value)
             if len(full_name) > 1:
                 db_users = Users.select().where(Users.full_name.startswith(full_name[0]) & Users.full_name.endswith(full_name[1]))
-            elif len(full_name) = 1:
+            elif len(full_name) == 1:
                 db_users = Users.select().where(Users.full_name.endswith(full_name[0]))
             else:
                 db_users = ['Nobody']
