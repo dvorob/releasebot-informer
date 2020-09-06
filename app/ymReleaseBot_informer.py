@@ -110,7 +110,7 @@ async def start(message: types.Message):
     """
     try:
         logger.info('start function by %s', returnHelper.return_name(message))
-        user_info = await db().get_username_from_db(message.from_user.username)
+        user_info = await db().search_user_by_name(message.from_user.username)
         if len(user_info) > 0:
             if user_info[0]["tg_id"] != str(message.from_user.id):
                 await db().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), notification=None, email=None)
@@ -158,7 +158,7 @@ async def write_chat_id(message: types.Message):
     """
     logger.info('write chat id started for : %s %s %s', message.from_user.username, message.from_user.id, message.chat.id)
     try:
-        user_info = await db().get_username_from_db(str(message.from_user.username))
+        user_info = await db().search_user_by_name(str(message.from_user.username))
         if len(user_info) > 0:
             logger.info('write my chat id found user info %s', user_info)
             message.from_user.username: message.chat.id
@@ -227,9 +227,16 @@ async def duties_new(message: types.Message):
         logger.info('duties asked for %s', duty_date.strftime('%Y-%m-%d %H %M'))
         dutymen_array = await db().get_duty(duty_date)
         if len(dutymen_array) > 0:
-            # msg = dict_duty_adm[dutymen_array]
-            msg = len(dutymen_array)
-            logger.info('I find duty_admin for date %s %s', today, msg)
+            msg = f"Дежурят на {duty_date.strftime('%Y-%m-%d')}:\n"
+            if len(dutymen_array) > 0:
+                for d in dutymen_array:
+                    logger.info('ddd %s', d)
+                    if len(d['account_name']) > 0:
+                        account_name = await db().search_user_by_name(d['account_name'])
+                        msg += f"· {d['full_text']} <b>@{account_name[0]['tg_login']}</b> \n" if len(account_name) > 0 else msg += f"> {d['full_text']} \n"
+            else:
+                msg += f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
+            logger.info('I find duty_admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
         else:
             logger.error('Today is %s and i did\'t find info in aerospike look at assistant pod logs', duty_date)
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
@@ -651,7 +658,7 @@ async def get_user_info(message: types.Message):
         probably_username = re.sub('@yamoney.ru', '', incoming[1])
         probably_username = re.sub('@', '', probably_username)
         try:
-            user_info = await db().get_username_from_db(probably_username)
+            user_info = await db().search_user_by_name(probably_username)
             logger.info('get user info found %s', user_info)
             if len(user_info) > 0:
                 msg = 'Found the User:'

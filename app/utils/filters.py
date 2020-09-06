@@ -53,7 +53,7 @@ async def restricted(message: types.message) -> bool:
         :return: Error msg to telegram or main function
     """
     try:
-        user_info = await db().get_username_from_db(str(message.from_user.username))
+        user_info = await db().search_user_by_name(str(message.from_user.username))
         logger.info('restriction check for : %s ,\n from %s ,\n found in users table %s', message.from_user.username, sys._getframe().f_back.f_code.co_name, user_info)
         warning_message = f'Unauthorized access denied: {returnHelper.return_name(message)}'
 

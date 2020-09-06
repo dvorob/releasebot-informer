@@ -216,7 +216,7 @@ class MysqlPool:
             self.db.close()
 
     # Вытащить пользователя из БД. Задается юзернейм, поиск ведется по полям account_name и tg_name. Обёртка вокруг db_get_user
-    async def get_username_from_db(self, username):
+    async def search_user_by_name(self, username):
         # Получили username, который может быть логином в AD или в ТГ. Проверим по обоим полям, запишем непустые объекты в массив 
         # Вернем первого члена массива (если в БД всплывут дубли, например, где у одного tg_login = account_name другого, надо что-то придумать)
         self.db.connect(reuse_if_open=True)
@@ -259,9 +259,9 @@ class MysqlPool:
             self.db.connect(reuse_if_open=True)
             result = []
             db_query = Duty_List.select().where(Duty_List.duty_date == duty_date)
-            logger.info('get duty %s', db_query)
             for v in db_query:
                 result.append((vars(v))['__data__'])
+            logger.debug('get duty for %s %s', duty_date, result)
             return result
         except Exception:
             logger.exception('exception in db get duty')
