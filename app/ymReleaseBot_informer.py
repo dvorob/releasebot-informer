@@ -167,6 +167,7 @@ async def write_chat_id(message: types.Message):
     except Exception:
         logger.exception('write chat id exception')
 
+# /duty command from chatbot
 @initializeBot.dp.message_handler(filters.restricted, commands=['duty'])
 async def duty_admin(message: types.Message):
     """
@@ -197,10 +198,41 @@ async def duty_admin(message: types.Message):
             msg = dict_duty_adm[today]
             logger.info('I find duty_admin for date %s %s', today, msg)
         else:
-            logger.error('Today is %s and i did\'t find info in aerospike '
-                         'look at assistant pod logs', today)
+            logger.error('Today is %s and i did\'t find info in aerospike look at assistant pod logs', today)
         await message.answer(msg, reply_markup=to_main_menu(),
                              parse_mode=ParseMode.HTML)
+    except Exception as e:
+        logger.exception('error in duty admin %s', str(e))
+
+
+# /dutynew command from chatbot
+@initializeBot.dp.message_handler(filters.restricted, commands=['dutynew'])
+async def duties_new(message: types.Message):
+    """
+        Информация о дежурных на дату (N, по умолчанию N = 0, т.е. на сегодня)
+        Берется из xerxes.duty_list (таблица заполняется модулем Assistant, раз в час на основании календаря AdminsOnDuty)
+    """
+    try:
+        logger.info('def duties admin started: %s', returnHelper.return_name(message))
+        message.bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.typing)
+        cli_args = message.text.split()
+        logger.info('duty, in_text = %s', cli_args)
+        # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов но вызван до 10 часов утра
+        after_days = cli_args[1] if (len(cli_args) == 2 and int(cli_args[1]) > 0) else 0
+        # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
+        if int(datetime.today().strftime("%H")) < int(10):
+            duty_date = datetime.today() - timedelta(1) + timedelta(int(after_days))
+        else:
+            duty_date = datetime.today() + timedelta(int(after_days))
+        logger.info('duties asked for %s', duty_date.strftime('%Y-%m-%d %H %M'))
+        dutymen_array = await db().get_duty(duty_date)
+        if len(dutymen_array) > 0:
+            # msg = dict_duty_adm[dutymen_array]
+            msg = len(dutymen_array)
+            logger.info('I find duty_admin for date %s %s', today, msg)
+        else:
+            logger.error('Today is %s and i did\'t find info in aerospike look at assistant pod logs', duty_date)
+        await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
 
@@ -338,8 +370,7 @@ def to_main_menu() -> types.InlineKeyboardMarkup:
         :return: InlineKeyboardMarkup object
     """
     keyboard_main_menu = [[types.InlineKeyboardButton('Main menu',
-                                                      callback_data=keyboard.posts_cb.new(action='main',
-                                                                                 issue='1'))]]
+                                                      callback_data=keyboard.posts_cb.new(action='main', issue='1'))]]
     return types.InlineKeyboardMarkup(inline_keyboard=keyboard_main_menu)
 
 

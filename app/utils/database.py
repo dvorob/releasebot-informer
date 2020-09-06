@@ -41,8 +41,9 @@ class Users(BaseModel):
     admin = IntegerField(default=0)
     date_update = DateTimeField()
 
-class DutyList(BaseModel):
-    date_duty = DateField(index=True)
+class Duty_List(BaseModel):
+    id = IntegerField()
+    duty_date = DateField(index=True)
     area = CharField()
     full_name = CharField()
     account_name = CharField()
@@ -58,7 +59,7 @@ class MysqlPool:
         """
         logger.info('sret chat called for %s %s %s notification %s', tg_id, title, started_by, notification)
         try:
-            self.db.connect()
+            self.db.connect(reuse_if_open=True)
             db_chat, _ = Chats.get_or_create(tg_id=tg_id)
             logger.info('a chat object is %s', db_chat)
             db_chat.title = title
@@ -78,7 +79,7 @@ class MysqlPool:
         """
         logger.debug('db_get_option started')
         try:
-            self.db.connect()
+            self.db.connect(reuse_if_open=True)
             db_option, _ = Option.get_or_create(name=name)
             db_option.save()
             return db_option.value
@@ -94,7 +95,7 @@ class MysqlPool:
             :param value:
         """
         try:
-            self.db.connect()
+            self.db.connect(reuse_if_open=True)
             db_option, _ = Option.get_or_create(name=name)
             db_option.value = value
             db_option.save()
@@ -111,7 +112,7 @@ class MysqlPool:
             :return: list of tg_chat_id
         """
         try:
-            self.db.connect()
+            self.db.connect(reuse_if_open=True)
             db_chats = Chats.select(Chats.tg_id).where(Chats.notification == 'all', Chats.tg_id.is_null(False))
             db_users = Users.select(Users.tg_id).where(Users.notification == 'all', Users.tg_id.is_null(False))
             logger.info('db chats = %s   db users = %s', db_chats, db_users)
@@ -134,7 +135,7 @@ class MysqlPool:
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
         logger.debug('db set users started for %s', account_name)
         try:
-            self.db.connect()
+            self.db.connect(reuse_if_open=True)
             db_users, _ = Users.get_or_create(account_name=account_name)
             if full_name:
                 db_users.full_name = full_name
@@ -161,7 +162,7 @@ class MysqlPool:
         logger.info('db_get_users param1 param2 %s %s', field, value)
         result = []
         try:
-            self.db.connect()
+            self.db.connect(reuse_if_open=True)
             db_users = Users.select().where(getattr(Users, field) == value)
             for v in db_users:
                 result.append((vars(v))['__data__'])
@@ -178,7 +179,7 @@ class MysqlPool:
         # всех админов - запросом db_get_users('admin', 1)
         result = []
         try:
-            self.db.connect()
+            self.db.connect(reuse_if_open=True)
             #db_users = Users.select().where(getattr(Users, field) == value)
             full_name = re.split(' ', value)
             if len(full_name) > 1:
@@ -202,7 +203,7 @@ class MysqlPool:
         logger.info('db get users with tg id')
         result = []
         try:
-            self.db.connect()
+            self.db.connect(reuse_if_open=True)
             db_users = Users.select().where(Users.tg_id.is_null(False))
             for v in db_users:
                 result.append((vars(v))['__data__'])
@@ -218,25 +219,32 @@ class MysqlPool:
     async def get_username_from_db(self, username):
         # Получили username, который может быть логином в AD или в ТГ. Проверим по обоим полям, запишем непустые объекты в массив 
         # Вернем первого члена массива (если в БД всплывут дубли, например, где у одного tg_login = account_name другого, надо что-то придумать)
-        logger.info('Mysql: trying to get users from Users table')
+        self.db.connect(reuse_if_open=True)
         users_array = []
-        user_from_db = await self.db_get_users('account_name', username)
-        users_array.append(user_from_db) if len(user_from_db) > 0 else logger.info('Nothing found in Users for %s as account_name', username)
+        try:
+            logger.info('Mysql: trying to get users from Users table')
+            user_from_db = await self.db_get_users('account_name', username)
+            users_array.append(user_from_db) if len(user_from_db) > 0 else logger.info('Nothing found in Users for %s as account_name', username)
 
-        user_from_db = await self.db_get_users('tg_login', username)
-        users_array.append(user_from_db) if len(user_from_db) > 0 else logger.info('Nothing found in Users for %s as tg_login', username)
-        if len(users_array) > 0:
-            users_array = users_array[0]
-        else:
-            users_array = []
-        return(users_array)
+            user_from_db = await self.db_get_users('tg_login', username)
+            users_array.append(user_from_db) if len(user_from_db) > 0 else logger.info('Nothing found in Users for %s as tg_login', username)
+            if len(users_array) > 0:
+                users_array = users_array[0]
+            else:
+                users_array = []
+            return users_array
+        except Exception:
+            logger.exception('get username from db')
+            return users_array
+        finally:
+            self.db.close()
 
     async def db_set_duty(self, duty_date, message, duty_chat_list):
         # Записать дежурных на сегодня
         logger.debug('db set duty started for %s %s %s ', duty_date, message, duty_chat_list)
         try:
-            self.db.connect()
-            db_users, _ = DutyList.get_or_create(duty_date=duty_date)
+            self.db.connect(reuse_if_open=True)
+            db_users, _ = Duty_List.get_or_create(duty_date=duty_date)
             db_users.message = message
             db_users.duty_chat_list = duty_chat_list
             db_users.save()
@@ -245,11 +253,16 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    async def db_get_duty(self, duty_date) -> list:
+    async def get_duty(self, duty_date) -> list:
         # Сходить в таблицу xerxes.duty_list за дежурными на заданную дату
         try:
-            self.db.connect()
-            return DutyList.get(DutyList.duty_date == duty_date)
+            self.db.connect(reuse_if_open=True)
+            result = []
+            db_query = Duty_List.select().where(Duty_List.duty_date == duty_date)
+            logger.info('get duty %s', db_query)
+            for v in db_query:
+                result.append((vars(v))['__data__'])
+            return result
         except Exception:
             logger.exception('exception in db get duty')
         finally:
