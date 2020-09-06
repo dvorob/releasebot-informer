@@ -227,13 +227,14 @@ async def duties_new(message: types.Message):
         logger.info('duties asked for %s', duty_date.strftime('%Y-%m-%d %H %M'))
         dutymen_array = await db().get_duty(duty_date)
         if len(dutymen_array) > 0:
-            msg = f"Дежурят на {duty_date.strftime('%Y-%m-%d')}:\n"
+            msg = f"<b>Дежурят на {duty_date.strftime('%Y-%m-%d')}:</b>\n"
             if len(dutymen_array) > 0:
                 for d in dutymen_array:
-                    logger.info('ddd %s', d)
+                    msg += f"\n· {d['full_text']}"
                     if len(d['account_name']) > 0:
                         account_name = await db().search_user_by_name(d['account_name'])
-                        msg += f"· {d['full_text']} <b>@{account_name[0]['tg_login']}</b> \n" if len(account_name) > 0 else msg += f"> {d['full_text']} \n"
+                        if len(account_name) > 0:
+                            msg += f" <b>@{account_name[0]['tg_login']}</b>" 
             else:
                 msg += f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
             logger.info('I find duty_admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
