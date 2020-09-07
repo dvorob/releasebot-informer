@@ -76,7 +76,7 @@ async def help_description(message: types.Message):
     msg = emojize(f'Привет, <b>{message.from_user.full_name}</b>! :raised_hand:\n'
                   f'\nЧтобы начать со мной взаимодействовать, нужно быть сотрудником компании.\n'
                   f'Если ты с нами, скорее всего, мы уже знакомы. Проверить это можно, спросив меня:\n'
-                  f'<b>/who мой_никнейм</b> (вместо мой_никней можно указать логин в ТГ или корпоративную учетку).\n'
+                  f'<b>/who мой_никнейм</b> (вместо мой_никней можно указать логин в ТГ, корпоративную учетку или имя (полное) с фамилией).\n'
                   f'Если в ответе ты видишь корректный логин, всё Ок.\n'
                   f'Если Telegram ID не заполнен, нажми <u><b>/start</b></u> .\n'
                   f'Во всех остальных случаях обратись к администраторам группы Admsys.\n'
@@ -110,7 +110,7 @@ async def start(message: types.Message):
     """
     try:
         logger.info('start function by %s', returnHelper.return_name(message))
-        user_info = await db().search_user_by_name(message.from_user.username)
+        user_info = await db().search_users_by_account(message.from_user.username)
         if len(user_info) > 0:
             if user_info[0]["tg_id"] != str(message.from_user.id):
                 await db().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), notification=None, email=None)
@@ -158,7 +158,7 @@ async def write_chat_id(message: types.Message):
     """
     logger.info('write chat id started for : %s %s %s', message.from_user.username, message.from_user.id, message.chat.id)
     try:
-        user_info = await db().search_user_by_name(str(message.from_user.username))
+        user_info = await db().search_users_by_account(str(message.from_user.username))
         if len(user_info) > 0:
             logger.info('write my chat id found user info %s', user_info)
             message.from_user.username: message.chat.id
@@ -232,7 +232,7 @@ async def duties_new(message: types.Message):
                 for d in dutymen_array:
                     msg += f"\n· {d['full_text']}"
                     if len(d['account_name']) > 0:
-                        account_name = await db().search_user_by_name(d['account_name'])
+                        account_name = await db().search_users_by_account(d['account_name'])
                         if len(account_name) > 0:
                             msg += f" <b>@{account_name[0]['tg_login']}</b>" 
             else:
@@ -648,37 +648,41 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
         logger.exception("unsubscribe_all")
 
 
-# Ручки поиска по БД. Светят наружу в API
-# Выдать информацию по пользователю из таблицы xerxes.users
+# Ручки поиска по БД. Светят наружу в API. 
+# /who Выдать информацию по пользователю из таблицы xerxes.users
 @initializeBot.dp.message_handler(filters.restricted, commands=['who'])
 async def get_user_info(message: types.Message):
-    logger.info('get_user_info started by %s', returnHelper.return_name(message))
+    logger.info('get user info started by %s', returnHelper.return_name(message))
     incoming = message.text.split()
-    if len(incoming) == 2:
-        # Уберем почту с конца строки, затем уберем @ если был задан тг-логин с собакой
-        probably_username = re.sub('@yamoney.ru', '', incoming[1])
-        probably_username = re.sub('@', '', probably_username)
+    if (len(incoming) == 2) or (len(incoming) == 3) :
         try:
-            user_info = await db().search_user_by_name(probably_username)
+            if bool(re.search('[а-яА-Я]', probably_username)):
+                user_info = await db().search_users_by_fullname(probably_username)
+            else:
+                # Уберем почту с конца строки, затем уберем @ если был задан тг-логин с собакой
+                probably_username = re.sub('@yamoney.ru', '', incoming[1])
+                probably_username = re.sub('@', '', probably_username)
+                user_info = await db().search_users_by_account(probably_username)
             logger.info('get user info found %s', user_info)
             if len(user_info) > 0:
-                msg = 'Found the User:'
-                msg += f'\n Account name: <strong>{user_info[0]["account_name"]}</strong>'
-                msg += f'\n Full name: <strong>{user_info[0]["full_name"]}</strong>'
-                msg += f'\n Email: <strong>{user_info[0]["email"]}</strong>'
-                msg += f'\n Telegram login: <strong>{user_info[0]["tg_login"]}</strong>'
-                msg += f'\n Telegram ID: <strong>{user_info[0]["tg_id"]}</strong>'
-                msg += f'\n Working status: <strong>{user_info[0]["working_status"]}</strong>'
-                msg += f'\n Notification: <strong>{user_info[0]["notification"]}</strong>'
+                msg = '<u><b>Нашёл</b></u>:'
+                for user in user_info:
+                    msg += f'\n Account name: <strong>{user["account_name"]}</strong>'
+                    msg += f'\n Full name: <strong>{user["full_name"]}</strong>'
+                    msg += f'\n Email: <strong>{user["email"]}</strong>'
+                    msg += f'\n Telegram login: <strong>{user["tg_login"]}</strong>'
+                    msg += f'\n Telegram ID: <strong>{user["tg_id"]}</strong>'
+                    msg += f'\n Working status: <strong>{user["working_status"]}</strong>'
+                    msg += f'\n Notification: <strong>{user["notification"]}</strong>\n'
             else:
-               msg = 'Didn\'t find any users'
+                msg = 'Пользователей в моей базе не найдено'
         except Exception:
             logger.exception('exception in get user info')
     else:
-        msg = 'Please, try again, example: /who username'
+        msg = 'Пожалуйста, попробуйте еще раз: /who username'
     await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
-def send_to_users(request):
+def bulksend_to_users(request):
     """
         {'chat_id': [list of chat_id], 'text': msg}
     """
@@ -760,6 +764,6 @@ if __name__ == '__main__':
 
     app = web.Application()
 
-    app.add_routes([web.post('/send', send_to_users)])
+    app.add_routes([web.post('/send', bulksend_to_users)])
 
     web.run_app(app, port=8080)

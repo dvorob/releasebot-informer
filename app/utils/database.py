@@ -173,33 +173,8 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    def get_users_by_fullname(self, value) -> list:
-        # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
-        # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
-        # всех админов - запросом db_get_users('admin', 1)
-        result = []
-        try:
-            self.db.connect(reuse_if_open=True)
-            #db_users = Users.select().where(getattr(Users, field) == value)
-            full_name = re.split(' ', value)
-            if len(full_name) > 1:
-                db_users = Users.select().where(Users.full_name.startswith(full_name[0]) & Users.full_name.endswith(full_name[1]))
-            elif len(full_name) == 1:
-                db_users = Users.select().where(Users.full_name.endswith(full_name[0]))
-            else:
-                db_users = ['Nobody']
-            for v in db_users:
-                result.append((vars(v))['__data__'])
-            return result
-        except Exception:
-            return result
-        finally:
-            self.db.close()
-
     async def get_all_tg_id(self) -> list:
-        # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
-        # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
-        # всех админов - запросом db_get_users('admin', 1)
+        # Отобрать всех пользователей, у которых заполнен tg_id - для массовых уведомлений
         logger.info('db get users with tg id')
         result = []
         try:
@@ -215,29 +190,51 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    # Вытащить пользователя из БД. Задается юзернейм, поиск ведется по полям account_name и tg_name. Обёртка вокруг db_get_user
-    async def search_user_by_name(self, username):
-        # Получили username, который может быть логином в AD или в ТГ. Проверим по обоим полям, запишем непустые объекты в массив 
-        # Вернем первого члена массива (если в БД всплывут дубли, например, где у одного tg_login = account_name другого, надо что-то придумать)
-        self.db.connect(reuse_if_open=True)
+    async def search_users_by_fullname(self, fullname):
+        # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
+        # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
+        # всех админов - запросом db_get_users('admin', 1)
         users_array = []
         try:
-            logger.info('Mysql: trying to get users from Users table')
-            user_from_db = await self.db_get_users('account_name', username)
-            users_array.append(user_from_db) if len(user_from_db) > 0 else logger.info('Nothing found in Users for %s as account_name', username)
+            logger.info('Search users by fullname for %s', fullname)
+            self.db.connect(reuse_if_open=True)
+            full_name = re.split(' ', value)
+            if len(full_name) > 1:
+                db_users = Users.select().where(
+                    (Users.full_name.startswith(full_name[0]) & Users.full_name.endswith(full_name[1])) |
+                    (Users.full_name.startswith(full_name[1]) & Users.full_name.endswith(full_name[0])))
+            elif len(full_name) == 1:
+                db_users = Users.select().where(Users.full_name.endswith(full_name[0]))
+            else:
+                db_users = ['Nobody']
+            for v in db_users:
+                users_array.append((vars(v))['__data__'])
+            return users_array
+        except Exception:
+            return users_array
+        finally:
+            self.db.close()
 
-            user_from_db = await self.db_get_users('tg_login', username)
-            users_array.append(user_from_db) if len(user_from_db) > 0 else logger.info('Nothing found in Users for %s as tg_login', username)
+    # Вытащить пользователя из БД. Задается юзернейм, поиск ведется по полям account_name и tg_name. Обёртка вокруг db_get_user
+    async def search_users_by_account(self, account_name):
+        # Получили account_name, который может быть логином в AD или в ТГ. Проверим по обоим полям, запишем непустые объекты в массив 
+        # Вернем первого члена массива (если в БД всплывут дубли, например, где у одного tg_login = account_name другого, надо что-то придумать)
+        users_array = []
+        try:
+            logger.info('Search users by account for %s', account_name)
+            db_users = await self.db_get_users('account_name', account_name)
+            users_array.append(db_users) if len(db_users) > 0 else logger.info('Nothing found in Users for %s as account_name', account_name)
+
+            db_users = await self.db_get_users('tg_login', account_name)
+            users_array.append(db_users) if len(db_users) > 0 else logger.info('Nothing found in Users for %s as tg_login', account_name)
             if len(users_array) > 0:
                 users_array = users_array[0]
             else:
                 users_array = []
             return users_array
-        except Exception:
-            logger.exception('get username from db')
+        except Exception as e:
+            logger.exception('Exception in search users by account %s', str(e))
             return users_array
-        finally:
-            self.db.close()
 
     async def db_set_duty(self, duty_date, message, duty_chat_list):
         # Записать дежурных на сегодня
