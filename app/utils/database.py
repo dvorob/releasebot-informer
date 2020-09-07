@@ -48,6 +48,7 @@ class Duty_List(BaseModel):
     full_name = CharField()
     account_name = CharField()
     full_text = CharField()
+    tg_login = CharField()
 
 class MysqlPool:
 
@@ -257,10 +258,11 @@ class MysqlPool:
         try:
             self.db.connect(reuse_if_open=True)
             result = []
-            db_query = (Duty_List
-                        .select(Duty_List, Users.tg_id)
-                        .join(Users, JOIN.LEFT_OUTER, on=(Duty_List.account_name == Users.account_name))
-                        .where(Duty_List.duty_date == duty_date))
+            # db_query = (Duty_List
+            #             .select(Duty_List, Users)
+            #             .join(Users, JOIN.LEFT_OUTER, on=(Duty_List.account_name == Users.account_name))
+            #             .where(Duty_List.duty_date == duty_date))
+            db_query = Duty_List.select().where(Duty_List.duty_date == duty_date)
             for v in db_query:
                 result.append((vars(v))['__data__'])
             logger.info('get duty for %s %s', duty_date, result)

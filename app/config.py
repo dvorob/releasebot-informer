@@ -34,7 +34,6 @@ api_chat_id = f'{api}/chat-id'
 api_aerospike_read = f'{api}/aerospike/read'
 api_aerospike_write = f'{api}/aerospike/write'
 api_get_user_info = f'{api}/get_user_info'
-api_get_duty_info = f'{api}/api_get_duty_info'
 api_sign_up = f'{api}/sign_up'
 api_lock_unlock = f'{api}/tasks/lock_unlock'
 

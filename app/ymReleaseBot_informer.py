@@ -227,12 +227,11 @@ async def duty_admin(message: types.Message):
         if len(dutymen_array) > 0:
             msg = f"<b>Дежурят на {duty_date.strftime('%Y-%m-%d')}:</b>\n"
             for d in dutymen_array:
-                msg += f"\n· {d['full_text']} <b>@{d['tg_login']}</b>"
-            else:
-                msg += f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
+                d['tg_login'] = '@' + d['tg_login'] if len(d['tg_login']) > 0 else ''
+                msg += f"\n· {d['full_text']} <b>{d['tg_login']}</b>"
             logger.info('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
         else:
-            logger.error('Today is %s and i did\'t find info in aerospike look at assistant pod logs', duty_date)
+            msg += f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
@@ -675,10 +674,17 @@ async def get_user_info(message: types.Message):
         msg = 'Пожалуйста, попробуйте еще раз: /who username'
     await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
-def try_bulksend():
-    logging.info('START BULKSEND')
-    json = {'accounts': ['ymvorobevda'], 'text': 'Sleep is for weaklings'}
-    bulksend_to_users()
+async def try_bulksend():
+    logger.info('START BULKSEND')
+    try:
+      json = {'accounts': ['ymvorobevda'], 'text': 'Sleep is for weaklings'}
+      session = await get_session()
+      async with session.post('http://xerxes-informer:8080/send', json=json) as resp:
+          await resp.json()
+          logger.info('try_bulksend: %s', resp)
+      bulksend_to_users()
+    except Exception as e:
+        logger.exception('try_bulksend %s', str(e))
 
 # Внешняя ручка рассылки
 async def bulksend_to_users(request):
@@ -732,6 +738,7 @@ async def on_startup(dispatcher):
         scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
         scheduler.add_job(start_update_releases, 'cron', day='*', hour='*', minute='*', second='30')
         scheduler.add_job(todo_tasks, 'cron', day='*', hour='*', minute='*', second='20')
+        #scheduler.add_job(try_bulksend, 'cron', day='*', hour='*', minute='*')
         scheduler.start()
     except Exception:
         logger.exception('on_startup')
@@ -749,7 +756,6 @@ async def on_shutdown(dispatcher):
 async def get_session():
     """
         Create aiohttp Client Session
-        :return: client session object
     """
     session = aiohttp.ClientSession()
     return session
@@ -759,10 +765,11 @@ if __name__ == '__main__':
     keyboard.posts_cb = filters.callback_filter()
     # Disable insecure SSL Warnings
     warnings.filterwarnings('ignore')
+
     logger = logging.setup()
 
     executor.start_polling(initializeBot.dp, on_startup=on_startup, on_shutdown=on_shutdown)
-    try_bulksend()
+
     app = web.Application()
 
     app.add_routes([web.post('/send', bulksend_to_users)])
