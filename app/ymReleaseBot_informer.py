@@ -227,7 +227,7 @@ async def duty_admin(message: types.Message):
         if len(dutymen_array) > 0:
             msg = f"<b>Дежурят на {duty_date.strftime('%Y-%m-%d')}:</b>\n"
             for d in dutymen_array:
-                msg += f"\n· {d['full_text']} <b>@{account_name[0]['tg_login']}</b>"
+                msg += f"\n· {d['full_text']} <b>@{d['tg_login']}</b>"
             else:
                 msg += f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
             logger.info('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
@@ -675,16 +675,25 @@ async def get_user_info(message: types.Message):
         msg = 'Пожалуйста, попробуйте еще раз: /who username'
     await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
-def bulksend_to_users(request):
+def try_bulksend():
+    logging.info('START BULKSEND')
+    json = {'accounts': ['ymvorobevda'], 'text': 'Sleep is for weaklings'}
+    bulksend_to_users()
+
+# Внешняя ручка рассылки
+async def bulksend_to_users(request):
     """
-        {'chat_id': [list of chat_id], 'text': msg}
+        {'accounts': [list of account_names], 'text': msg}
     """
     try:
         data_json = json.loads(request.text())
         logger.info('send to user caught message : %s', data_json)
-        parse_mode_in_json = data_json.get('type', None)
-        parse_mode = telegram.ParseMode.MARKDOWN if not parse_mode_in_json else telegram.ParseMode.HTML
-        set_of_chat_id = set(data_json.get('chat_id'))
+        set_of_chat_id = []
+        for acc in data_json['accounts']:
+            user_from_db = await db().db_get_users('account_name', acc)
+            if len(user_from_db) > 0:
+                set_of_chat_id.append(user_from_db[0]['tg_id'])
+
         for chat_id in set_of_chat_id:
             try:
                 bot.send_message(chat_id=chat_id, text=data_json['text'],
@@ -697,8 +706,8 @@ def bulksend_to_users(request):
                                  parse_mode=telegram.ParseMode.MARKDOWN)
 
         return web.json_response()
-    except Exception:
-        logger.exception('tg_send')
+    except Exception as e:
+        logger.exception('Exception in bulksend to users %s', str(e))
 
 @initializeBot.dp.message_handler()
 async def unknown_message(message: types.Message):
@@ -753,7 +762,7 @@ if __name__ == '__main__':
     logger = logging.setup()
 
     executor.start_polling(initializeBot.dp, on_startup=on_startup, on_shutdown=on_shutdown)
-
+    try_bulksend()
     app = web.Application()
 
     app.add_routes([web.post('/send', bulksend_to_users)])
