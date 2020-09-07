@@ -168,46 +168,46 @@ async def write_chat_id(message: types.Message):
         logger.exception('write chat id exception')
 
 # /duty command from chatbot
-@initializeBot.dp.message_handler(filters.restricted, commands=['duty'])
-async def duty_admin(message: types.Message):
-    """
-        Info about current or future duty admin
-        Description:
-        /duty N (optional) - go to aerospike for info (it does by assistant at 10 a.m.) about duties (*after N days)
-        If current time between 00.00 and 10.00, got to the exchange
-        and will write explanatory message.
-        :param message:
-    """
-    try:
-        logger.info('duty_admin started: %s', returnHelper.return_name(message))
-        message.bot.send_chat_action(chat_id=message.chat.id,
-                                     action=ChatActions.typing)
-        cli_args = message.text.split()
-        logger.info('duty, in_text = %s', cli_args)
-        # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов но вызван до 10 часов утра
-        after_days = cli_args[1] if (len(cli_args) == 2 and int(cli_args[1]) > 0) else 0
-        dict_duty_adm = aero.read(item='duty', aerospike_set='duty_admin')
-        # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
-        if int(datetime.today().strftime("%H")) < int(10):
-            today = (datetime.today() - timedelta(1) + timedelta(after_days)).strftime("%Y-%m-%d")
-        else:
-            today = (datetime.today() + timedelta(int(after_days))).strftime("%Y-%m-%d")
-        logger.debug('dict_duty_adm = %s', dict_duty_adm)
+# @initializeBot.dp.message_handler(filters.restricted, commands=['duty'])
+# async def duty_admin(message: types.Message):
+#     """
+#         Info about current or future duty admin
+#         Description:
+#         /duty N (optional) - go to aerospike for info (it does by assistant at 10 a.m.) about duties (*after N days)
+#         If current time between 00.00 and 10.00, got to the exchange
+#         and will write explanatory message.
+#         :param message:
+#     """
+#     try:
+#         logger.info('duty admin started: %s', returnHelper.return_name(message))
+#         message.bot.send_chat_action(chat_id=message.chat.id,
+#                                      action=ChatActions.typing)
+#         cli_args = message.text.split()
+#         logger.info('duty, in_text = %s', cli_args)
+#         # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов но вызван до 10 часов утра
+#         after_days = cli_args[1] if (len(cli_args) == 2 and int(cli_args[1]) > 0) else 0
+#         dict_duty_adm = aero.read(item='duty', aerospike_set='duty_admin')
+#         # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
+#         if int(datetime.today().strftime("%H")) < int(10):
+#             today = (datetime.today() - timedelta(1) + timedelta(after_days)).strftime("%Y-%m-%d")
+#         else:
+#             today = (datetime.today() + timedelta(int(after_days))).strftime("%Y-%m-%d")
+#         logger.debug('dict_duty_adm = %s', dict_duty_adm)
 
-        if today in dict_duty_adm.keys():
-            msg = dict_duty_adm[today]
-            logger.info('I find duty_admin for date %s %s', today, msg)
-        else:
-            logger.error('Today is %s and i did\'t find info in aerospike look at assistant pod logs', today)
-        await message.answer(msg, reply_markup=to_main_menu(),
-                             parse_mode=ParseMode.HTML)
-    except Exception as e:
-        logger.exception('error in duty admin %s', str(e))
+#         if today in dict_duty_adm.keys():
+#             msg = dict_duty_adm[today]
+#             logger.info('I find duty admin for date %s %s', today, msg)
+#         else:
+#             logger.error('Today is %s and i did\'t find info in aerospike look at assistant pod logs', today)
+#         await message.answer(msg, reply_markup=to_main_menu(),
+#                              parse_mode=ParseMode.HTML)
+#     except Exception as e:
+#         logger.exception('error in duty admin %s', str(e))
 
 
 # /dutynew command from chatbot
-@initializeBot.dp.message_handler(filters.restricted, commands=['dutynew'])
-async def duties_new(message: types.Message):
+@initializeBot.dp.message_handler(filters.restricted, commands=['duty'])
+async def duty_admin(message: types.Message):
     """
         Информация о дежурных на дату (N, по умолчанию N = 0, т.е. на сегодня)
         Берется из xerxes.duty_list (таблица заполняется модулем Assistant, раз в час на основании календаря AdminsOnDuty)
@@ -216,28 +216,21 @@ async def duties_new(message: types.Message):
         logger.info('def duties admin started: %s', returnHelper.return_name(message))
         message.bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.typing)
         cli_args = message.text.split()
-        logger.info('duty, in_text = %s', cli_args)
         # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов но вызван до 10 часов утра
-        after_days = cli_args[1] if (len(cli_args) == 2 and int(cli_args[1]) > 0) else 0
+        after_days = int(cli_args[1]) if (len(cli_args) == 2 and int(cli_args[1]) > 0) else 0
         # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
         if int(datetime.today().strftime("%H")) < int(10):
-            duty_date = datetime.today() - timedelta(1) + timedelta(int(after_days))
-        else:
-            duty_date = datetime.today() + timedelta(int(after_days))
-        logger.info('duties asked for %s', duty_date.strftime('%Y-%m-%d %H %M'))
+            after_days = after_days - 1
+        duty_date = datetime.today() + timedelta(after_days)
+
         dutymen_array = await db().get_duty(duty_date)
         if len(dutymen_array) > 0:
             msg = f"<b>Дежурят на {duty_date.strftime('%Y-%m-%d')}:</b>\n"
-            if len(dutymen_array) > 0:
-                for d in dutymen_array:
-                    msg += f"\n· {d['full_text']}"
-                    if len(d['account_name']) > 0:
-                        account_name = await db().search_users_by_account(d['account_name'])
-                        if len(account_name) > 0:
-                            msg += f" <b>@{account_name[0]['tg_login']}</b>" 
+            for d in dutymen_array:
+                msg += f"\n· {d['full_text']} <b>@{account_name[0]['tg_login']}</b>"
             else:
                 msg += f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
-            logger.info('I find duty_admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
+            logger.info('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
         else:
             logger.error('Today is %s and i did\'t find info in aerospike look at assistant pod logs', duty_date)
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
@@ -686,7 +679,6 @@ def bulksend_to_users(request):
     """
         {'chat_id': [list of chat_id], 'text': msg}
     """
-    logger.info('SEND TO USER WORKS!')
     try:
         data_json = json.loads(request.text())
         logger.info('send to user caught message : %s', data_json)

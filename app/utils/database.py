@@ -257,7 +257,10 @@ class MysqlPool:
         try:
             self.db.connect(reuse_if_open=True)
             result = []
-            db_query = Duty_List.select().where(Duty_List.duty_date == duty_date)
+            db_query = (Duty_List
+                        .select()
+                        .join(Users, JOIN.LEFT_OUTER, on=(Duty_List.account_name == Users.account_name))
+                        .where(Duty_List.duty_date == duty_date))
             for v in db_query:
                 result.append((vars(v))['__data__'])
             logger.debug('get duty for %s %s', duty_date, result)
