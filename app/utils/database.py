@@ -190,15 +190,17 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    async def search_users_by_fullname(self, fullname):
+    async def search_users_by_fullname(self, full_name):
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
         # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
         # всех админов - запросом db_get_users('admin', 1)
         users_array = []
         try:
-            logger.info('Search users by fullname for %s', fullname)
+            logger.info('Search users by fullname for %s', full_name)
             self.db.connect(reuse_if_open=True)
-            full_name = re.split(' ', value)
+            if (type(full_name) == str):
+                full_name = re.split(' ', full_name)
+
             if len(full_name) > 1:
                 db_users = Users.select().where(
                     (Users.full_name.startswith(full_name[0]) & Users.full_name.endswith(full_name[1])) |
