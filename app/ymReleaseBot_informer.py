@@ -655,13 +655,13 @@ async def get_user_info(message: types.Message):
     logger.info('get user info started by %s', returnHelper.return_name(message))
     incoming = message.text.split()
     if (len(incoming) == 2) or (len(incoming) == 3) :
+        probably_username  = incoming[1:]
         try:
-            if bool(re.search('[а-яА-Я]', probably_username)):
+            if bool(re.search('[а-яА-Я]', probably_username[0])):
                 user_info = await db().search_users_by_fullname(probably_username)
             else:
-                # Уберем почту с конца строки, затем уберем @ если был задан тг-логин с собакой
-                probably_username = re.sub('@yamoney.ru', '', incoming[1])
-                probably_username = re.sub('@', '', probably_username)
+                # Уберем почту с конца строки, затем уберем @ если был задан ТГ-логин с собакой
+                probably_username = re.sub('@yamoney.ru|@', '', probably_username[0])
                 user_info = await db().search_users_by_account(probably_username)
             logger.info('get user info found %s', user_info)
             if len(user_info) > 0:
