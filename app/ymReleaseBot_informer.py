@@ -662,7 +662,7 @@ async def get_user_info(message: types.Message):
                     msg += f'\n Account name: <strong>{user["account_name"]}</strong>'
                     msg += f'\n Full name: <strong>{user["full_name"]}</strong>'
                     msg += f'\n Email: <strong>{user["email"]}</strong>'
-                    msg += f'\n Telegram login: <strong>{user["tg_login"]}</strong>'
+                    msg += f'\n Telegram login: <strong>@{user["tg_login"]}</strong>'
                     msg += f'\n Telegram ID: <strong>{user["tg_id"]}</strong>'
                     msg += f'\n Working status: <strong>{user["working_status"]}</strong>'
                     msg += f'\n Notification: <strong>{user["notification"]}</strong>\n'
@@ -722,9 +722,9 @@ async def unknown_message(message: types.Message):
     logger.info('unknown message start')
     is_restricted = await filters.restricted(message)
     if is_restricted:
-        msg = emojize(f'{bold(message.from_user.full_name)}, are you sure?\n'
-                      f'I don\'t know what to do with {message.text} :astonished:\n'
-                      'Try send /help')
+        msg = emojize(f'{bold(message.from_user.full_name)},\n'
+                      f'Я не знаю, как ответить на {message.text} :astonished:\n'
+                      'Список того, что я умею - /help')
         await message.reply(msg, parse_mode=ParseMode.MARKDOWN)
 
 async def on_startup(dispatcher):
