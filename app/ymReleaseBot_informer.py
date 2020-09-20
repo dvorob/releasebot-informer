@@ -6,6 +6,7 @@ Telegram bot for employee of Yandex.Money
 import aiohttp
 import app.config as config
 import app.keyboard as keyboard
+import asyncio
 import json
 import re
 import requests
