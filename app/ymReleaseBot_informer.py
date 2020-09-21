@@ -652,15 +652,15 @@ async def try_bulksend():
         logger.exception('try_bulksend %s', str(e))
 
 # Внешняя ручка рассылки
-async def send_message(request):
+async def bulksend_to_users(request):
     """
         {'accounts': [list of account_names], 'text': msg}
     """
-    await request.text()
-    logger.info('Send message called %s', request)
+    logger.info('start sending to users')
+    data_json = await request.json()
+    logger.info('Send message called %s', data_json)
     try:
-        logger.info(request.json())
-        data_json = json.loads(request.text())
+        #data_json = json.loads(req)
         logger.info('send to user caught message : %s', data_json)
         set_of_chat_id = []
         for acc in data_json['accounts']:
@@ -730,7 +730,7 @@ async def get_session():
 def start_webserver():
     app = web.Application()
     runner = web.AppRunner(app)
-    app.add_routes([web.post('/send_message', send_message)])
+    app.add_routes([web.post('/send_message', bulksend_to_users)])
     loop.run_until_complete(runner.setup())
     site = web.TCPSite(runner, port=8080)
     loop.run_until_complete(site.start())
