@@ -24,6 +24,8 @@ from app.utils.database import MysqlPool as db
 from app.releaseboard_checker import start_update_releases, todo_tasks
 from datetime import timedelta, datetime
 
+loop = asyncio.get_event_loop()
+
 @initializeBot.dp.errors_handler()
 async def errors_handler(update: Update, exception: Exception):
     """
@@ -167,44 +169,6 @@ async def write_chat_id(message: types.Message):
             logger.info('wirhte my chat id done for %s %s', str(message.from_user.id), str(message.chat.id))
     except Exception:
         logger.exception('write chat id exception')
-
-# /duty command from chatbot
-# @initializeBot.dp.message_handler(filters.restricted, commands=['duty'])
-# async def duty_admin(message: types.Message):
-#     """
-#         Info about current or future duty admin
-#         Description:
-#         /duty N (optional) - go to aerospike for info (it does by assistant at 10 a.m.) about duties (*after N days)
-#         If current time between 00.00 and 10.00, got to the exchange
-#         and will write explanatory message.
-#         :param message:
-#     """
-#     try:
-#         logger.info('duty admin started: %s', returnHelper.return_name(message))
-#         message.bot.send_chat_action(chat_id=message.chat.id,
-#                                      action=ChatActions.typing)
-#         cli_args = message.text.split()
-#         logger.info('duty, in_text = %s', cli_args)
-#         # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов но вызван до 10 часов утра
-#         after_days = cli_args[1] if (len(cli_args) == 2 and int(cli_args[1]) > 0) else 0
-#         dict_duty_adm = aero.read(item='duty', aerospike_set='duty_admin')
-#         # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
-#         if int(datetime.today().strftime("%H")) < int(10):
-#             today = (datetime.today() - timedelta(1) + timedelta(after_days)).strftime("%Y-%m-%d")
-#         else:
-#             today = (datetime.today() + timedelta(int(after_days))).strftime("%Y-%m-%d")
-#         logger.debug('dict_duty_adm = %s', dict_duty_adm)
-
-#         if today in dict_duty_adm.keys():
-#             msg = dict_duty_adm[today]
-#             logger.info('I find duty admin for date %s %s', today, msg)
-#         else:
-#             logger.error('Today is %s and i did\'t find info in aerospike look at assistant pod logs', today)
-#         await message.answer(msg, reply_markup=to_main_menu(),
-#                              parse_mode=ParseMode.HTML)
-#     except Exception as e:
-#         logger.exception('error in duty admin %s', str(e))
-
 
 # /dutynew command from chatbot
 @initializeBot.dp.message_handler(filters.restricted, commands=['duty'])
@@ -688,11 +652,13 @@ async def try_bulksend():
         logger.exception('try_bulksend %s', str(e))
 
 # Внешняя ручка рассылки
-async def bulksend_to_users(request):
+async def send_message(request):
     """
         {'accounts': [list of account_names], 'text': msg}
     """
+    logger.info('Send message called %s', request)
     try:
+        logger.info(request.json())
         data_json = json.loads(request.text())
         logger.info('send to user caught message : %s', data_json)
         set_of_chat_id = []
@@ -745,7 +711,6 @@ async def on_startup(dispatcher):
         logger.exception('on_startup')
         scheduler.shutdown()
 
-
 async def on_shutdown(dispatcher):
     """
         Shutdown Bot
@@ -761,6 +726,14 @@ async def get_session():
     session = aiohttp.ClientSession()
     return session
 
+def start_webserver():
+    app = web.Application()
+    runner = web.AppRunner(app)
+    app.add_routes([web.post('/send_message', send_message)])
+    loop.run_until_complete(runner.setup())
+    site = web.TCPSite(runner, port=8080)
+    loop.run_until_complete(site.start())
+
 if __name__ == '__main__':
 
     keyboard.posts_cb = filters.callback_filter()
@@ -768,11 +741,9 @@ if __name__ == '__main__':
     warnings.filterwarnings('ignore')
 
     logger = logging.setup()
-
+    start_webserver()
     executor.start_polling(initializeBot.dp, on_startup=on_startup, on_shutdown=on_shutdown)
 
-    app = web.Application()
-
-    app.add_routes([web.post('/send', bulksend_to_users)])
-
-    web.run_app(app, port=8080)
+    #app = web.Application()
+    #app.add_routes([web.post('/send', bulksend_to_users)])
+    #web.run_app(app, port=8080)
