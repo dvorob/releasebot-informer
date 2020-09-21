@@ -656,6 +656,7 @@ async def send_message(request):
     """
         {'accounts': [list of account_names], 'text': msg}
     """
+    await request.text()
     logger.info('Send message called %s', request)
     try:
         logger.info(request.json())
