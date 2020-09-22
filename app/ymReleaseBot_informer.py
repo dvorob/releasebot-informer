@@ -15,8 +15,9 @@ import warnings
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram import Dispatcher, executor, types
 from aiogram.types import ParseMode, ChatActions, Update, ContentType
-from aiogram.utils.markdown import bold
 from aiogram.utils.emoji import emojize
+from aiogram.utils.exceptions import ChatNotFound, BotBlocked
+from aiogram.utils.markdown import bold
 from aiohttp import web
 from app.jiratools import JiraTools
 from app.utils import aero, logging, returnHelper, initializeBot, filters
