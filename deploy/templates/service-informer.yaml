@@ -8,7 +8,7 @@ spec:
   - name: {{ $conf.name }}
     port: {{ $conf.service_port }}
     protocol: TCP
-    targetPort: {{ $conf.service_port }}
+    targetPort: {{ $conf.target_port }}
   selector:
     app: {{ $conf.name }}
-  type: ClusterIP
+  type: LoadBalancer

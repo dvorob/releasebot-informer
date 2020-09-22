@@ -671,7 +671,7 @@ async def bulksend_to_users(request):
 
         for chat_id in set_of_chat_id:
             try:
-                await bot.send_message(chat_id=279933948, text='something was sent to somebody', parse_mode=ParseMode.MARKDOWN)
+                #await bot.send_message(chat_id=279933948, text='something was sent to somebody', parse_mode=ParseMode.MARKDOWN)
                 await bot.send_message(chat_id=chat_id, text=data_json['text'])
             except BotBlocked:
                 logger.info('YM release bot was blocked by %s', chat_id)
