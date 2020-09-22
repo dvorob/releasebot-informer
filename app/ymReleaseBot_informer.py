@@ -20,6 +20,7 @@ from aiogram.utils.emoji import emojize
 from aiohttp import web
 from app.jiratools import JiraTools
 from app.utils import aero, logging, returnHelper, initializeBot, filters
+from app.utils.initializeBot import dp, bot
 from app.utils.database import MysqlPool as db
 from app.releaseboard_checker import start_update_releases, todo_tasks
 from datetime import timedelta, datetime
@@ -57,7 +58,6 @@ async def marketing_send(message: types.Message):
                   f'3. Если это не помогло, зайдите, пожалуйста, в Диму Воробьёва -- @dvorob .\n'
                   f'--------------------------\n'
                   f'Хорошего дня!\n')
-    chats = []
     #chats = await db().get_all_tg_id()
     logger.debug(chats)
     for chat_id in chats:
@@ -656,29 +656,26 @@ async def bulksend_to_users(request):
     """
         {'accounts': [list of account_names], 'text': msg}
     """
-    logger.info('start sending to users')
     data_json = await request.json()
-    logger.info('Send message called %s', data_json)
+    logger.info('Send message called %s %s', data_json, type(data_json))
     try:
-        #data_json = json.loads(req)
-        logger.info('send to user caught message : %s', data_json)
         set_of_chat_id = []
         for acc in data_json['accounts']:
             user_from_db = await db().db_get_users('account_name', acc)
             if len(user_from_db) > 0:
-                set_of_chat_id.append(user_from_db[0]['tg_id'])
+                if user_from_db[0]['tg_id'] != 'None':
+                    set_of_chat_id.append(user_from_db[0]['tg_id'])
+
+        logger.info('sending message %s for %s', data_json['text'], set_of_chat_id)
 
         for chat_id in set_of_chat_id:
             try:
-                bot.send_message(chat_id=chat_id, text=data_json['text'],
-                                 parse_mode=parse_mode)
-            except telegram.error.Unauthorized:
-                blocked_by_whom = find_username_by_chat_id(chat_id)
-                logger.error('Bot was blocked by: %s', blocked_by_whom)
-                bot.send_message(chat_id=279933948,
-                                 text=f'*Xerxes was blocked by {blocked_by_whom}*',
-                                 parse_mode=telegram.ParseMode.MARKDOWN)
-
+                await bot.send_message(chat_id=279933948, text='something was sent to somebody', parse_mode=ParseMode.MARKDOWN)
+                await bot.send_message(chat_id=chat_id, text=data_json['text'])
+            except BotBlocked:
+                logger.info('YM release bot was blocked by %s', chat_id)
+            except ChatNotFound:
+                logger.error('Chat not found with: %s', chat_id)
         return web.json_response()
     except Exception as e:
         logger.exception('Exception in bulksend to users %s', str(e))
