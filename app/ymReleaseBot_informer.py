@@ -655,7 +655,7 @@ async def try_bulksend():
 # Внешняя ручка рассылки
 async def bulksend_to_users(request):
     """
-        {'accounts': [list of account_names], 'text': msg}
+        {'accounts': [list of account_names], 'jira_tasks': [list of tasks_id], 'text': str}
     """
     data_json = await request.json()
     logger.info('Send message called %s %s', data_json, type(data_json))
@@ -672,7 +672,6 @@ async def bulksend_to_users(request):
 
             for chat_id in set_of_chat_id:
                 try:
-                    #await bot.send_message(chat_id=279933948, text='something was sent to somebody', parse_mode=ParseMode.MARKDOWN)
                     await bot.send_message(chat_id=chat_id, text=data_json['text'])
                 except BotBlocked:
                     logger.info('YM release bot was blocked by %s', chat_id)
@@ -681,16 +680,12 @@ async def bulksend_to_users(request):
         except Exception as e:
             logger.exception('Exception in bulksend to users %s', str(e))
     if 'jira_tasks' in data_json:
-        await comment_jiratask('ADMSYS-54316', data_json['text'])
+        for task in data_json['jira_tasks']:
+            try:
+                JiraTools().add_comment(JiraTools().jira_issue(task), data_json['text'])
+            except Exception as e:
+                logger.exception('Exception in bulksend to users when commenting jira task %s', str(e))
     return web.json_response()
-
-async def comment_jiratask(task, comment):
-    """
-       task = AMDSYS-666
-       comment = str
-    """
-    logger.info('comment jiratask %s with %s', task, comment)
-    JiraTools().add_comment(JiraTools().jira_issue(task), comment)
 
 @initializeBot.dp.message_handler()
 async def unknown_message(message: types.Message):
