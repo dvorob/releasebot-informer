@@ -680,7 +680,7 @@ async def bulksend_to_users(request):
                     logger.error('Chat not found with: %s', chat_id)
         except Exception as e:
             logger.exception('Exception in bulksend to users %s', str(e))
-    elif 'jira_tasks' in data_json:
+    if 'jira_tasks' in data_json:
         await comment_jiratask('ADMSYS-54316', data_json['text'])
     return web.json_response()
 
@@ -689,6 +689,7 @@ async def comment_jiratask(task, comment):
        task = AMDSYS-666
        comment = str
     """
+    logger.info('comment jiratask %s with %s', task, comment)
     JiraTools().add_comment(JiraTools().jira_issue(task), comment)
 
 @initializeBot.dp.message_handler()
