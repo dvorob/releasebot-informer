@@ -659,27 +659,37 @@ async def bulksend_to_users(request):
     """
     data_json = await request.json()
     logger.info('Send message called %s %s', data_json, type(data_json))
-    try:
-        set_of_chat_id = []
-        for acc in data_json['accounts']:
-            user_from_db = await db().db_get_users('account_name', acc)
-            if len(user_from_db) > 0:
-                if user_from_db[0]['tg_id'] != 'None':
-                    set_of_chat_id.append(user_from_db[0]['tg_id'])
+    if 'accounts' in data_json:
+        try:
+            set_of_chat_id = []
+            for acc in data_json['accounts']:
+                user_from_db = await db().db_get_users('account_name', acc)
+                if len(user_from_db) > 0:
+                    if user_from_db[0]['tg_id'] != 'None':
+                        set_of_chat_id.append(user_from_db[0]['tg_id'])
 
-        logger.info('sending message %s for %s', data_json['text'], set_of_chat_id)
+            logger.info('sending message %s for %s', data_json['text'], set_of_chat_id)
 
-        for chat_id in set_of_chat_id:
-            try:
-                #await bot.send_message(chat_id=279933948, text='something was sent to somebody', parse_mode=ParseMode.MARKDOWN)
-                await bot.send_message(chat_id=chat_id, text=data_json['text'])
-            except BotBlocked:
-                logger.info('YM release bot was blocked by %s', chat_id)
-            except ChatNotFound:
-                logger.error('Chat not found with: %s', chat_id)
-        return web.json_response()
-    except Exception as e:
-        logger.exception('Exception in bulksend to users %s', str(e))
+            for chat_id in set_of_chat_id:
+                try:
+                    #await bot.send_message(chat_id=279933948, text='something was sent to somebody', parse_mode=ParseMode.MARKDOWN)
+                    await bot.send_message(chat_id=chat_id, text=data_json['text'])
+                except BotBlocked:
+                    logger.info('YM release bot was blocked by %s', chat_id)
+                except ChatNotFound:
+                    logger.error('Chat not found with: %s', chat_id)
+        except Exception as e:
+            logger.exception('Exception in bulksend to users %s', str(e))
+    elif 'jira_tasks' in data_json:
+        await comment_jiratask('ADMSYS-54316', data_json['text'])
+    return web.json_response()
+
+async def comment_jiratask(task, comment):
+    """
+       task = AMDSYS-666
+       comment = str
+    """
+    JiraTools().add_comment(JiraTools().jira_issue(task), comment)
 
 @initializeBot.dp.message_handler()
 async def unknown_message(message: types.Message):
