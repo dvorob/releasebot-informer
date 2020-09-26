@@ -26,7 +26,6 @@ def return_early_duty_msg(time_now) -> str:
         Create and return msg for early duty admin request
     """
     msg = f'<strong>Приветствую!</strong>\n' \
-          f'Мне очень жаль, что тебе нужна информация в столь ранний час\n' \
           f'Сейчас <strong>{time_now}</strong> утра,\n' \
           f'Прямо сейчас дежурят эти люди, но всё изменится в <strong>10:00</strong>\n' \
           f'Посмотреть, кто сегодня дежурит после 10:00 можно командой ' \

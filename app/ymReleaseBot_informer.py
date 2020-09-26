@@ -171,7 +171,7 @@ async def write_chat_id(message: types.Message):
     except Exception:
         logger.exception('write chat id exception')
 
-# /dutynew command from chatbot
+# /duty command from chatbot
 @initializeBot.dp.message_handler(filters.restricted, commands=['duty'])
 async def duty_admin(message: types.Message):
     """
@@ -182,50 +182,33 @@ async def duty_admin(message: types.Message):
         logger.info('def duties admin started: %s', returnHelper.return_name(message))
         message.bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.typing)
         cli_args = message.text.split()
-        # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов но вызван до 10 часов утра
+        # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов
         after_days = int(cli_args[1]) if (len(cli_args) == 2 and int(cli_args[1]) > 0) else 0
-        # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
-        if int(datetime.today().strftime("%H")) < int(10):
-            after_days = after_days - 1
-        duty_date = datetime.today() + timedelta(after_days)
-
-        dutymen_array = await db().get_duty(duty_date)
-        if len(dutymen_array) > 0:
-            msg = f"<b>Дежурят на {duty_date.strftime('%Y-%m-%d')}:</b>\n"
-            for d in dutymen_array:
-                d['tg_login'] = '@' + d['tg_login'] if len(d['tg_login']) > 0 else ''
-                msg += f"\n· {d['full_text']} <b>{d['tg_login']}</b>"
-            logger.info('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
-        else:
-            msg += f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
+        duty_date = await get_duty_date(datetime.today()) + timedelta(after_days)
+        msg = await create_duty_message(duty_date)
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
 
+async def create_duty_message(duty_date) -> str:
+    dutymen_array = await db().get_duty(duty_date)
+    if len(dutymen_array) > 0:
+        msg = f"<b>Дежурят на {duty_date.strftime('%Y-%m-%d')}:</b>\n"
+        for d in dutymen_array:
+            d['tg_login'] = '@' + d['tg_login'] if len(d['tg_login']) > 0 else ''
+            msg += f"\n· {d['full_text']} <b>{d['tg_login']}</b>"
+        logger.info('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
+    else:
+        msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
+    return msg
 
-def duty_admin_now() -> str:
-    """
-        Information about current duty administrators
-        :return: msg with today duty admin
-    """
-    try:
-        logger.info('duty_admin_now started')
-        dict_duty_adm = aero.read(item='duty', aerospike_set='duty_admin')
-        today = datetime.today().strftime("%Y-%m-%d")
-
-        logger.debug('dict_duty_adm, today = %s\n%s', dict_duty_adm, today)
-
-        if today in dict_duty_adm.keys():
-            msg = dict_duty_adm[today]
-            logger.info('I find info about duty_admin in aerospike')
-        else:
-            msg = 'Error'
-            logger.error('Today is %s and i did\'t find info in aerospike '
-                         'look at assistant pod logs', today)
-        return msg
-    except Exception:
-        logger.exception(duty_admin_now)
-
+async def get_duty_date(date):
+    # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
+    # Это особенность дежурств в Департаменте
+    if int(datetime.today().strftime("%H")) < int(10):
+        return date - timedelta(1)
+    else:
+        return date
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='get_ext_inf_board'), filters.restricted)
 async def get_ext_inf_board_button(query: types.CallbackQuery, callback_data: str) -> str:
@@ -687,6 +670,13 @@ async def bulksend_to_users(request):
                 logger.exception('Exception in bulksend to users when commenting jira task %s', str(e))
     return web.json_response()
 
+# Внешняя ручка для информирования дежурных
+async def inform_duty(request):
+    """
+        {'area': 'ADMSYS(портал)', 'message': str}
+    """
+
+
 @initializeBot.dp.message_handler()
 async def unknown_message(message: types.Message):
     """
@@ -710,7 +700,6 @@ async def on_startup(dispatcher):
         scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
         scheduler.add_job(start_update_releases, 'cron', day='*', hour='*', minute='*', second='30')
         scheduler.add_job(todo_tasks, 'cron', day='*', hour='*', minute='*', second='20')
-        #scheduler.add_job(try_bulksend, 'cron', day='*', hour='*', minute='*')
         scheduler.start()
     except Exception:
         logger.exception('on_startup')
@@ -735,6 +724,7 @@ def start_webserver():
     app = web.Application()
     runner = web.AppRunner(app)
     app.add_routes([web.post('/send_message', bulksend_to_users)])
+    app.add_routes([web.post('/inform_duty', inform_duty)])
     loop.run_until_complete(runner.setup())
     site = web.TCPSite(runner, port=8080)
     loop.run_until_complete(site.start())
