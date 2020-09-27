@@ -184,11 +184,12 @@ async def duty_admin(message: types.Message):
         cli_args = message.text.split()
         # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов
         after_days = int(cli_args[1]) if (len(cli_args) == 2 and int(cli_args[1]) > 0) else 0
-        duty_date = await get_duty_date(datetime.today()) + timedelta(after_days)
+        duty_date = get_duty_date(datetime.today()) + timedelta(after_days)
         msg = await create_duty_message(duty_date)
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
+
 
 async def create_duty_message(duty_date) -> str:
     dutymen_array = await db().get_duty(duty_date)
@@ -202,7 +203,8 @@ async def create_duty_message(duty_date) -> str:
         msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
     return msg
 
-async def get_duty_date(date):
+
+def get_duty_date(date):
     # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
     # Это особенность дежурств в Департаменте
     if int(datetime.today().strftime("%H")) < int(10):
@@ -301,14 +303,16 @@ async def duty_button(query: types.CallbackQuery, callback_data: str):
     del callback_data
     try:
         logger.info('duty_button started from: %s', returnHelper.return_name(query))
-        logger.debug('duty, query: %s', query)
-        extra_msg = '\n\nЕсли вы хотите узнать дежурных через N дней,\n' \
-                    'отправьте команду /duty N'
-        msg = returnHelper.return_early_duty_msg(datetime.today().strftime("%H:%M")) \
-            if int(datetime.today().strftime("%H")) < int(10) \
-            else duty_admin_now() + extra_msg
-        await query.message.answer(text=msg, reply_markup=to_main_menu(),
-                                   parse_mode=ParseMode.HTML)
+        msg = ''
+        if int(datetime.today().strftime("%H")) < int(10):
+            msg += f'<strong>Приветствую!</strong>\n' \
+                  f'Сейчас <strong>{datetime.today().strftime("%H:%M")}</strong> утра.\n' \
+                  f'Посмотреть, кто сегодня дежурит после 10:00 можно командой ' \
+                  f'<strong>/duty 1</strong>.\n\n'
+
+        msg += await create_duty_message(get_duty_date(datetime.today()))
+        msg += 'Если вы хотите узнать дежурных через N дней, отправьте команду /duty N\n\n'
+        await query.message.answer(text=msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception('duty_button')
 
