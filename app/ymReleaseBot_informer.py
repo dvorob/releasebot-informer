@@ -190,6 +190,22 @@ async def duty_admin(message: types.Message):
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
 
+# /myduty command from chatbot
+@initializeBot.dp.message_handler(filters.restricted, commands=['myduty'])
+async def duty_admin_personal(message: types.Message):
+    """
+        Информация о дежурных на дату (N, по умолчанию N = 0, т.е. на сегодня)
+        Берется из xerxes.duty_list (таблица заполняется модулем Assistant, раз в час на основании календаря AdminsOnDuty)
+    """
+    try:
+        logger.info('def my duty admin started: %s', returnHelper.return_name(message))
+        message.bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.typing)
+
+        duty_date = get_duty_date(datetime.today())
+        msg = await create_duty_message_personal(duty_date, returnHelper.return_name(message))
+        await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+    except Exception as e:
+        logger.exception('error in duty admin %s', str(e))
 
 async def create_duty_message(duty_date) -> str:
     dutymen_array = await db().get_duty(duty_date)
@@ -203,6 +219,17 @@ async def create_duty_message(duty_date) -> str:
         msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
     return msg
 
+async def create_duty_message_personal(duty_date, tg_login) -> str:
+    dutymen_array = await db().get_duty_personal(duty_date, tg_login)
+    if len(dutymen_array) > 0:
+        msg = f"<b>Дежурства начиная с {duty_date.strftime('%Y-%m-%d')}:</b>\n"
+        for d in dutymen_array:
+            d['tg_login'] = '@' + d['tg_login'] if len(d['tg_login']) > 0 else ''
+            msg += f"\n· {d['full_text']} <b>{d['tg_login']}</b>"
+        logger.info('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
+    else:
+        msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
+    return msg
 
 def get_duty_date(date):
     # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
@@ -211,6 +238,7 @@ def get_duty_date(date):
         return date - timedelta(1)
     else:
         return date
+   
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='get_ext_inf_board'), filters.restricted)
 async def get_ext_inf_board_button(query: types.CallbackQuery, callback_data: str) -> str:
@@ -311,7 +339,7 @@ async def duty_button(query: types.CallbackQuery, callback_data: str):
                   f'<strong>/duty 1</strong>.\n\n'
 
         msg += await create_duty_message(get_duty_date(datetime.today()))
-        msg += 'Если вы хотите узнать дежурных через N дней, отправьте команду /duty N\n\n'
+        msg += '\n\nЕсли вы хотите узнать дежурных через N дней, отправьте команду /duty N\n\n'
         await query.message.answer(text=msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception('duty_button')
@@ -558,7 +586,7 @@ async def subscribe_all(query: types.CallbackQuery, callback_data: str):
         del callback_data
         logger.info('Subscribe a %s chat %s ', query.message.chat.type, query.message.chat)
         if (query.message.chat.type == 'private'):
-            user_from_db = await db().db_get_users('tg_id', query.message.chat.id)
+            user_from_db = await db().get_users('tg_id', query.message.chat.id)
             await db().db_set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='all', email=None)
         elif (query.message.chat.type == 'group'):
             await db().set_chats(query.message.chat.id, title=query.message.chat.title, started_by=query.message.from_user.username, notification='all')
@@ -581,7 +609,7 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
         del callback_data
         logger.info('Unsubscribe a %s chat %s ', query.message.chat.type, query.message.chat)
         if (query.message.chat.type == 'private'):
-            user_from_db = await db().db_get_users('tg_id', query.message.chat.id)
+            user_from_db = await db().get_users('tg_id', query.message.chat.id)
             await db().db_set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='none', email=None)
         elif (query.message.chat.type == 'group'):
             await db().set_chats(query.message.chat.id, title=query.message.chat.title, started_by=query.message.from_user.username, notification='none')
@@ -627,17 +655,6 @@ async def get_user_info(message: types.Message):
         msg = 'Пожалуйста, попробуйте еще раз: /who username'
     await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
-async def try_bulksend():
-    logger.info('START BULKSEND')
-    try:
-      json = {'accounts': ['ymvorobevda'], 'text': 'Sleep is for weaklings'}
-      session = await get_session()
-      async with session.post('http://xerxes-informer:8080/send', json=json) as resp:
-          await resp.json()
-          logger.info('try_bulksend: %s', resp)
-      bulksend_to_users()
-    except Exception as e:
-        logger.exception('try_bulksend %s', str(e))
 
 # Внешняя ручка рассылки
 async def bulksend_to_users(request):
@@ -650,13 +667,11 @@ async def bulksend_to_users(request):
         try:
             set_of_chat_id = []
             for acc in data_json['accounts']:
-                user_from_db = await db().db_get_users('account_name', acc)
+                user_from_db = await db().get_users('account_name', acc)
                 if len(user_from_db) > 0:
                     if user_from_db[0]['tg_id'] != 'None':
                         set_of_chat_id.append(user_from_db[0]['tg_id'])
-
             logger.info('sending message %s for %s', data_json['text'], set_of_chat_id)
-
             for chat_id in set_of_chat_id:
                 try:
                     await bot.send_message(chat_id=chat_id, text=data_json['text'])
@@ -666,19 +681,48 @@ async def bulksend_to_users(request):
                     logger.error('Chat not found with: %s', chat_id)
         except Exception as e:
             logger.exception('Exception in bulksend to users %s', str(e))
+
     if 'jira_tasks' in data_json:
         for task in data_json['jira_tasks']:
             try:
                 JiraTools().add_comment(JiraTools().jira_issue(task), data_json['text'])
             except Exception as e:
                 logger.exception('Exception in bulksend to users when commenting jira task %s', str(e))
+
     return web.json_response()
+
 
 # Внешняя ручка для информирования дежурных
 async def inform_duty(request):
     """
-        {'area': 'ADMSYS(портал)', 'message': str}
+        {'areas': ['ADMSYS(портал)', ...], 'message': str}
+        areas - задаются в календаре AdminsOnDuty, перед именем дежурного
     """
+    data_json = await request.json()
+    logger.info('Inform duty called %s %s', data_json, type(data_json))
+    if 'areas' in data_json:
+        try:
+            for area in data_json['areas']:
+                await inform_today_duty(area, data_json['message'])
+        except Exception as e:
+            logger.exception('Exception in inform duty %s', str(e))
+    return web.json_response()
+
+
+# Функция отправки сообщения сегодняшнему дежурному
+async def inform_today_duty(area, msg):
+    dutymen_array = await db().get_duty_in_area(get_duty_date(datetime.today()), area)
+    logger.info('inform today duty %s %s', dutymen_array, msg)
+    if len(dutymen_array) > 0:
+        for d in dutymen_array:
+            try:
+                dutymen = await db().get_users('account_name', d['account_name'])
+                logger.info('informing duty %s %s %s', dutymen[0]['tg_id'], dutymen[0]['tg_login'], msg)
+                await bot.send_message(chat_id=dutymen[0]['tg_id'], text=msg)
+            except BotBlocked:
+                logger.info('YM release bot was blocked by %s', d['tg_login'])
+            except ChatNotFound:
+                logger.error('Chat not found with: %s', d['tg_login'])
 
 
 @initializeBot.dp.message_handler()
@@ -742,7 +786,3 @@ if __name__ == '__main__':
     logger = logging.setup()
     start_webserver()
     executor.start_polling(initializeBot.dp, on_startup=on_startup, on_shutdown=on_shutdown)
-
-    #app = web.Application()
-    #app.add_routes([web.post('/send', bulksend_to_users)])
-    #web.run_app(app, port=8080)

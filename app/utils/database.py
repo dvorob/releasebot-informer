@@ -156,11 +156,11 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    async def db_get_users(self, field, value) -> list:
+    async def get_users(self, field, value) -> list:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
-        # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
-        # всех админов - запросом db_get_users('admin', 1)
-        logger.debug('db_get_users param1 param2 %s %s', field, value)
+        # например, найти Воробьева можно запросом get_users('account_name', 'ymvorobevda')
+        # всех админов - запросом get_users('admin', 1)
+        logger.debug('get_users param1 param2 %s %s', field, value)
         result = []
         try:
             self.db.connect(reuse_if_open=True)
@@ -193,8 +193,8 @@ class MysqlPool:
 
     async def search_users_by_fullname(self, full_name):
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
-        # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
-        # всех админов - запросом db_get_users('admin', 1)
+        # например, найти Воробьева можно запросом get_users('account_name', 'ymvorobevda')
+        # всех админов - запросом get_users('admin', 1)
         users_array = []
         try:
             logger.info('Search users by fullname for %s', full_name)
@@ -225,10 +225,10 @@ class MysqlPool:
         users_array = []
         try:
             logger.info('Search users by account for %s', account_name)
-            db_users = await self.db_get_users('account_name', account_name)
+            db_users = await self.get_users('account_name', account_name)
             users_array.append(db_users) if len(db_users) > 0 else logger.info('Nothing found in Users for %s as account_name', account_name)
 
-            db_users = await self.db_get_users('tg_login', account_name)
+            db_users = await self.get_users('tg_login', account_name)
             users_array.append(db_users) if len(db_users) > 0 else logger.info('Nothing found in Users for %s as tg_login', account_name)
             if len(users_array) > 0:
                 users_array = users_array[0]
@@ -248,8 +248,8 @@ class MysqlPool:
             db_users.message = message
             db_users.duty_chat_list = duty_chat_list
             db_users.save()
-        except Exception:
-            logger.exception('exception in db_get_users')
+        except Exception as e:
+            logger.exception('exception in db set users %s', str(e))
         finally:
             self.db.close()
 
@@ -261,9 +261,41 @@ class MysqlPool:
             db_query = Duty_List.select().where(Duty_List.duty_date == duty_date)
             for v in db_query:
                 result.append((vars(v))['__data__'])
-            logger.info('get duty for %s %s', duty_date, result)
+            logger.debug('get duty for %s %s', duty_date, result)
             return result
-        except Exception:
-            logger.exception('exception in db get duty')
+        except Exception as e:
+            logger.exception('exception in db get duty %s', str(e))
+        finally:
+            self.db.close()
+
+    async def get_duty_in_area(self, duty_date, area) -> list:
+        # Сходить в таблицу xerxes.duty_list за дежурными на заданную дату и зону ответственности
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            db_query = Duty_List.select().where(Duty_List.duty_date == duty_date, Duty_List.area == area)
+            for v in db_query:
+                result.append((vars(v))['__data__'])
+            logger.info('get duty for %s %s %s', duty_date, area, result)
+            return result
+        except Exception as e:
+            logger.exception('exception in db get duty in area %s', str(e))
+        finally:
+            self.db.close()
+
+    async def get_duty_personal(self, duty_date, tg_login) -> list:
+        # Сходить в таблицу xerxes.duty_list за расписание дежурств конкретного администратора
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            logger.info('get duty personal for %s %s', duty_date, tg_login)
+            tg_login = 'smirnov'
+            db_query = Duty_List.select().where(Duty_List.duty_date >= duty_date, Duty_List.tg_login == tg_login)
+            for v in db_query:
+                result.append((vars(v))['__data__'])
+            logger.info('get duty for %s %s %s', duty_date, tg_login, result)
+            return result
+        except Exception as e:
+            logger.exception('exception in db get duty personal tg_login %s', str(e))
         finally:
             self.db.close()

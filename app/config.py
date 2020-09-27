@@ -29,6 +29,7 @@ mysql = PooledMySQLDatabase(
     stale_timeout=300)
 
 jenkins = 'http://xerxes-leeroy:8080'
+
 api = 'http://xerxes-api-v1/api-v1'
 api_chat_id = f'{api}/chat-id'
 api_aerospike_read = f'{api}/aerospike/read'
@@ -40,6 +41,7 @@ api_lock_unlock = f'{api}/tasks/lock_unlock'
 jira_host = 'https://jira.yamoney.ru'
 jira_user = getenv('secret_jira_user')
 jira_pass = getenv('secret_jira_pass')
+jira_options = {'server': jira_host, 'verify': False}
 
 waiting_assignee_releases = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
                      'status = "TO DO" ORDER BY Rank ASC'
