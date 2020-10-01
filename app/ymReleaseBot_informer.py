@@ -198,11 +198,11 @@ async def duty_admin_personal(message: types.Message):
         Берется из xerxes.duty_list (таблица заполняется модулем Assistant, раз в час на основании календаря AdminsOnDuty)
     """
     try:
-        logger.info('def my duty admin started: %s', returnHelper.return_name(message))
+        logger.info('def my duty admin started: %s', message.from_user.username)
         message.bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.typing)
 
         duty_date = get_duty_date(datetime.today())
-        msg = await create_duty_message_personal(duty_date, re.sub('@', '', returnHelper.return_name(message)))
+        msg = await create_duty_message_personal(duty_date, re.sub('@', '', message.from_user.username))
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
@@ -224,8 +224,8 @@ async def create_duty_message(duty_date) -> str:
 async def create_duty_message_personal(duty_date, tg_login) -> str:
     dutymen_array = await db().get_duty_personal(duty_date, tg_login)
     if len(dutymen_array) > 0:
-        msg = f"<b>Дежурства начиная с {duty_date.strftime('%Y-%m-%d')}:</b>\n"
-        msg += f"для {d['full_text']} <b>@{d['tg_login']}</b>"
+        msg = f"Дежурства начиная с <b>{duty_date.strftime('%Y-%m-%d')}</b> для <b>@{tg_login}</b>:\n"
+
         for d in dutymen_array:
             msg += f"\n· {d['duty_date']}"
         logger.info('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
@@ -553,7 +553,7 @@ async def process_return_queue_callback(query: types.CallbackQuery, callback_dat
             msg = 'You are not in assignee list.\n'
             err_msg = f'{returnHelper.return_name(query)} + ' \
                       f'tried return to queue {jira_issue_id} ' \
-                      f'but smth went wrong'
+                     f'but smth went wrong'
             logger.error(err_msg)
         await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)
     except Exception:
@@ -672,7 +672,7 @@ async def bulksend_to_users(request):
             for acc in data_json['accounts']:
                 user_from_db = await db().get_users('account_name', acc)
                 if len(user_from_db) > 0:
-                    if user_from_db[0]['tg_id'] != 'None':
+                    if user_from_db[0]['tg_id'] != None:
                         set_of_chat_id.append(user_from_db[0]['tg_id'])
             logger.info('sending message %s for %s', data_json['text'], set_of_chat_id)
             for chat_id in set_of_chat_id:
