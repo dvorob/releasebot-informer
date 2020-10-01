@@ -202,10 +202,11 @@ async def duty_admin_personal(message: types.Message):
         message.bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.typing)
 
         duty_date = get_duty_date(datetime.today())
-        msg = await create_duty_message_personal(duty_date, returnHelper.return_name(message))
+        msg = await create_duty_message_personal(duty_date, re.sub('@', '', returnHelper.return_name(message)))
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
+
 
 async def create_duty_message(duty_date) -> str:
     dutymen_array = await db().get_duty(duty_date)
@@ -219,17 +220,19 @@ async def create_duty_message(duty_date) -> str:
         msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
     return msg
 
+
 async def create_duty_message_personal(duty_date, tg_login) -> str:
     dutymen_array = await db().get_duty_personal(duty_date, tg_login)
     if len(dutymen_array) > 0:
         msg = f"<b>Дежурства начиная с {duty_date.strftime('%Y-%m-%d')}:</b>\n"
+        msg += f"для {d['full_text']} <b>@{d['tg_login']}</b>"
         for d in dutymen_array:
-            d['tg_login'] = '@' + d['tg_login'] if len(d['tg_login']) > 0 else ''
-            msg += f"\n· {d['full_text']} <b>{d['tg_login']}</b>"
+            msg += f"\n· {d['duty_date']}"
         logger.info('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
     else:
         msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
     return msg
+
 
 def get_duty_date(date):
     # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"

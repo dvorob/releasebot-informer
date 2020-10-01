@@ -289,7 +289,6 @@ class MysqlPool:
             self.db.connect(reuse_if_open=True)
             result = []
             logger.info('get duty personal for %s %s', duty_date, tg_login)
-            tg_login = 'smirnov'
             db_query = Duty_List.select().where(Duty_List.duty_date >= duty_date, Duty_List.tg_login == tg_login)
             for v in db_query:
                 result.append((vars(v))['__data__'])
