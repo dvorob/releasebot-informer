@@ -121,7 +121,7 @@ async def start_update_releases():
                 if issues.id not in list_tasks_in_db:
                     msg_sending = f'[{issues.fields.summary}]' \
                                   f'(https://jira.yamoney.ru/browse/{issues.key}) ' \
-                                  f'{action_of_task}.'
+                                  f'{action_of_task}'
 
                 return_list_id.append(issues.id)
 
@@ -139,7 +139,6 @@ async def start_update_releases():
             'rl_waiting', config.issues_waiting, 'поступила в очередь'
         )
         if msg_queed != 'No message':
-            # await send_msg_all_subscribed(msg_queed)
             release_list = await db().get_subscribers_to_everything()
             for chat_id in release_list:
                 await bot.send_message(chat_id=chat_id, text=msg_queed + how_many_is_working(),

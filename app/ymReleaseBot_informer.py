@@ -215,7 +215,7 @@ async def create_duty_message(duty_date) -> str:
         for d in dutymen_array:
             d['tg_login'] = '@' + d['tg_login'] if len(d['tg_login']) > 0 else ''
             msg += f"\n· {d['full_text']} <b>{d['tg_login']}</b>"
-        logger.info('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
+        logger.debug('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
     else:
         msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
     return msg
@@ -677,7 +677,7 @@ async def bulksend_to_users(request):
             logger.info('sending message %s for %s', data_json['text'], set_of_chat_id)
             for chat_id in set_of_chat_id:
                 try:
-                    await bot.send_message(chat_id=chat_id, text=data_json['text'])
+                    await bot.send_message(chat_id=chat_id, text=data_json['text'], parse_mode=ParseMode.MARKDOWN)
                 except BotBlocked:
                     logger.info('YM release bot was blocked by %s', chat_id)
                 except ChatNotFound:
@@ -707,6 +707,7 @@ async def inform_duty(request):
         try:
             for area in data_json['areas']:
                 await inform_today_duty(area, data_json['message'])
+                await bot.send_message(chat_id=279933948, text=data_json['message'], parse_mode=ParseMode.MARKDOWN)
         except Exception as e:
             logger.exception('Exception in inform duty %s', str(e))
     return web.json_response()

@@ -160,7 +160,7 @@ class MysqlPool:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
         # например, найти Воробьева можно запросом get_users('account_name', 'ymvorobevda')
         # всех админов - запросом get_users('admin', 1)
-        logger.debug('get_users param1 param2 %s %s', field, value)
+        logger.info('get_users param1 param2 %s %s', field, value)
         result = []
         try:
             self.db.connect(reuse_if_open=True)
