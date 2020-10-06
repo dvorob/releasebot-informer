@@ -22,7 +22,7 @@ async def todo_tasks():
         Function for notification in case changing releases status.
         Looks at all waiting assignee tasks.
     """
-    logger.debug('todo_tasks started')
+    logger.info('todo_tasks started')
     try:
         db_result_todo = await db().db_get_option('rl_todo')
         todo_db = db_result_todo.split() if isinstance(db_result_todo, str) else []
@@ -33,7 +33,7 @@ async def todo_tasks():
 
         todo_id = []
         for issue in issues_todo:
-            logger.info('Working with issue: %s', issue)
+            logger.info('Working with issue %s', issue)
             todo_id.append(issue.id)
 
             if issue.id not in todo_db:
@@ -53,7 +53,7 @@ async def todo_tasks():
                     recipient_chat_id = list(request_chatid_api_v1.json())
                 except Exception:
                     logger.exception('Personal Jesus fail')
-                logger.info('recipient_chatid: %s', request_chatid_api_v1.json())
+                logger.info('For issue %s recipient_chatid: %s', issue, request_chatid_api_v1.json())
 
                 jira_link = 'https://jira.yamoney.ru/browse/'
                 text_waiting = f'[{issue.fields.summary}]({jira_link}{issue.key}) ' \
@@ -99,7 +99,7 @@ async def start_update_releases():
         Function for notification in case changing releases status.
         Informs about all entered the queue tasks and
     """
-    logger.debug('start_update_releases started')
+    logger.info('start_update_releases started')
 
     async def helper_func(option_name, jira_filter, action_of_task):
         """
@@ -114,7 +114,7 @@ async def start_update_releases():
             db_result = await db().db_get_option(option_name)
             list_tasks_in_db = db_result.split() if isinstance(db_result, str) else []
             jira_tasks = JiraTools().jira_search(jira_filter)
-            logger.debug('helper is start_update_releases option_name %s \n db_result %s \n jira_tasks %s', option_name, db_result, jira_tasks)
+            logger.info('helper is start_update_releases option_name %s \n db_result %s \n jira_tasks %s', option_name, db_result, jira_tasks)
             return_list_id = []
 
             for issues in jira_tasks:
@@ -125,7 +125,7 @@ async def start_update_releases():
 
                 return_list_id.append(issues.id)
 
-            logger.debug('List of jira id to DB %s', return_list_id)
+            logger.info('List of jira id to DB %s', return_list_id)
             # Save data to db
             await db().db_set_option(option_name, ' '.join(return_list_id))
             if len(msg_sending) == 0:
@@ -160,13 +160,12 @@ async def start_update_releases():
                 logger.debug('j_releases, j_issue: %s', j_issue)
                 msg_done_new_task = f'[{j_issue.fields.summary}]' \
                                     f'(https://jira.yamoney.ru/browse/{j_issue.key}) ' \
-                                    f'выполнена! ({j_issue.fields.resolution})'
+                                    f'завершен. Резолюция: *{j_issue.fields.resolution}*'
                 release_list = await db().get_subscribers_to_everything()
                 for chat_id in release_list:
                     await bot.send_message(chat_id=chat_id,
                                            text=msg_done_new_task + how_many_is_working(),
                                            parse_mode=ParseMode.MARKDOWN)
-                # 'Выполнена! kiosk+1.223.0, ADMSYS-34586'
                 logger.info('Выполнена! %s, %s, %s', j_issue.fields.summary,
                             j_issue.key, j_issue.fields.resolution)
 

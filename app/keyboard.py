@@ -128,7 +128,7 @@ def current_mode() -> str:
         Get current mode of Bot
         :return: str with mode
     """
-    spiky_mode = Spike.read(item='deploy', aerospike_set='remaster')
+    spiky_mode = aero.read(item='deploy', aerospike_set='remaster')
 
     if spiky_mode['run'] == 2:
         mode = 'Working'

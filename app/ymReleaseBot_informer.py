@@ -115,13 +115,13 @@ async def start(message: types.Message):
     try:
         logger.info('start function by %s', returnHelper.return_name(message))
         user_info = await db().search_users_by_account(message.from_user.username)
-        if len(user_info) > 0:
-            if user_info[0]["tg_id"] != str(message.from_user.id):
-                await db().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), notification=None, email=None)
-            # user already exist in aerospike, we don't need some additional actions
-            await message.reply(text=start_menu_message(message),
-                                reply_markup=keyboard.main_menu(),
-                                parse_mode=ParseMode.MARKDOWN)
+        if len(user_info)>0:
+            for users in user_info:
+                if users["tg_id"] != str(message.from_user.id):
+                    await db().db_set_users(users['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), notification=None, email=None)
+                await message.reply(text=start_menu_message(message),
+                                    reply_markup=keyboard.main_menu(),
+                                    parse_mode=ParseMode.MARKDOWN)
         else:
             not_familiar_msg = emojize(f'Здравствуй, {bold(message.from_user.full_name)}!\n'
                                        f'Я не нашел записи с твоим телеграмм-аккаунтом в своей базе. :confused:\n'
@@ -132,7 +132,10 @@ async def start(message: types.Message):
 
     except Exception:
         logger.exception('start')
-
+        not_familiar_msg = emojize(f'Здравствуй, {bold(message.from_user.full_name)}!\n'
+                                   f'В ходе знакомства с тобой произошла ошибка. :confused:\n'
+                                   f'Пожалуйста, обратись к системным администраторам группы admsys@')
+        await message.reply(text=not_familiar_msg)
 
 def start_menu_message(message) -> str:
     """
@@ -648,7 +651,7 @@ async def get_user_info(message: types.Message):
                     msg += f'\n Email: <strong>{user["email"]}</strong>'
                     msg += f'\n Telegram login: <strong>@{user["tg_login"]}</strong>'
                     msg += f'\n Telegram ID: <strong>{user["tg_id"]}</strong>'
-                    msg += f'\n Working status: <strong>{user["working_status"]}</strong>'
+                    msg += f'\n Is employee: <strong>{user["working_status"]}</strong>'
                     msg += f'\n Notification: <strong>{user["notification"]}</strong>\n'
             else:
                 msg = 'Пользователей в моей базе не найдено'
@@ -707,7 +710,6 @@ async def inform_duty(request):
         try:
             for area in data_json['areas']:
                 await inform_today_duty(area, data_json['message'])
-                await bot.send_message(chat_id=279933948, text=data_json['message'], parse_mode=ParseMode.MARKDOWN)
         except Exception as e:
             logger.exception('Exception in inform duty %s', str(e))
     return web.json_response()
@@ -722,7 +724,8 @@ async def inform_today_duty(area, msg):
             try:
                 dutymen = await db().get_users('account_name', d['account_name'])
                 logger.info('informing duty %s %s %s', dutymen[0]['tg_id'], dutymen[0]['tg_login'], msg)
-                await bot.send_message(chat_id=dutymen[0]['tg_id'], text=msg)
+                await bot.send_message(chat_id=279933948, text=msg, parse_mode=ParseMode.MARKDOWN)
+                await bot.send_message(chat_id=dutymen[0]['tg_id'], text=msg, parse_mode=ParseMode.MARKDOWN)
             except BotBlocked:
                 logger.info('YM release bot was blocked by %s', d['tg_login'])
             except ChatNotFound:
