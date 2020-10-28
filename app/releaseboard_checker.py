@@ -24,7 +24,7 @@ async def todo_tasks():
     """
     logger.info('todo_tasks started')
     try:
-        db_result_todo = await db().db_get_option('rl_todo')
+        db_result_todo = db().db_get_option('rl_todo')
         todo_db = db_result_todo.split() if isinstance(db_result_todo, str) else []
         logger.info('DB Releases (in mysql): %s', todo_db)
 
@@ -76,9 +76,8 @@ async def todo_tasks():
 
                 logger.info('%s - sent notification from to_do functon (via api-v1) to: %s',
                             issue.key, set(recipient_chat_id))
-            
-            # Save data to db
-            await db().db_set_option('rl_todo', ' '.join(todo_id))
+        # Save data to db
+        db().db_set_option('rl_todo', ' '.join(todo_id))
 
     except Exception:
         logger.exception('todo_task')
@@ -101,7 +100,7 @@ async def start_update_releases():
     """
     logger.info('start_update_releases started')
 
-    async def helper_func(option_name, jira_filter, action_of_task):
+    def helper_func(option_name, jira_filter, action_of_task):
         """
 
             :param option_name:
@@ -111,7 +110,7 @@ async def start_update_releases():
         """
         msg_sending = ''
         try:
-            db_result = await db().db_get_option(option_name)
+            db_result = db().db_get_option(option_name)
             list_tasks_in_db = db_result.split() if isinstance(db_result, str) else []
             jira_tasks = JiraTools().jira_search(jira_filter)
             logger.info('helper is start_update_releases option_name %s \n db_result %s \n jira_tasks %s', option_name, db_result, jira_tasks)
@@ -127,7 +126,7 @@ async def start_update_releases():
 
             logger.info('List of jira id to DB %s', return_list_id)
             # Save data to db
-            await db().db_set_option(option_name, ' '.join(return_list_id))
+            db().db_set_option(option_name, ' '.join(return_list_id))
             if len(msg_sending) == 0:
                 msg_sending = 'No message'
             return return_list_id, list_tasks_in_db, msg_sending
@@ -135,7 +134,7 @@ async def start_update_releases():
             logger.exception('helper_func start_update_releases')
 
     try:
-        waiting_id, waiting_db, msg_queed = await helper_func(
+        waiting_id, waiting_db, msg_queed = helper_func(
             'rl_waiting', config.issues_waiting, 'поступила в очередь'
         )
         if msg_queed != 'No message':
@@ -143,7 +142,7 @@ async def start_update_releases():
             for chat_id in release_list:
                 await bot.send_message(chat_id=chat_id, text=msg_queed + how_many_is_working(),
                                        parse_mode=ParseMode.MARKDOWN)
-        now_id, now_db, msg_in_work = await helper_func(
+        now_id, now_db, msg_in_work = helper_func(
             'rl_now', config.search_issues_work, 'в работе!'
         )
         if msg_in_work != 'No message':

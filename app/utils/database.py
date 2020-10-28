@@ -72,13 +72,13 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    async def db_get_option(self, name):
+    def db_get_option(self, name):
         """
             Get value from db key
             :param name:
             :return:
         """
-        logger.debug('db_get_option started')
+        logger.info('db_get_option started %s %s', self, name)
         try:
             self.db.connect(reuse_if_open=True)
             db_option, _ = Option.get_or_create(name=name)
@@ -89,12 +89,13 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    async def db_set_option(self, name, value):
+    def db_set_option(self, name, value):
         """
             Set value to db
             :param name:
             :param value:
         """
+        logger.info('db_set_option started %s %s', self, name)
         try:
             self.db.connect(reuse_if_open=True)
             db_option, _ = Option.get_or_create(name=name)
