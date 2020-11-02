@@ -669,6 +669,7 @@ async def bulksend_to_users(request):
     """
     data_json = await request.json()
     logger.info('Send message called %s %s', data_json, type(data_json))
+    disable_notification = False
     if 'accounts' in data_json:
         try:
             set_of_chat_id = []
@@ -677,10 +678,12 @@ async def bulksend_to_users(request):
                 if len(user_from_db) > 0:
                     if user_from_db[0]['tg_id'] != None:
                         set_of_chat_id.append(user_from_db[0]['tg_id'])
+            if 'disable_notification' in data_json:
+                disable_notification = True
             logger.info('sending message %s for %s', data_json['text'], set_of_chat_id)
             for chat_id in set_of_chat_id:
                 try:
-                    await bot.send_message(chat_id=chat_id, text=data_json['text'], parse_mode=ParseMode.MARKDOWN)
+                    await bot.send_message(chat_id=chat_id, text=data_json['text'], disable_notification=disable_notification, parse_mode=ParseMode.MARKDOWN)
                 except BotBlocked:
                     logger.info('YM release bot was blocked by %s', chat_id)
                 except ChatNotFound:

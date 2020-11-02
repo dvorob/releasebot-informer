@@ -134,6 +134,7 @@ async def start_update_releases():
             logger.exception('helper_func start_update_releases')
 
     try:
+        logger.info('waiting_id %s waiting_db %s msg_queed %s', waiting_id, waiting_db, msg_queed)
         waiting_id, waiting_db, msg_queed = helper_func(
             'rl_waiting', config.issues_waiting, 'поступила в очередь'
         )
