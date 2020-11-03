@@ -108,26 +108,25 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    async def get_subscribers_to_everything(self) -> list:
+    async def get_subscribers_to_something(self, notification) -> list:
         """
             Get list of employee and Chats who subscribed to events
             :return: list of tg_chat_id
         """
         try:
             self.db.connect(reuse_if_open=True)
-            db_chats = Chats.select(Chats.tg_id).where(Chats.notification == 'all', Chats.tg_id.is_null(False))
-            db_users = Users.select(Users.tg_id).where(Users.notification == 'all', Users.tg_id.is_null(False))
-            logger.info('db chats = %s   db users = %s', db_chats, db_users)
+            db_chats = Chats.select(Chats.tg_id).where(Chats.notification == notification, Chats.tg_id.is_null(False))
+            db_users = Users.select(Users.tg_id).where(Users.notification == notification, Users.tg_id.is_null(False))
+            logger.info('Get subscribers for %s db chats = %s   db users = %s', notification, db_chats, db_users)
             result = []
 
             for line in db_chats:
                 result.append(line.tg_id)
             for line in db_users:
                 result.append(line.tg_id)
-            logger.debug('get_subscribers_to_everything, result: %s', result)
             return result
         except Exception as e:
-            logger.exception('get subscribers to everything error %s', str(e))
+            logger.exception('get subscribers to something error %s', str(e))
         finally:
             self.db.close()
 

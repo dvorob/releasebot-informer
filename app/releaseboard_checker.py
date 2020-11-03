@@ -37,15 +37,6 @@ async def todo_tasks():
             todo_id.append(issue.id)
 
             if issue.id not in todo_db:
-                release_list = await db().get_subscribers_to_everything()
-                for chat_id in release_list:
-                    msg_in_queue = f'[{issue.fields.summary}]' \
-                                   f'(https://jira.yamoney.ru/browse/{issue.key}) ' \
-                                   f'ищет согласующих.'
-                    await bot.send_message(chat_id=chat_id,
-                                           text=msg_in_queue + how_many_is_working(),
-                                           parse_mode=ParseMode.MARKDOWN)
-
                 # Personal notification
                 logger.info('Trying to personal notification for issue: %s', issue.key)
                 try:
@@ -134,44 +125,13 @@ async def start_update_releases():
             logger.exception('helper_func start_update_releases')
 
     try:
-        waiting_id, waiting_db, msg_queed = helper_func(
-            'rl_waiting', config.issues_waiting, 'поступила в очередь'
-        )
-        if msg_queed != 'No message':
-            release_list = await db().get_subscribers_to_everything()
-            for chat_id in release_list:
-                await bot.send_message(chat_id=chat_id, text=msg_queed + how_many_is_working(),
-                                       parse_mode=ParseMode.MARKDOWN)
-        now_id, now_db, msg_in_work = helper_func(
-            'rl_now', config.search_issues_work, 'в работе!'
-        )
-        if msg_in_work != 'No message':
-            release_list = await db().get_subscribers_to_everything()
-            for chat_id in release_list:
-                await bot.send_message(chat_id=chat_id, text=msg_in_work + how_many_is_working(),
-                                       parse_mode=ParseMode.MARKDOWN)
 
         ###
         # List of new completed tasks
         for issue in now_db:
             if issue not in now_id:
                 j_issue = JiraTools().jira_issue(int(issue))
-                logger.debug('j_releases, j_issue: %s', j_issue)
-                msg_done_new_task = f'[{j_issue.fields.summary}]' \
-                                    f'(https://jira.yamoney.ru/browse/{j_issue.key}) ' \
-                                    f'завершен. Резолюция: *{j_issue.fields.resolution}*'
-                release_list = await db().get_subscribers_to_everything()
-                for chat_id in release_list:
-                    await bot.send_message(chat_id=chat_id,
-                                           text=msg_done_new_task + how_many_is_working(),
-                                           parse_mode=ParseMode.MARKDOWN)
-                logger.info('Выполнена! %s, %s, %s', j_issue.fields.summary,
-                            j_issue.key, j_issue.fields.resolution)
 
-                # After completing each task, write dict
-                # { 'releases': {'deposit': ['1.1.1', '1.1.2'], 'shiro': ['2.2.1', '2.2.2'] }} to
-                # aerospike(item='auto_rollback', set='rollback')
-                logger.info('fields.resolution: %s', str(j_issue.fields.resolution))
                 if str(j_issue.fields.resolution) == 'Выполнен':
                     # To the aerospike we write only successfully
                     # completed tasks
@@ -206,9 +166,6 @@ async def start_update_releases():
                         msg_done = f'[{j_issue.fields.summary}]' \
                                    f'(https://jira.yamoney.ru/browse/{j_issue.key}) ' \
                                    f'выполнена! ({j_issue.fields.resolution})'
-                        await bot.send_message(chat_id=chat_id,
-                                               text=msg_done + how_many_is_working(),
-                                               parse_mode=ParseMode.MARKDOWN)
                     logger.info('resolution is %s', j_issue.fields.resolution)
                     if str(j_issue.fields.resolution) == 'Выполнен':
                         # To the aerospike we write only successfully

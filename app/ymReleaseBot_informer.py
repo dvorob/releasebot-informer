@@ -663,7 +663,7 @@ async def get_user_info(message: types.Message):
 
 
 # Внешняя ручка рассылки
-async def bulksend_to_users(request):
+async def send_message_to_users(request):
     """
         {'accounts': [list of account_names], 'jira_tasks': [list of tasks_id], 'text': str}
     """
@@ -689,14 +689,14 @@ async def bulksend_to_users(request):
                 except ChatNotFound:
                     logger.error('Chat not found with: %s', chat_id)
         except Exception as e:
-            logger.exception('Exception in bulksend to users %s', str(e))
+            logger.exception('Exception in send message to users %s', str(e))
 
     if 'jira_tasks' in data_json:
         for task in data_json['jira_tasks']:
             try:
                 JiraTools().add_comment(JiraTools().jira_issue(task), data_json['text'])
             except Exception as e:
-                logger.exception('Exception in bulksend to users when commenting jira task %s', str(e))
+                logger.exception('Exception in send message to users when commenting jira task %s', str(e))
 
     return web.json_response()
 
@@ -715,6 +715,24 @@ async def inform_duty(request):
                 await inform_today_duty(area, data_json['message'])
         except Exception as e:
             logger.exception('Exception in inform duty %s', str(e))
+    return web.json_response()
+
+
+# Внешняя ручка для информирования дежурных
+async def inform_subscribers(request):
+    """
+        {'notification': 'all', 'message': str}
+        notification можно найти в таблице Xerxes.Users в соответствующем поле
+    """
+    data_json = await request.json()
+    logger.info('Inform subscribers called %s %s', data_json, type(data_json))
+    if 'notification' in data_json:
+        try:
+            subscribers = await db().get_subscribers_to_something('all')
+            for chat_id in subscribers:
+                await bot.send_message(chat_id=chat_id, text=data_json['text'], disable_notification=True, parse_mode=ParseMode.MARKDOWN)
+        except Exception as e:
+            logger.exception('Exception in inform subscribers %s', str(e))
     return web.json_response()
 
 
@@ -781,8 +799,9 @@ async def get_session():
 def start_webserver():
     app = web.Application()
     runner = web.AppRunner(app)
-    app.add_routes([web.post('/send_message', bulksend_to_users)])
+    app.add_routes([web.post('/send_message', send_message_to_users)])
     app.add_routes([web.post('/inform_duty', inform_duty)])
+    app.add_routes([web.post('/inform_subscribers', inform_subscribers)])
     loop.run_until_complete(runner.setup())
     site = web.TCPSite(runner, port=8080)
     loop.run_until_complete(site.start())
