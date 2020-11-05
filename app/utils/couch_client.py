@@ -46,7 +46,5 @@ async def search_lxc_for_app(app_name):
         for item in hv_name_list[:-1]:
             limits += f'{item}, '
         limits += hv_name_list[-1]
-    else:
-        limits = hv_name_list[0]
-    hv_name_map.update({'limits': limits })
+        hv_name_map.update({'limits': limits })
     return hv_name_map
