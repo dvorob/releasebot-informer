@@ -637,7 +637,7 @@ async def where_app_hosts(message: types.Message):
             ansfer = {}
             for app_name in app_name_list:
                 ansfer.update({ app_name: await couch_client.search_lxc_for_app(app_name) })
-            msg = '<u><b>Нашёл</b></u>:'\
+            msg = '<u><b>Результаты поиска</b></u>:'\
                 + f'\n <strong>{ansfer}</strong> \n'
         else:
             msg = 'Error: app_name not found'

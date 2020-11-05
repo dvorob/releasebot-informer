@@ -32,12 +32,21 @@ async def search_lxc_for_app(app_name):
     app_name = app_name.replace('_', '-')
     copy_part_db()
     hv_name_list = []
-    found = False
-    for item in local_db_copy:
-        for cnt in item['containers']['list']:
+    hv_name_map = {}
+    for value in local_db_copy.values():
+        for cnt in value['containers']['list']:
             if cnt.find(app_name) != -1:
-                found = True
+                hv_name_list.append(value['name'])
+                hv_name_map.update({cnt: value['name']})
                 break
-        if found:
-            hv_name_list.append(item['name'])
-    return hv_name_list
+    if len(hv_name_list) == 0:
+        return f"{app_name}: not fount"
+    elif len(hv_name_list) > 1:
+        limits = ''
+        for item in hv_name_list[:-1]:
+            limits += f'{item}, '
+        limits += hv_name_list[-1]
+    else:
+        limits = hv_name_list[0]
+    hv_name_map.update({'limits': limits })
+    return hv_name_map
