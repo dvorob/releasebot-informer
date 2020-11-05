@@ -28,6 +28,14 @@ mysql = PooledMySQLDatabase(
     max_connections=8,
     stale_timeout=300)
 
+couch_db = {
+    'host': 'ugr-couchdb1.yamoney.ru',
+    'port': '5984',
+    'db_name': 'lxc_collector',
+    'user': 'admin',
+    'passwd': '2G1FgGEuJtFmZxQWh3aN'
+}
+
 jenkins = 'http://xerxes-leeroy:8080'
 
 api = 'http://xerxes-api-v1/api-v1'

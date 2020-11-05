@@ -20,7 +20,7 @@ from aiogram.utils.exceptions import ChatNotFound, BotBlocked
 from aiogram.utils.markdown import bold
 from aiohttp import web
 from app.jiratools import JiraTools
-from app.utils import aero, logging, returnHelper, initializeBot, filters
+from app.utils import aero, logging, returnHelper, initializeBot, filters, couch_client
 from app.utils.initializeBot import dp, bot
 from app.utils.database import MysqlPool as db
 from app.releaseboard_checker import start_update_releases, todo_tasks
@@ -626,6 +626,24 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
     except Exception:
         logger.exception("unsubscribe_all")
 
+#  Запросить список гипервизоров, где в данный момент находится приложение
+@initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['where_app'])
+async def where_app_hosts(message: types.Message):
+    logger.info( f'get where app info started by {returnHelper.return_name(message)}' )
+    incoming = message.text.split()
+    try:
+        if len(incoming) >= 2:
+            app_name_list = incoming[1:]
+            ansfer = {}
+            for app_name in app_name_list:
+                ansfer.update({ app_name: await couch_client.search_lxc_for_app(app_name) })
+            msg = '<u><b>Нашёл</b></u>:'\
+                + f'\n <strong>{ansfer}</strong> \n'
+        else:
+            msg = 'Error: app_name not found'
+        await message.answer(text=msg, parse_mode=ParseMode.HTML)
+    except Exception as e:
+        logger.exception('Error in where app hosts %s', e)
 
 # Ручки поиска по БД. Светят наружу в API. 
 # /who Выдать информацию по пользователю из таблицы xerxes.users

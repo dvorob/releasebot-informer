@@ -125,7 +125,12 @@ async def start_update_releases():
             logger.exception('helper_func start_update_releases')
 
     try:
-
+        waiting_id, waiting_db, msg_queed = await helper_func(
+            'rl_waiting', config.issues_waiting, 'поступила в очередь'
+        )
+        now_id, now_db, msg_in_work = await helper_func(
+            'rl_now', config.search_issues_work, 'в работе!'
+        )
         ###
         # List of new completed tasks
         for issue in now_db:

@@ -2,6 +2,7 @@ aiogram==2.6
 aiohttp==3.6.2
 apscheduler
 asyncio
+couchdb
 emoji
 jira==2.0.0
 nest_asyncio
