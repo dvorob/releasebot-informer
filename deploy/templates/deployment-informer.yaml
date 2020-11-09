@@ -21,12 +21,13 @@ spec:
       containers:
         - image: {{ $conf.image }}:{{ $conf.tag }}
           name: {{ $conf.name }}
+          imagePullPolicy: Always
           volumeMounts:
           - mountPath: /etc/xerxes/logging_informer_new.conf
             name: {{ $conf.logging.configmap_name }}
             subPath: logging_informer_new.conf
           resources:
-{{ toYaml $conf.resources| indent 12  }}
+{{ toYaml $conf.resources | indent 12  }}
           envFrom:
             - prefix: secret_jira_
               secretRef:
