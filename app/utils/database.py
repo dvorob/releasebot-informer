@@ -4,9 +4,10 @@
 Input/output for mysql
 """
 from datetime import datetime
-from app.utils import logging
-import app.config as config
 from peewee import *
+from utils import logging
+import config
+
 
 logger = logging.setup()
 

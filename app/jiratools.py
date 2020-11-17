@@ -4,24 +4,19 @@
 Realize jira methods
 """
 from jira import JIRA
+from utils import logging
+import config
 import jira.exceptions
-from app import config
-from app.utils import logging
 
-__all__ = ['JiraTools']
+__all__ = ['JiraConnection']
 logger = logging.setup()
 
-
-class JiraTools:
-    """
-        Implementations of Jira methods
-    """
+class JiraConnection:
 
     def __init__(self):
         self.options = {
             'server': config.jira_host, 'verify': False
         }
-        # self.jira_connect = JIRA(self.options, basic_auth=(config.jira_user, config.jira_pass))
         self.jira = JIRA(self.options, basic_auth=(config.jira_user, config.jira_pass))
 
     def jira_issue(self, query):
@@ -57,15 +52,6 @@ class JiraTools:
         self.jira.assign_issue(jira_issue_id, for_whom_assign)
 
     def transition_issue(self, jira_issue_id, transition_id):
-        """
-            Moved issue to some other step
-            321 - from looking_for_assignee to waiting_release_master
-            41 -
-            191 -
-            241 -
-            211 -
-            101 -
-        """
         try:
             self.jira.transition_issue(jira_issue_id, transition_id)
         except jira.exceptions.JIRAError as err:

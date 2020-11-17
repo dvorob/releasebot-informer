@@ -5,7 +5,6 @@ Logging
 """
 import logging.config
 
-
 def setup():
     """
         Initialization logging system

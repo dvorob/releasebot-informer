@@ -5,11 +5,11 @@ Defence filters
 """
 from aiogram import types
 from aiogram.utils.callback_data import CallbackData
-from app.utils import logging, returnHelper
-from app.utils.database import MysqlPool as db
+from utils import logging, returnHelper
+from utils.database import MysqlPool as db
 import aiohttp
 import asyncio
-import app.config as config
+import config as config
 import warnings
 import sys
 import requests

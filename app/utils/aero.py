@@ -4,8 +4,8 @@
 Input/output for aerospike
 """
 import requests
-import app.config as config
-from app.utils import logging
+import config as config
+from utils import logging
 
 logger = logging.setup()
 

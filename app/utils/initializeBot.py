@@ -4,7 +4,7 @@
 Initialization of bot
 """
 from aiogram import Bot, Dispatcher
-import app.config as config
+import config as config
 
 bot = Bot(token=config.bot_token)
 dp = Dispatcher(bot)

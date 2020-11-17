@@ -4,7 +4,7 @@
 Build different menus
 """
 from aiogram import types
-from app.utils import logging, filters, aero
+from utils import logging, filters, aero
 
 logger = logging.setup()
 posts_cb = filters.callback_filter()

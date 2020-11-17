@@ -3,10 +3,9 @@
 """
 Input/output for coucdb 
 """
-
 import couchdb
-import app.config as config
-from app.utils import logging
+import config as config
+from utils import logging
 
 couch_config = config.couch_db
 logger = logging.setup()

@@ -4,8 +4,8 @@
 Telegram bot for employee of Yandex.Money
 """
 import aiohttp
-import app.config as config
-import app.keyboard as keyboard
+import config
+import keyboard as keyboard
 import asyncio
 import json
 import re
@@ -19,11 +19,11 @@ from aiogram.utils.emoji import emojize
 from aiogram.utils.exceptions import ChatNotFound, BotBlocked
 from aiogram.utils.markdown import bold
 from aiohttp import web
-from app.jiratools import JiraTools
-from app.utils import aero, logging, returnHelper, initializeBot, filters, couch_client
-from app.utils.initializeBot import dp, bot
-from app.utils.database import MysqlPool as db
-from app.releaseboard_checker import start_update_releases, todo_tasks
+from jiratools import JiraConnection
+from utils import aero, logging, returnHelper, initializeBot, filters, couch_client
+from utils.initializeBot import dp, bot
+from utils.database import MysqlPool as db
+from releaseboard_checker import start_update_releases, todo_tasks
 from datetime import timedelta, datetime
 
 loop = asyncio.get_event_loop()
@@ -265,7 +265,7 @@ async def get_ext_inf_board_button(query: types.CallbackQuery, callback_data: st
                 Create msg with Jira task based on incoming filter
                 :return: string with issues or empty str
             """
-            issues = JiraTools().jira_search(jira_filter)
+            issues = JiraConnection().jira_search(jira_filter)
             if len(issues) > 0:
                 list_of_issues = []
                 for issue in issues:
@@ -311,9 +311,9 @@ async def get_min_inf_board_button(query: types.CallbackQuery, callback_data: st
                 Request to Jira and format msg
                 :return: msg for tg
             """
-            issues_releases_progress = JiraTools().jira_search(config.search_issues_work)
+            issues_releases_progress = JiraConnection().jira_search(config.search_issues_work)
 
-            issues_admsys = JiraTools().jira_search(
+            issues_admsys = JiraConnection().jira_search(
                 'project = ADMSYS AND issuetype = "Release (conf)" AND '
                 'status IN (Open, "Waiting release") ORDER BY Rank ASC'
             )
@@ -493,7 +493,7 @@ async def return_to_queue(query: types.CallbackQuery, callback_data: str):
     del callback_data
     try:
         await returnHelper.return_one_second(query)
-        if waiting_assignee_issues := JiraTools().jira_search(config.waiting_assignee_releases):
+        if waiting_assignee_issues := JiraConnection().jira_search(config.waiting_assignee_releases):
             msg = 'This is Jira task, which may be returned to the queue'
             markup = keyboard.return_queue_menu(waiting_assignee_issues)
             await query.message.reply(text=msg,
@@ -531,7 +531,7 @@ async def process_return_queue_callback(query: types.CallbackQuery, callback_dat
             msg = f'Returned back to the queue  **{jira_issue_id}**, ' \
                   'come back when you are ready.'
             # delete assignee from task
-            jira_object = JiraTools()
+            jira_object = JiraConnection()
             jira_object.assign_issue(jira_issue_id, None)
             # 321 - transition identifier from looking_for_assignee
             # to waiting_release_master
@@ -710,7 +710,7 @@ async def send_message_to_users(request):
     if 'jira_tasks' in data_json:
         for task in data_json['jira_tasks']:
             try:
-                JiraTools().add_comment(JiraTools().jira_issue(task), data_json['text'])
+                JiraConnection().add_comment(JiraConnection().jira_issue(task), data_json['text'])
             except Exception as e:
                 logger.exception('Exception in send message to users when commenting jira task %s', str(e))
 

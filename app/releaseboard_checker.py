@@ -4,16 +4,16 @@
 Realize jira methods
 """
 import asyncio
+import config
 import re
 import requests
 from aiogram.types import ParseMode
 from aiogram.utils.exceptions import ChatNotFound, BotBlocked
-from app import config
-from app.utils.database import MysqlPool as db
-from app.jiratools import JiraTools
-from app.utils import logging, initializeBot
-from app.utils import aero
-from app.utils.initializeBot import dp, bot
+from utils.database import MysqlPool as db
+from jiratools import JiraConnection
+from utils import logging, initializeBot
+from utils import aero
+from utils.initializeBot import dp, bot
 
 logger = logging.setup()
 
@@ -28,7 +28,7 @@ async def todo_tasks():
         todo_db = db_result_todo.split() if isinstance(db_result_todo, str) else []
         logger.info('DB Releases (in mysql): %s', todo_db)
 
-        issues_todo = JiraTools().jira_search(config.waiting_assignee_releases)
+        issues_todo = JiraConnection().jira_search(config.waiting_assignee_releases)
         logger.info('Jira releases in todo: %s', issues_todo)
 
         todo_id = []
@@ -36,37 +36,6 @@ async def todo_tasks():
             logger.info('Working with issue %s', issue)
             todo_id.append(issue.id)
 
-            if issue.id not in todo_db:
-                # Personal notification
-                logger.info('Trying to personal notification for issue: %s', issue.key)
-                try:
-                    request_chatid_api_v1 = requests.get(f'{config.api_chat_id}/{issue.key}')
-                    recipient_chat_id = list(request_chatid_api_v1.json())
-                except Exception:
-                    logger.exception('Personal Jesus fail')
-                logger.info('For issue %s recipient_chatid: %s', issue, request_chatid_api_v1.json())
-
-                jira_link = 'https://jira.yamoney.ru/browse/'
-                text_waiting = f'[{issue.fields.summary}]({jira_link}{issue.key}) ' \
-                               f'с нетерпением ждет твоего согласования.\n' \
-                               'Если вы не можете катить релиз сейчас, ' \
-                               'воспользуйтесь кнопкой `Return task to the queue`'
-                # Especially for case, when someone block or not added to bot..
-                for chat_id in set(recipient_chat_id):
-                    try:
-                        await bot.send_message(chat_id=chat_id, text=text_waiting,
-                                               parse_mode=ParseMode.MARKDOWN)
-                    except BotBlocked:
-                        logger.info('YM release bot was blocked by %s', chat_id)
-                        await bot.send_message(chat_id=279933948, text=f'*YMReleaseBot '
-                                                                       f'was blocked by {chat_id}*')
-                    except ChatNotFound:
-                        logger.error('Chat not found with: %s', chat_id)
-                        await bot.send_message(chat_id=279933948, text=f'*YMReleaseBot '
-                                                                       f'chat not found {chat_id}*')
-
-                logger.info('%s - sent notification from to_do functon (via api-v1) to: %s',
-                            issue.key, set(recipient_chat_id))
         # Save data to db
         db().db_set_option('rl_todo', ' '.join(todo_id))
 
@@ -79,8 +48,8 @@ def how_many_is_working() -> str:
         Count how many releases is working now and how many in total
         :return: msg
     """
-    issues_releases = JiraTools().jira_search(config.issues_not_closed_resolved)
-    issues_working_now = JiraTools().jira_search(config.search_issues_work)
+    issues_releases = JiraConnection().jira_search(config.issues_not_closed_resolved)
+    issues_working_now = JiraConnection().jira_search(config.search_issues_work)
     return f'\n> в работе: {len(issues_working_now)} из {len(issues_releases)}'
 
 
@@ -103,7 +72,7 @@ async def start_update_releases():
         try:
             db_result = db().db_get_option(option_name)
             list_tasks_in_db = db_result.split() if isinstance(db_result, str) else []
-            jira_tasks = JiraTools().jira_search(jira_filter)
+            jira_tasks = JiraConnection().jira_search(jira_filter)
             logger.info('helper is start_update_releases option_name %s \n db_result %s \n jira_tasks %s', option_name, db_result, jira_tasks)
             return_list_id = []
 
@@ -135,7 +104,7 @@ async def start_update_releases():
         # List of new completed tasks
         for issue in now_db:
             if issue not in now_id:
-                j_issue = JiraTools().jira_issue(int(issue))
+                j_issue = JiraConnection().jira_issue(int(issue))
 
                 if str(j_issue.fields.resolution) == 'Выполнен':
                     # To the aerospike we write only successfully
@@ -165,7 +134,7 @@ async def start_update_releases():
         for issue in waiting_db:
             if issue not in waiting_id:
                 if issue not in now_id:
-                    j_issue = JiraTools().jira_issue(int(issue))
+                    j_issue = JiraConnection().jira_issue(int(issue))
                     release_list = await db().get_subscribers_to_everything()
                     for chat_id in release_list:
                         msg_done = f'[{j_issue.fields.summary}]' \

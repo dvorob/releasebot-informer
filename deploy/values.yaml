@@ -9,7 +9,7 @@ ymreleasebot:
   target_port: 8080
   count_replicas: 1
   image: 'docker-ym.nexus.yamoney.ru/yamoney/releasebot-informer'
-  tag: <value>
+  tag: 'latest'
   mysql:
     name: mysql
     port:
