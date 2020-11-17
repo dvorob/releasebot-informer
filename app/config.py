@@ -38,7 +38,7 @@ couch_db = {
 
 jenkins = 'http://xerxes-leeroy:8080'
 
-api = 'http://xerxes-api-v1/api-v1'
+api = 'http://releasebot-api/api-v1'
 api_chat_id = f'{api}/chat-id'
 api_aerospike_read = f'{api}/aerospike/read'
 api_aerospike_write = f'{api}/aerospike/write'
