@@ -36,7 +36,7 @@ couch_db = {
     'passwd': '2G1FgGEuJtFmZxQWh3aN'
 }
 
-jenkins = 'http://xerxes-leeroy:8080'
+jenkins = 'http://releasebot-leeroy:8080'
 
 api = 'http://releasebot-api/api-v1'
 api_chat_id = f'{api}/chat-id'
