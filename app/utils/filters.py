@@ -26,7 +26,7 @@ def callback_filter() -> CallbackData:
         :return: callback data filter first argument - prefix (don't know for what this one),
         other strings as *args **kwargs - filter fields
     """
-    return CallbackData("prefix", "issue", "action", "issue_key")
+    return CallbackData("prefix", "issue", "action")
 
 
 async def admin(message: types.message) -> bool:

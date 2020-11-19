@@ -3,6 +3,7 @@
 Build different menus
 """
 from aiogram import types
+from aiogram.utils.callback_data import CallbackData
 from jiratools import JiraConnection
 from utils import logging, filters, aero
 import config
@@ -135,7 +136,7 @@ def release_app_list() -> types.InlineKeyboardMarkup:
         if len(issues) > 0:
             for issue in issues:
                 button_release_list.append(types.InlineKeyboardButton(f'Release {issue.key} {issue.fields.summary}', 
-                                           callback_data=posts_cb.new(action='release_app', issue_key=issue.key, issue='1')))
+                                           callback_data=posts_cb.new(action='release_app', issue=issue.key)))
         to_admin = types.InlineKeyboardButton('Admin menu', callback_data=posts_cb.new(action='admin_menu', issue='1'))
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=2, footer_buttons=to_admin))
     except Exception as e:
@@ -153,7 +154,7 @@ def rollback_app_list() -> types.InlineKeyboardMarkup:
         if len(issues) > 0:
             for issue in issues:
                 button_release_list.append(types.InlineKeyboardButton(f'Release {issue.key} {issue.fields.summary}', 
-                                           callback_data=posts_cb.new(action='rollback_app', issue_key=issue.key, issue='1')))
+                                           callback_data=posts_cb.new(action='rollback_app', issue=issue.key)))
         to_admin = types.InlineKeyboardButton('Admin menu', callback_data=posts_cb.new(action='admin_menu', issue='1'))
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=2, footer_buttons=to_admin))
     except Exception as e:
