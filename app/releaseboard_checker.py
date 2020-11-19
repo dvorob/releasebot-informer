@@ -95,7 +95,7 @@ async def start_update_releases():
 
     try:
         waiting_id, waiting_db, msg_queed = helper_func(
-            'rl_waiting', config.issues_waiting, 'поступила в очередь'
+            'rl_waiting', config.issues_waiting_confirm, 'поступила в очередь'
         )
         now_id, now_db, msg_in_work = helper_func(
             'rl_now', config.search_issues_work, 'в работе!'

@@ -454,6 +454,9 @@ async def lock_app_release(message: types.Message):
             logger.exception('lock_unlock_task')
             return web.json_response({'status': 'error', 'message': str(exc)})
 
+##############################################################################################
+#              Кнопки админского меню
+##############################################################################################
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='turn_on'), filters.restricted, filters.admin)
 async def start_bot(query: types.CallbackQuery, callback_data: str):
@@ -483,6 +486,60 @@ async def dont_touch_releases(query: types.CallbackQuery, callback_data: str):
     aero.write(item='deploy', bins=bins, aerospike_set='remaster')
     await query.answer('Ok, I won\'t touch new releases by myself.')
 
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='admin_menu'), filters.restricted, filters.admin)
+async def admin_menu(query: types.CallbackQuery, callback_data: str):
+    """
+        Open admin menu
+        :param query:
+        :param callback_data
+    """
+    del callback_data
+    try:
+        logger.info('admin menu opened by %s', returnHelper.return_name(query))
+        msg = f'Hi, admin!\nCurrent work mode: *{keyboard.current_mode()}*'
+        await query.message.reply(text=msg, reply_markup=keyboard.admin_menu(),
+                                  parse_mode=ParseMode.MARKDOWN)
+    except Exception:
+        logger.exception('admin_menu')
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='release_app_list'), filters.restricted, filters.admin)
+async def release_app_list(query: types.CallbackQuery, callback_data: str):
+    """
+        Скормить релиз боту
+    """
+    #issue_key = callback_data['issue_key']
+    logger.info('-- RELEASE APP LIST menu opened by %s %s', returnHelper.return_name(query), callback_data)
+    msg = f'Hi, admin!\nCurrent work mode: *{keyboard.current_mode()}*'
+    await query.message.reply(text=msg, reply_markup=keyboard.release_app_list(), parse_mode=ParseMode.MARKDOWN)
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='release_app'), filters.restricted, filters.admin)
+async def release_app(query: types.CallbackQuery, callback_data: str):
+    """
+        Скормить релиз боту
+    """
+    #issue_key = callback_data['issue_key']
+    logger.info('-- RELEASE APP started by %s %s', returnHelper.return_name(query), callback_data)
+    await query.answer('Съел релиз, перевариваю.')
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='rollback_app_list'), filters.restricted, filters.admin)
+async def rollback_app_list(query: types.CallbackQuery, callback_data: str):
+    """
+        Выставить у релиза резолюцию "Rollback"
+    """
+    #issue_key = callback_data['issue_key']
+    logger.info('-- ROLLBACK APP LIST menu opened by %s %s', returnHelper.return_name(query), callback_data)
+    await query.message.reply(text=msg, reply_markup=keyboard.rollback_app_list(), parse_mode=ParseMode.MARKDOWN)
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='rollback_app'), filters.restricted, filters.admin)
+async def rollback_app(query: types.CallbackQuery, callback_data: str):
+    """
+        Скормить релиз боту
+    """
+    #issue_key = callback_data['issue_key']
+    logger.info('-- ROLLBACK APP started by %s %s', returnHelper.return_name(query), callback_data)
+    await query.answer('Съел релиз, перевариваю.')
+
+##############################################################################################
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='return_queue'), filters.restricted)
 async def return_to_queue(query: types.CallbackQuery, callback_data: str):

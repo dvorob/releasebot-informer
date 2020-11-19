@@ -1,36 +1,14 @@
-#!/usr/bin/env python3.8
 # -*- coding: utf-8 -*-
 """
 Build different menus
 """
 from aiogram import types
+from jiratools import JiraConnection
 from utils import logging, filters, aero
+import config
 
 logger = logging.setup()
 posts_cb = filters.callback_filter()
-
-def admin_menu() -> types.InlineKeyboardMarkup:
-    """
-        Build admin menu keyboard
-        :return: admin keyboard
-    """
-    # issue = '1' - hack for correct work posts_cb filter
-    button_admin_list = [
-        types.InlineKeyboardButton('Restart Informer', callback_data=posts_cb.new(action='restart',
-                                                                             issue='1')),
-        types.InlineKeyboardButton('Turn on bot', callback_data=posts_cb.new(action='turn_on',
-                                                                             issue='1')),
-        types.InlineKeyboardButton('Turn off bot', callback_data=posts_cb.new(action='turn_off',
-                                                                              issue='1')),
-        types.InlineKeyboardButton('Don\'t touch new release',
-                                   callback_data=posts_cb.new(action='dont_touch',
-                                                              issue='1')),
-    ]
-    to_main = types.InlineKeyboardButton('Main menu', callback_data=posts_cb.new(action='main',
-                                                                                 issue='1'))
-    return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_admin_list,
-                                                                 n_cols=2, footer_buttons=to_main))
-
 
 def main_menu() -> types.InlineKeyboardMarkup:
     """
@@ -115,13 +93,71 @@ def build_menu(buttons, n_cols, header_buttons=None, footer_buttons=None) -> lis
         :return: menu button
     """
     menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
-    logger.debug('build_menu: %s', menu)
+    logger.info('-- BUILD MENU: %s', menu)
     if header_buttons:
         menu.insert(0, [header_buttons])
     if footer_buttons:
         menu.append([footer_buttons])
     return menu
 
+def admin_menu() -> types.InlineKeyboardMarkup:
+    """
+        Build admin menu keyboard
+        :return: admin keyboard
+    """
+    # issue = '1' - hack for correct work posts_cb filter
+    button_admin_list = [
+        types.InlineKeyboardButton('Restart Informer', callback_data=posts_cb.new(action='restart',
+                                                                             issue='1')),
+        types.InlineKeyboardButton('Turn on bot', callback_data=posts_cb.new(action='turn_on',
+                                                                             issue='1')),
+        types.InlineKeyboardButton('Turn off bot', callback_data=posts_cb.new(action='turn_off',
+                                                                              issue='1')),
+        types.InlineKeyboardButton('Don\'t touch new release',
+                                   callback_data=posts_cb.new(action='dont_touch', issue='1')),
+        types.InlineKeyboardButton('Release', callback_data=posts_cb.new(action='release_app_list', issue='1')),
+        types.InlineKeyboardButton('Rollback', callback_data=posts_cb.new(action='rollback_app_list', issue='1'))
+    ]
+    to_main = types.InlineKeyboardButton('Main menu', callback_data=posts_cb.new(action='main',
+                                                                                 issue='1'))
+    return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_admin_list,
+                                                                 n_cols=2, footer_buttons=to_main))
+
+def release_app_list() -> types.InlineKeyboardMarkup:
+    """
+        Build admin menu keyboard
+        :return: admin keyboard
+    """
+    try:
+        issues = JiraConnection().jira_search(config.issues_waiting)
+        button_release_list = []
+        logger.info('-- KEYBOARD RELEASE APP build menu for %s', issues)
+        if len(issues) > 0:
+            for issue in issues:
+                button_release_list.append(types.InlineKeyboardButton(f'Release {issue.key} {issue.fields.summary}', 
+                                           callback_data=posts_cb.new(action='release_app', issue_key=issue.key, issue='1')))
+        to_admin = types.InlineKeyboardButton('Admin menu', callback_data=posts_cb.new(action='admin_menu', issue='1'))
+        return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=2, footer_buttons=to_admin))
+    except Exception as e:
+        logger.exception('Error in RELEASE APP %s', e)
+
+def rollback_app_list() -> types.InlineKeyboardMarkup:
+    """
+        Build admin menu keyboard
+        :return: admin keyboard
+    """
+    try:
+        issues = JiraConnection().jira_search(config.issues_confirm_full_resolved)
+        button_release_list = []
+        logger.info('-- KEYBOARD ROLLBACK APP build menu for %s', issues)    
+        if len(issues) > 0:
+            for issue in issues:
+                button_release_list.append(types.InlineKeyboardButton(f'Release {issue.key} {issue.fields.summary}', 
+                                           callback_data=posts_cb.new(action='rollback_app', issue_key=issue.key, issue='1')))
+        to_admin = types.InlineKeyboardButton('Admin menu', callback_data=posts_cb.new(action='admin_menu', issue='1'))
+        return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=2, footer_buttons=to_admin))
+    except Exception as e:
+        logger.exception('Error in ROLLBACK APP %s', e)
 
 def current_mode() -> str:
     """

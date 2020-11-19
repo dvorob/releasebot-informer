@@ -57,13 +57,19 @@ waiting_assignee_releases = 'project = ADMSYS AND issuetype = "Release (conf)" A
 search_issues_wait = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
                      'status IN (Open, "Waiting release", "TO DO") ORDER BY Rank ASC'
 
+issues_waiting = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
+                 'status IN ("Waiting release") ORDER BY Rank ASC'
+
+issues_confirm_full_resolved = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
+                               'status IN (CONFIRM, "FULL DEPLOY", Resolved) ORDER BY Rank ASC'
+
 search_issues_work = 'project = ADMSYS AND issuetype = "Release (conf)" AND status IN ' \
                      '("PARTIAL DEPLOY", CONFIRM, "FULL DEPLOY") ORDER BY Rank ASC'
 
 search_issues_completed = 'project = ADMSYS AND issuetype = "Release (conf)" ' \
                           'AND status = Resolved ORDER BY Rank ASC'
 
-issues_waiting = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
+issues_waiting_confirm = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
                  'status IN ("Open", "На согласовании", "Waiting release", "TO DO") ' \
                  'ORDER BY Rank ASC'
 
