@@ -509,7 +509,7 @@ async def release_app_list(query: types.CallbackQuery, callback_data: str):
     """
     #issue_key = callback_data['issue_key']
     logger.info('-- RELEASE APP LIST menu opened by %s %s', returnHelper.return_name(query), callback_data)
-    msg = f'Hi, admin!\nCurrent work mode: *{keyboard.current_mode()}*'
+    msg = f'Привет! \nМой текущий рабочий режим: *{keyboard.current_mode()}*'
     await query.message.reply(text=msg, reply_markup=keyboard.release_app_list(), parse_mode=ParseMode.MARKDOWN)
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='release_app'), filters.restricted, filters.admin)
@@ -517,17 +517,22 @@ async def release_app(query: types.CallbackQuery, callback_data: str):
     """
         Скормить релиз боту
     """
-    #issue_key = callback_data['issue_key']
     logger.info('-- RELEASE APP started by %s %s', returnHelper.return_name(query), callback_data)
-    await query.answer('Съел релиз, перевариваю.')
+    try:
+        logger.info('Assign %s to Releasebot', callback_data['issue'])
+        JiraConnection().assign_issue(callback_data['issue'], config.jira_user)
+        JiraConnection().add_comment(callback_data['issue'], f"Назначен на бота неким {returnHelper.return_name(query)}")
+    except Exception as e:
+        logger.exception('Error in RELEASE APP %s', e)
+    await query.message.reply('Съел релиз %s, перевариваю.', callback_data['issue'])
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='rollback_app_list'), filters.restricted, filters.admin)
 async def rollback_app_list(query: types.CallbackQuery, callback_data: str):
     """
         Выставить у релиза резолюцию "Rollback"
     """
-    #issue_key = callback_data['issue_key']
     logger.info('-- ROLLBACK APP LIST menu opened by %s %s', returnHelper.return_name(query), callback_data)
+    msg = f'Привет! \nМой текущий рабочий режим: *{keyboard.current_mode()}*'
     await query.message.reply(text=msg, reply_markup=keyboard.rollback_app_list(), parse_mode=ParseMode.MARKDOWN)
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='rollback_app'), filters.restricted, filters.admin)
@@ -537,7 +542,11 @@ async def rollback_app(query: types.CallbackQuery, callback_data: str):
     """
     #issue_key = callback_data['issue_key']
     logger.info('-- ROLLBACK APP started by %s %s', returnHelper.return_name(query), callback_data)
-    await query.answer('Съел релиз, перевариваю.')
+    try:
+        JiraConnection().transition_issue(callback_data['issue'], '241', resolution={'id': '10300'})
+    except Exception as e:
+        logger.error('Error in ROLLBACK APP %s', e)
+    await query.message.reply('Откатываю релиз %s. Потому что я красавчик.', callback_data['issue'])
 
 ##############################################################################################
 

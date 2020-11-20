@@ -61,7 +61,8 @@ issues_waiting = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
                  'status IN ("Waiting release") ORDER BY Rank ASC'
 
 issues_confirm_full_resolved = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
-                               'status IN (CONFIRM, "FULL DEPLOY", Resolved) ORDER BY Rank ASC'
+                               '(status IN (CONFIRM, "FULL DEPLOY") OR (status in (Resolved) AND updated >= startOfDay())) ' \
+                               'ORDER BY Rank ASC'
 
 search_issues_work = 'project = ADMSYS AND issuetype = "Release (conf)" AND status IN ' \
                      '("PARTIAL DEPLOY", CONFIRM, "FULL DEPLOY") ORDER BY Rank ASC'

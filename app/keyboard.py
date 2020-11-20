@@ -94,7 +94,7 @@ def build_menu(buttons, n_cols, header_buttons=None, footer_buttons=None) -> lis
         :return: menu button
     """
     menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
-    logger.info('-- BUILD MENU: %s', menu)
+    logger.debug('-- BUILD MENU: %s', menu)
     if header_buttons:
         menu.insert(0, [header_buttons])
     if footer_buttons:
@@ -138,7 +138,7 @@ def release_app_list() -> types.InlineKeyboardMarkup:
                 button_release_list.append(types.InlineKeyboardButton(f'Release {issue.key} {issue.fields.summary}', 
                                            callback_data=posts_cb.new(action='release_app', issue=issue.key)))
         to_admin = types.InlineKeyboardButton('Admin menu', callback_data=posts_cb.new(action='admin_menu', issue='1'))
-        return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=2, footer_buttons=to_admin))
+        return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=1, footer_buttons=to_admin))
     except Exception as e:
         logger.exception('Error in RELEASE APP %s', e)
 
@@ -156,7 +156,7 @@ def rollback_app_list() -> types.InlineKeyboardMarkup:
                 button_release_list.append(types.InlineKeyboardButton(f'Release {issue.key} {issue.fields.summary}', 
                                            callback_data=posts_cb.new(action='rollback_app', issue=issue.key)))
         to_admin = types.InlineKeyboardButton('Admin menu', callback_data=posts_cb.new(action='admin_menu', issue='1'))
-        return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=2, footer_buttons=to_admin))
+        return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=1, footer_buttons=to_admin))
     except Exception as e:
         logger.exception('Error in ROLLBACK APP %s', e)
 
