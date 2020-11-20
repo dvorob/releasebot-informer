@@ -543,7 +543,7 @@ async def rollback_app(query: types.CallbackQuery, callback_data: str):
     #issue_key = callback_data['issue_key']
     logger.info('-- ROLLBACK APP started by %s %s', returnHelper.return_name(query), callback_data)
     try:
-        JiraConnection().transition_issue(callback_data['issue'], '241', resolution={'id': '10300'})
+        JiraConnection().transition_issue_with_resolution(callback_data['issue'], '241', {'id': '10300'})
     except Exception as e:
         logger.error('Error in ROLLBACK APP %s', e)
     await query.message.reply('Откатываю релиз %s. Потому что я красавчик.', callback_data['issue'])

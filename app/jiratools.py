@@ -56,3 +56,9 @@ class JiraConnection:
             self.jira.transition_issue(jira_issue_id, transition_id)
         except jira.exceptions.JIRAError as err:
             logger.error('transition_issue %s', err)
+
+    def transition_issue_with_resolution(self, jira_issue_id, transition_id, resolution):
+        try:
+            self.jira.transition_issue(jira_issue_id, transition_id, resolution=resolution)
+        except jira.exceptions.JIRAError as err:
+            logger.error('transition_issue %s', err)

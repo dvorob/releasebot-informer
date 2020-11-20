@@ -135,7 +135,7 @@ def release_app_list() -> types.InlineKeyboardMarkup:
         logger.info('-- KEYBOARD RELEASE APP build menu for %s', issues)
         if len(issues) > 0:
             for issue in issues:
-                button_release_list.append(types.InlineKeyboardButton(f'Release {issue.key} {issue.fields.summary}', 
+                button_release_list.append(types.InlineKeyboardButton(f'{issue.key} {issue.fields.summary}', 
                                            callback_data=posts_cb.new(action='release_app', issue=issue.key)))
         to_admin = types.InlineKeyboardButton('Admin menu', callback_data=posts_cb.new(action='admin_menu', issue='1'))
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=1, footer_buttons=to_admin))
@@ -153,7 +153,7 @@ def rollback_app_list() -> types.InlineKeyboardMarkup:
         logger.info('-- KEYBOARD ROLLBACK APP build menu for %s', issues)    
         if len(issues) > 0:
             for issue in issues:
-                button_release_list.append(types.InlineKeyboardButton(f'Release {issue.key} {issue.fields.summary}', 
+                button_release_list.append(types.InlineKeyboardButton(f'{issue.key} {issue.fields.summary}', 
                                            callback_data=posts_cb.new(action='rollback_app', issue=issue.key)))
         to_admin = types.InlineKeyboardButton('Admin menu', callback_data=posts_cb.new(action='admin_menu', issue='1'))
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=1, footer_buttons=to_admin))
