@@ -93,14 +93,16 @@ def build_menu(buttons, n_cols, header_buttons=None, footer_buttons=None) -> lis
         :param footer_buttons:
         :return: menu button
     """
-    menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
-    logger.debug('-- BUILD MENU: %s', menu)
-    if header_buttons:
-        menu.insert(0, [header_buttons])
-    if footer_buttons:
-        menu.append([footer_buttons])
-    return menu
-
+    try:
+        menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
+        logger.debug('-- BUILD MENU: %s', menu)
+        if header_buttons:
+            menu.insert(0, [header_buttons])
+        if footer_buttons:
+            menu.append([footer_buttons])
+        return menu
+    except Exception as e:
+        logger.exception('Error in BUILD MENU %s', e)
 def admin_menu() -> types.InlineKeyboardMarkup:
     """
         Build admin menu keyboard
@@ -132,7 +134,7 @@ def release_app_list() -> types.InlineKeyboardMarkup:
     try:
         issues = JiraConnection().jira_search(config.issues_waiting)
         button_release_list = []
-        logger.info('-- KEYBOARD RELEASE APP build menu for %s', issues)
+        logger.info('-- KEYBOARD RELEASE APP LIST build menu for %s', issues)
         if len(issues) > 0:
             for issue in issues:
                 button_release_list.append(types.InlineKeyboardButton(f'{issue.key} {issue.fields.summary}', 
@@ -140,7 +142,18 @@ def release_app_list() -> types.InlineKeyboardMarkup:
         to_admin = types.InlineKeyboardButton('Admin menu', callback_data=posts_cb.new(action='admin_menu', issue='1'))
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=1, footer_buttons=to_admin))
     except Exception as e:
-        logger.exception('Error in RELEASE APP %s', e)
+        logger.exception('Error in KEYBOARD RELEASE APP LIST %s', e)
+
+def release_app_confirm(issue) -> types.InlineKeyboardMarkup:
+    """
+    """
+    try:
+        logger.info('-- KEYBOARD RELEASE APP CONFIRM build menu for issue %s', issue)
+        button_confirm = [types.InlineKeyboardButton('Точно', callback_data=posts_cb.new(action='release_app_confirm', issue=issue))]
+        release_app_list = types.InlineKeyboardButton('К списку релизов', callback_data=posts_cb.new(action='release_app_list', issue='1'))
+        return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_confirm, n_cols=1, footer_buttons=release_app_list))
+    except Exception as e:
+        logger.exception('Error in KEYBOARD RELEASE APP CONFIRM %s', e)
 
 def rollback_app_list() -> types.InlineKeyboardMarkup:
     """
@@ -150,15 +163,26 @@ def rollback_app_list() -> types.InlineKeyboardMarkup:
     try:
         issues = JiraConnection().jira_search(config.issues_confirm_full_resolved)
         button_release_list = []
-        logger.info('-- KEYBOARD ROLLBACK APP build menu for %s', issues)    
+        logger.info('-- KEYBOARD ROLLBACK APP LIST build menu for %s', issues)    
         if len(issues) > 0:
             for issue in issues:
-                button_release_list.append(types.InlineKeyboardButton(f'{issue.key} {issue.fields.summary}', 
+                button_release_list.append(types.InlineKeyboardButton(f'{issue.key} {issue.fields.summary}',
                                            callback_data=posts_cb.new(action='rollback_app', issue=issue.key)))
         to_admin = types.InlineKeyboardButton('Admin menu', callback_data=posts_cb.new(action='admin_menu', issue='1'))
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=1, footer_buttons=to_admin))
     except Exception as e:
-        logger.exception('Error in ROLLBACK APP %s', e)
+        logger.exception('Error in KEYBOARD ROLLBACK APP LIST %s', e)
+
+def rollback_app_confirm(issue) -> types.InlineKeyboardMarkup:
+    """
+    """
+    try:
+        logger.info('-- KEYBOARD ROLLBACK APP CONFIRM build menu for issue %s', issue)
+        button_confirm = [types.InlineKeyboardButton('Точно', callback_data=posts_cb.new(action='rollback_app_confirm', issue=issue))]
+        rollback_app_list = types.InlineKeyboardButton('К списку релизов', callback_data=posts_cb.new(action='rollback_app_list', issue='1'))
+        return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_confirm, n_cols=1, footer_buttons=rollback_app_list))
+    except Exception as e:
+        logger.exception('Error in KEYBOARD ROLLBACK APP CONFIRM %s', e)
 
 def current_mode() -> str:
     """

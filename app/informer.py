@@ -496,7 +496,7 @@ async def admin_menu(query: types.CallbackQuery, callback_data: str):
     del callback_data
     try:
         logger.info('admin menu opened by %s', returnHelper.return_name(query))
-        msg = f'Hi, admin!\nCurrent work mode: *{keyboard.current_mode()}*'
+        msg = f'Привет! \nМой текущий рабочий режим: *{keyboard.current_mode()}*'
         await query.message.reply(text=msg, reply_markup=keyboard.admin_menu(),
                                   parse_mode=ParseMode.MARKDOWN)
     except Exception:
@@ -509,7 +509,7 @@ async def release_app_list(query: types.CallbackQuery, callback_data: str):
     """
     #issue_key = callback_data['issue_key']
     logger.info('-- RELEASE APP LIST menu opened by %s %s', returnHelper.return_name(query), callback_data)
-    msg = f'Привет! \nМой текущий рабочий режим: *{keyboard.current_mode()}*'
+    msg = f'Релизы, которые я могу выкатить (находятся в статусе Waiting на доске):'
     await query.message.reply(text=msg, reply_markup=keyboard.release_app_list(), parse_mode=ParseMode.MARKDOWN)
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='release_app'), filters.restricted, filters.admin)
@@ -518,13 +518,22 @@ async def release_app(query: types.CallbackQuery, callback_data: str):
         Скормить релиз боту
     """
     logger.info('-- RELEASE APP started by %s %s', returnHelper.return_name(query), callback_data)
+    msg = f"Точно выкатываем {callback_data['issue']} ?"
+    await query.message.reply(text=msg, reply_markup=keyboard.release_app_confirm(callback_data['issue']), parse_mode=ParseMode.MARKDOWN)
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='release_app_confirm'), filters.restricted, filters.admin)
+async def release_app_confirm(query: types.CallbackQuery, callback_data: str):
+    """
+        Скормить релиз боту
+    """
+    logger.info('-- RELEASE APP CONFIRM started by %s %s', returnHelper.return_name(query), callback_data)
     try:
         logger.info('Assign %s to Releasebot', callback_data['issue'])
         JiraConnection().assign_issue(callback_data['issue'], config.jira_user)
         JiraConnection().add_comment(callback_data['issue'], f"Назначен на бота неким {returnHelper.return_name(query)}")
     except Exception as e:
-        logger.exception('Error in RELEASE APP %s', e)
-    await query.message.reply('Съел релиз %s, перевариваю.', callback_data['issue'])
+        logger.exception('Error in RELEASE APP CONFIRM %s', e)
+    await query.answer(f"Съел релиз {callback_data['issue']}, перевариваю.")
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='rollback_app_list'), filters.restricted, filters.admin)
 async def rollback_app_list(query: types.CallbackQuery, callback_data: str):
@@ -532,7 +541,7 @@ async def rollback_app_list(query: types.CallbackQuery, callback_data: str):
         Выставить у релиза резолюцию "Rollback"
     """
     logger.info('-- ROLLBACK APP LIST menu opened by %s %s', returnHelper.return_name(query), callback_data)
-    msg = f'Привет! \nМой текущий рабочий режим: *{keyboard.current_mode()}*'
+    msg = f'Релизы, которые я могу откатить (выехали хотя бы на один хост на доске):'
     await query.message.reply(text=msg, reply_markup=keyboard.rollback_app_list(), parse_mode=ParseMode.MARKDOWN)
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='rollback_app'), filters.restricted, filters.admin)
@@ -542,11 +551,22 @@ async def rollback_app(query: types.CallbackQuery, callback_data: str):
     """
     #issue_key = callback_data['issue_key']
     logger.info('-- ROLLBACK APP started by %s %s', returnHelper.return_name(query), callback_data)
+    msg = f"Точно откатываем {callback_data['issue']} ?"
+    await query.message.reply(text=msg, reply_markup=keyboard.rollback_app_confirm(callback_data['issue']), parse_mode=ParseMode.MARKDOWN)
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='rollback_app_confirm'), filters.restricted, filters.admin)
+async def rollback_app_confirm(query: types.CallbackQuery, callback_data: str):
+    """
+        Скормить релиз боту
+    """
+    #issue_key = callback_data['issue_key']
+    logger.info('-- ROLLBACK APP CONFIRM started by %s %s', returnHelper.return_name(query), callback_data)
     try:
         JiraConnection().transition_issue_with_resolution(callback_data['issue'], '241', {'id': '10300'})
+        JiraConnection().add_comment(callback_data['issue'], f"Откатывает некий {returnHelper.return_name(query)}")
     except Exception as e:
-        logger.error('Error in ROLLBACK APP %s', e)
-    await query.message.reply('Откатываю релиз %s. Потому что я красавчик.', callback_data['issue'])
+        logger.error('Error in ROLLBACK APP CONFIRM %s', e)
+    await query.answer(f"Откатываю релиз {callback_data['issue']}. Потому что я красавчик.")
 
 ##############################################################################################
 
