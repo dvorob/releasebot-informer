@@ -19,6 +19,7 @@ from aiogram.utils.emoji import emojize
 from aiogram.utils.exceptions import ChatNotFound, BotBlocked
 from aiogram.utils.markdown import bold
 from aiohttp import web
+from enum import Enum
 from jiratools import JiraConnection
 from utils import aero, logging, returnHelper, initializeBot, filters, couch_client
 from utils.initializeBot import dp, bot
@@ -27,6 +28,13 @@ from releaseboard_checker import start_update_releases, todo_tasks
 from datetime import timedelta, datetime
 
 loop = asyncio.get_event_loop()
+class JiraTransitions(Enum):
+    TODO_WAIT = '321'
+    WAIT_TODO = '41'
+    TODO_PARTIAL = '191'
+    PARTIAL_CONFIRM = '211'
+    CONFIRM_FULL = '101'
+    FULL_RESOLVED = '241'
 
 @initializeBot.dp.errors_handler()
 async def errors_handler(update: Update, exception: Exception):
