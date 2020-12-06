@@ -152,8 +152,8 @@ def main_menu_message() -> str:
         Main menu message
         :return: str
     """
-    msg = emojize('Send /help if you want to read description all of my commands.\n'
-                  'Here :point_down: you can see what I can')
+    msg = emojize('Отправьте /help, чтобы узнать, что я умею.\n'
+                  'Ниже :point_down: меню, но это далеко не всё.')
     return msg
 
 @initializeBot.dp.message_handler(filters.restricted, commands=['write_my_chat_id'])
@@ -632,9 +632,8 @@ async def subscribe_events(query: types.CallbackQuery, callback_data: str):
     del callback_data
     try:
         logger.info('subscribe_events opened by %s', returnHelper.return_name(query))
-        msg = 'Here you can `subscribe to all` notification about all releases from bot' \
-              ' or `unsubscribe at all` - in this case, you will receive ' \
-              'notifications *only related to you.*'
+        msg = 'Вы можете подписаться на уведомления обо всех релизах.' \
+              'Уведомления о ваших релизах будут работать в любом случае, от них отписаться нельзя.'
         await query.message.reply(text=msg, reply_markup=keyboard.subscribe_menu(),
                                   parse_mode=ParseMode.MARKDOWN)
     except Exception:
