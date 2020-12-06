@@ -4,7 +4,7 @@ Build different menus
 """
 from aiogram import types
 from aiogram.utils.callback_data import CallbackData
-from jiratools import JiraConnection
+from utils.jiratools import JiraConnection
 from utils import logging, filters, aero
 import config
 

@@ -3,6 +3,7 @@
 """
 Realize jira methods
 """
+from enum import Enum
 from jira import JIRA
 from utils import logging
 import config
@@ -10,6 +11,18 @@ import jira.exceptions
 
 __all__ = ['JiraConnection']
 logger = logging.setup()
+
+class JiraTransitions(Enum):
+    TODO_WAIT = '321'
+    WAIT_TODO = '41'
+    TODO_PARTIAL = '191'
+    PARTIAL_CONFIRM = '211'
+    PARTIAL_RESOLVED = '241'
+    PARTIAL_WAIT = '321'
+    CONFIRM_FULL = '101'
+    CONFIRM_WAIT = '321'
+    FULL_RESOLVED = '241'
+    FULL_WAIT = '321'
 
 class JiraConnection:
 

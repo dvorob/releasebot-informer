@@ -20,21 +20,13 @@ from aiogram.utils.exceptions import ChatNotFound, BotBlocked
 from aiogram.utils.markdown import bold
 from aiohttp import web
 from enum import Enum
-from jiratools import JiraConnection
+from utils.jiratools import JiraConnection, JiraTransitions
 from utils import aero, logging, returnHelper, initializeBot, filters, couch_client
 from utils.initializeBot import dp, bot
 from utils.database import MysqlPool as db
-from releaseboard_checker import start_update_releases, todo_tasks
 from datetime import timedelta, datetime
 
 loop = asyncio.get_event_loop()
-class JiraTransitions(Enum):
-    TODO_WAIT = '321'
-    WAIT_TODO = '41'
-    TODO_PARTIAL = '191'
-    PARTIAL_CONFIRM = '211'
-    CONFIRM_FULL = '101'
-    FULL_RESOLVED = '241'
 
 @initializeBot.dp.errors_handler()
 async def errors_handler(update: Update, exception: Exception):
@@ -570,7 +562,7 @@ async def rollback_app_confirm(query: types.CallbackQuery, callback_data: str):
     #issue_key = callback_data['issue_key']
     logger.info('-- ROLLBACK APP CONFIRM started by %s %s', returnHelper.return_name(query), callback_data)
     try:
-        JiraConnection().transition_issue_with_resolution(callback_data['issue'], '241', {'id': '10300'})
+        JiraConnection().transition_issue_with_resolution(callback_data['issue'], JiraTransitions.FULL_RESOLVED.value, {'id': '10300'})
         JiraConnection().add_comment(callback_data['issue'], f"Откатывает некий {returnHelper.return_name(query)}")
     except Exception as e:
         logger.error('Error in ROLLBACK APP CONFIRM %s', e)
@@ -605,64 +597,37 @@ async def return_to_queue(query: types.CallbackQuery, callback_data: str):
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='return_release'), filters.restricted)
 async def process_return_queue_callback(query: types.CallbackQuery, callback_data: str):
     """
-        Based on callback_data["issue"] (received from keyboard.return_queue_menu)
-        will know a = [tg chat_id] of assignee this Jira task. If employee clicking the button
-        with this Jira task inside a:
-        will stop the Jenkins job, del assignee from task, return to the queue, write msg.
-        Else, will write "You are not in assignee list"
-        :param query:
-        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
+        Получит callback_data["issue"] (через keyboard.return_queue_menu)
+        Вернет таску в начало очереди, если это сделал один из согласующих.
     """
     try:
         await returnHelper.return_one_second(query)
         jira_issue_id = callback_data['issue']
-        # Get chat_id of recipients this jira task
+        # Получить список согласующих (через releasebot-api)
         request_api_v1 = requests.get(f'{config.api_chat_id}/{jira_issue_id}')
         chat_id_recipients = request_api_v1.json()
         logger.info('chat_id_recipients: %s', chat_id_recipients)
 
         if str(query.message.chat.id) in chat_id_recipients:
-            msg = f'Returned back to the queue  **{jira_issue_id}**, ' \
-                  'come back when you are ready.'
-            # delete assignee from task
+            msg = f'Вернул в очередь **{jira_issue_id}**. Попробую выкатить позже.'
+            # Передвинем таску в начало доски и снимем её с бота
             jira_object = JiraConnection()
             jira_object.assign_issue(jira_issue_id, None)
-            # 321 - transition identifier from looking_for_assignee
-            # to waiting_release_master
-            jira_object.transition_issue(jira_issue_id, '321')
-            jira_object.add_comment(jira_issue_id, "Задача была возвращена "
-                                                   "в очередь одним из согласующих "
-                                                   "через телеграм.")
-            msg_who_returned = f'{returnHelper.return_name(query)} ' \
-                               f'returned {jira_issue_id} ' \
-                               f'to the queue a second ago'
-            logger.info(msg_who_returned)
-
-            # jenkins stop task
-            all_return_queue_task = aero.read(item='return_to_queue',
-                                               aerospike_set='jenkins_args')
-            jenkins_args_for_stop = all_return_queue_task[jira_issue_id]
-            logger.info('jenkins_args_for_stop: %s', all_return_queue_task[jira_issue_id])
-            url_jenkins_stop_job = f'{config.jenkins}/stop/job'
-            r = requests.post(url_jenkins_stop_job, json=jenkins_args_for_stop)
-            logger.info('jenkins remote response: %s', r.json())
+            jira_object.transition_issue(jira_issue_id, JiraTransitions.FULL_WAIT.value)
+            jira_object.add_comment(jira_issue_id, "Задача была возвращена в очередь одним из согласующих через телеграм.")
         else:
-            msg = 'You are not in assignee list.\n'
-            err_msg = f'{returnHelper.return_name(query)} + ' \
-                      f'tried return to queue {jira_issue_id} ' \
-                     f'but smth went wrong'
-            logger.error(err_msg)
+            msg = 'Вы не в списке согласующих, вернуть задачу в очередь не смогу.\n'
+
         await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)
     except Exception:
         logger.exception('process_return_queue_callback')
 
+
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='subscribe'), filters.restricted)
 async def subscribe_events(query: types.CallbackQuery, callback_data: str):
     """
-        Subscribe to events
-
-        :param query:
-        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
+    Подписать пользователя на события
+    {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     del callback_data
     try:
@@ -675,11 +640,11 @@ async def subscribe_events(query: types.CallbackQuery, callback_data: str):
     except Exception:
         logger.exception("subscribe")
 
+
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='subscribe_all'), filters.restricted)
 async def subscribe_all(query: types.CallbackQuery, callback_data: str):
     """
         Push 1 to some db table, you will subscribed
-        :param query:
         :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     try:
@@ -701,9 +666,8 @@ async def subscribe_all(query: types.CallbackQuery, callback_data: str):
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='unsubscribe_all'), filters.restricted)
 async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
     """
-        Push 0 to some db table, you will unsubscribed
-        :param query:
-        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
+    Отписать пользователя от всех уведомлений.
+    {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     try:
         del callback_data
@@ -720,9 +684,12 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
     except Exception:
         logger.exception("unsubscribe_all")
 
-#  Запросить список гипервизоров, где в данный момент находится приложение
+
 @initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['where_app'])
 async def where_app_hosts(message: types.Message):
+    """
+    Запросить список гипервизоров, где в данный момент находится приложение
+    """
     logger.info( f'get where app info started by {returnHelper.return_name(message)}' )
     incoming = message.text.split()
     try:
@@ -737,10 +704,13 @@ async def where_app_hosts(message: types.Message):
     except Exception as e:
         logger.exception('Error in where app hosts %s', e)
 
-# Ручки поиска по БД. Светят наружу в API. 
-# /who Выдать информацию по пользователю из таблицы xerxes.users
+
 @initializeBot.dp.message_handler(filters.restricted, commands=['who'])
 async def get_user_info(message: types.Message):
+    """
+    Ручки поиска по БД. Светят наружу в API. 
+    /who Выдать информацию по пользователю из таблицы xerxes.users
+    """
     logger.info('get user info started by %s', returnHelper.return_name(message))
     incoming = message.text.split()
     if (len(incoming) == 2) or (len(incoming) == 3) :
@@ -772,10 +742,10 @@ async def get_user_info(message: types.Message):
     await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
 
-# Внешняя ручка рассылки
 async def send_message_to_users(request):
     """
-        {'accounts': [list of account_names], 'jira_tasks': [list of tasks_id], 'text': str}
+    # Внешняя ручка рассылки
+    {'accounts': [list of account_names], 'jira_tasks': [list of tasks_id], 'text': str}
     """
     data_json = await request.json()
     logger.info('Send message called %s %s', data_json, type(data_json))
@@ -811,11 +781,11 @@ async def send_message_to_users(request):
     return web.json_response()
 
 
-# Внешняя ручка для информирования дежурных
 async def inform_duty(request):
     """
-        {'areas': ['ADMSYS(портал)', ...], 'message': str}
-        areas - задаются в календаре AdminsOnDuty, перед именем дежурного
+    Внешняя ручка для информирования дежурных
+    {'areas': ['ADMSYS(портал)', ...], 'message': str}
+    areas - задаются в календаре AdminsOnDuty, перед именем дежурного
     """
     data_json = await request.json()
     logger.info('Inform duty called %s %s', data_json, type(data_json))
@@ -828,11 +798,11 @@ async def inform_duty(request):
     return web.json_response()
 
 
-# Внешняя ручка для информирования дежурных
 async def inform_subscribers(request):
     """
-        {'notification': 'all', 'message': str}
-        notification можно найти в таблице Xerxes.Users в соответствующем поле
+    Внешняя ручка для информирования дежурных
+    {'notification': 'all', 'message': str}
+    notification можно найти в таблице Xerxes.Users в соответствующем поле
     """
     data_json = await request.json()
     logger.info('Inform subscribers called %s %s', data_json, type(data_json))
@@ -846,8 +816,10 @@ async def inform_subscribers(request):
     return web.json_response()
 
 
-# Функция отправки сообщения сегодняшнему дежурному
 async def inform_today_duty(area, msg):
+    """
+    Функция отправки сообщения сегодняшнему дежурному
+    """
     dutymen_array = await db().get_duty_in_area(get_duty_date(datetime.today()), area)
     logger.info('inform today duty %s %s', dutymen_array, msg)
     if len(dutymen_array) > 0:
@@ -875,29 +847,28 @@ async def unknown_message(message: types.Message):
                       'Список того, что я умею - /help')
         await message.reply(msg, parse_mode=ParseMode.MARKDOWN)
 
+
 async def on_startup(dispatcher):
     """
         Start up function
-        :param dispatcher:
     """
     try:
         logger.info('- - - - Start bot - - - - -')
 
         scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
-        scheduler.add_job(start_update_releases, 'cron', day='*', hour='*', minute='*', second='30')
-        scheduler.add_job(todo_tasks, 'cron', day='*', hour='*', minute='*', second='20')
         scheduler.start()
     except Exception:
         logger.exception('on_startup')
         scheduler.shutdown()
 
+
 async def on_shutdown(dispatcher):
     """
         Shutdown Bot
-        :param dispatcher:
     """
     del dispatcher
     logger.info('Shutdown')
+
 
 async def get_session():
     """
@@ -905,6 +876,7 @@ async def get_session():
     """
     session = aiohttp.ClientSession()
     return session
+
 
 def start_webserver():
     app = web.Application()
