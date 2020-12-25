@@ -35,7 +35,7 @@ node('docker') {
                 def prepare_tag_yaml = ["ymreleasebot": ["tag": image_version]]
                 writeYaml file: 'tag-values.yaml', data: prepare_tag_yaml
                 withDockerRegistry([ url: "https://${registry}", credentialsId: credentials.registryCredentialsId ]) {
-                    def image_build = docker.build("${registry}/yamoney/${image}", "-f Dockerfile --pull .")
+                    def image_build = docker.build("${registry}/yamoney/${image}", "-f Dockerfile --net=host --pull .")
                     image_build.push(image_version)
                     image_build.push('latest')
                 }

@@ -670,7 +670,7 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
     """
     try:
         del callback_data
-        logger.info('Unsubscribe a %s chat %s ', query.message.chat.type, query.message.chat)
+        logger.info('-- UNSUBSCRIBE ALL %s chat %s ', query.message.chat.type, query.message.chat)
         if (query.message.chat.type == 'private'):
             user_from_db = await db().get_users('tg_id', query.message.chat.id)
             await db().db_set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='none', email=None)
@@ -680,8 +680,8 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
             logger.info('Subscribe got something undefined %s', query.message.chat.id)
         msg = 'Вы отписались от сообщений о релизах.'
         await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)
-    except Exception:
-        logger.exception("unsubscribe_all")
+    except Exception as e:
+        logger.exception("Error in UNSUBSCRIBE ALL %s", e)
 
 
 @initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['where_app'])
@@ -689,7 +689,7 @@ async def where_app_hosts(message: types.Message):
     """
     Запросить список гипервизоров, где в данный момент находится приложение
     """
-    logger.info( f'get where app info started by {returnHelper.return_name(message)}' )
+    logger.info( '-- WHERE APP HOSTS info started by %s', returnHelper.return_name(message))
     incoming = message.text.split()
     try:
         if len(incoming) >= 2:
@@ -701,7 +701,7 @@ async def where_app_hosts(message: types.Message):
             msg = 'Error: app_name not found'
         await message.answer(text=msg, parse_mode=ParseMode.HTML)
     except Exception as e:
-        logger.exception('Error in where app hosts %s', e)
+        logger.exception('Error in WHERE APP HOSTS %s', e)
 
 
 @initializeBot.dp.message_handler(filters.restricted, commands=['who'])
@@ -710,7 +710,7 @@ async def get_user_info(message: types.Message):
     Ручки поиска по БД. Светят наружу в API. 
     /who Выдать информацию по пользователю из таблицы xerxes.users
     """
-    logger.info('get user info started by %s', returnHelper.return_name(message))
+    logger.info('-- GET USER INFO started by %s', returnHelper.return_name(message))
     incoming = message.text.split()
     if (len(incoming) == 2) or (len(incoming) == 3) :
         probably_username  = incoming[1:]
@@ -719,7 +719,7 @@ async def get_user_info(message: types.Message):
                 user_info = await db().search_users_by_fullname(probably_username)
             else:
                 # Уберем почту с конца строки, затем уберем @ если был задан ТГ-логин с собакой
-                probably_username = re.sub('@yamoney.ru|@', '', probably_username[0])
+                probably_username = re.sub('@yamoney.ru|@yoomoney.ru|@', '', probably_username[0])
                 user_info = await db().search_users_by_account(probably_username)
             logger.info('get user info found %s', user_info)
             if len(user_info) > 0:
@@ -734,8 +734,8 @@ async def get_user_info(message: types.Message):
                     msg += f'\n Notification: <strong>{user["notification"]}</strong>\n'
             else:
                 msg = 'Пользователей в моей базе не найдено'
-        except Exception:
-            logger.exception('exception in get user info')
+        except Exception as e:
+            logger.exception('Error GET USER INFO %s', e)
     else:
         msg = 'Пожалуйста, попробуйте еще раз: /who username'
     await message.answer(text=msg, parse_mode=ParseMode.HTML)
@@ -747,7 +747,7 @@ async def send_message_to_users(request):
     {'accounts': [list of account_names], 'jira_tasks': [list of tasks_id], 'text': str}
     """
     data_json = await request.json()
-    logger.info('Send message called %s %s', data_json, type(data_json))
+    logger.info('-- SEND MESSAGE TO USERS %s %s', data_json, type(data_json))
     disable_notification = False
     if 'accounts' in data_json:
         try:
@@ -768,14 +768,14 @@ async def send_message_to_users(request):
                 except ChatNotFound:
                     logger.error('Chat not found with: %s', chat_id)
         except Exception as e:
-            logger.exception('Exception in send message to users %s', str(e))
+            logger.exception('Error send message to users %s', str(e))
 
     if 'jira_tasks' in data_json:
         for task in data_json['jira_tasks']:
             try:
                 JiraConnection().add_comment(JiraConnection().jira_issue(task), data_json['text'])
             except Exception as e:
-                logger.exception('Exception in send message to users when commenting jira task %s', str(e))
+                logger.exception('Error send message to users when commenting jira task %s', str(e))
 
     return web.json_response()
 
@@ -787,13 +787,13 @@ async def inform_duty(request):
     areas - задаются в календаре AdminsOnDuty, перед именем дежурного
     """
     data_json = await request.json()
-    logger.info('Inform duty called %s %s', data_json, type(data_json))
+    logger.info('-- INFORM DUTY %s %s', data_json, type(data_json))
     if 'areas' in data_json:
         try:
             for area in data_json['areas']:
                 await inform_today_duty(area, data_json['message'])
         except Exception as e:
-            logger.exception('Exception in inform duty %s', str(e))
+            logger.exception('Error inform duty %s', e)
     return web.json_response()
 
 
@@ -804,14 +804,14 @@ async def inform_subscribers(request):
     notification можно найти в таблице Xerxes.Users в соответствующем поле
     """
     data_json = await request.json()
-    logger.info('Inform subscribers called %s %s', data_json, type(data_json))
+    logger.info('-- INFORM SUBSCRIBERS %s %s', data_json, type(data_json))
     if 'notification' in data_json:
         try:
             subscribers = await db().get_subscribers_to_something('all')
             for chat_id in subscribers:
                 await bot.send_message(chat_id=chat_id, text=data_json['text'], disable_notification=True, parse_mode=ParseMode.MARKDOWN)
         except Exception as e:
-            logger.exception('Exception in inform subscribers %s', str(e))
+            logger.exception('Error inform subscribers %s', e)
     return web.json_response()
 
 
@@ -820,7 +820,7 @@ async def inform_today_duty(area, msg):
     Функция отправки сообщения сегодняшнему дежурному
     """
     dutymen_array = await db().get_duty_in_area(get_duty_date(datetime.today()), area)
-    logger.info('inform today duty %s %s', dutymen_array, msg)
+    logger.info('-- INFORM TODAY DUTY %s %s', dutymen_array, msg)
     if len(dutymen_array) > 0:
         for d in dutymen_array:
             try:
@@ -832,13 +832,15 @@ async def inform_today_duty(area, msg):
                 logger.info('YM release bot was blocked by %s', d['tg_login'])
             except ChatNotFound:
                 logger.error('Chat not found with: %s', d['tg_login'])
+            except Exception as e:
+                logger.exception('Error in INFORM TODAY DUTY %s', e)  
 
 
 @initializeBot.dp.message_handler()
 async def unknown_message(message: types.Message):
     """
     """
-    logger.info('unknown message start')
+    logger.info('-- UNKNOWN MESSAGE start')
     is_restricted = await filters.restricted(message)
     if is_restricted:
         msg = emojize(f'{bold(message.from_user.full_name)},\n'
