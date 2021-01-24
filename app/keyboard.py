@@ -6,6 +6,7 @@ from aiogram import types
 from aiogram.utils.callback_data import CallbackData
 from utils.jiratools import JiraConnection
 from utils import logging, filters, aero
+from utils.database import PostgresPool as db
 import config
 
 logger = logging.setup()
@@ -189,11 +190,11 @@ def current_mode() -> str:
         Get current mode of Bot
         :return: str with mode
     """
-    spiky_mode = aero.read(item='deploy', aerospike_set='remaster')
+    run_mode = db().get_parameters('run_mode')[0]['value']
 
-    if spiky_mode['run'] == 2:
+    if run_mode == 'on':
         mode = 'Working'
-    elif spiky_mode['run'] == 0:
+    elif run_mode == 'off':
         mode = 'Stopped'
     else:
         mode = 'Don\'t touching new releases'

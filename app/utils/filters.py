@@ -6,7 +6,7 @@ Defence filters
 from aiogram import types
 from aiogram.utils.callback_data import CallbackData
 from utils import logging, returnHelper
-from utils.database import MysqlPool as db
+from utils.database import PostgresPool as db
 import aiohttp
 import asyncio
 import config as config

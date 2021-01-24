@@ -23,7 +23,7 @@ from enum import Enum
 from utils.jiratools import JiraConnection, JiraTransitions
 from utils import aero, logging, returnHelper, initializeBot, filters, couch_client
 from utils.initializeBot import dp, bot
-from utils.database import MysqlPool as db
+from utils.database import PostgresPool as db
 from datetime import timedelta, datetime
 
 loop = asyncio.get_event_loop()
@@ -420,8 +420,7 @@ async def stop_bot(query: types.CallbackQuery, callback_data: str):
     """
     del callback_data
     logger.warning('%s stopped bot', returnHelper.return_name(query))
-    bins = {'run': 0}
-    aero.write(item='deploy', bins=bins, aerospike_set='remaster')
+    db().set_parameters('run_mode', 'off')
     await query.answer('Bot was stopped, Bye!')
 
 
@@ -446,9 +445,9 @@ async def lock_app_release(message: types.Message):
             async with session.post(config.api_lock_unlock, headers=locked_app) as resp:
                 await resp.json()
                 logger.info('lock send locked app to api, status is: %s', resp.status)
-            get_app = aero.read(item='deploy', aerospike_set='remaster')
-            logger.info('lock app release %s ', get_app["apps"][incoming[1]])
-            msg = f'lock app release {get_app["apps"][incoming[1]]}'
+            get_app =  db().get_application_metainfo(incoming[1])
+            logger.info('lock app release %s ', get_app)
+            msg = f'lock app release {get_app}'
             await message.answer(text=msg)
         except Exception as exc:
             logger.exception('lock_unlock_task')
@@ -467,8 +466,7 @@ async def start_bot(query: types.CallbackQuery, callback_data: str):
     """
     del callback_data
     logger.warning('%s started bot', returnHelper.return_name(query))
-    bins = {'run': 2}
-    aero.write(item='deploy', bins=bins, aerospike_set='remaster')
+    db().set_parameters('run_mode', 'on')
     await query.answer('Bot was started, Go!')
 
 
@@ -482,8 +480,7 @@ async def dont_touch_releases(query: types.CallbackQuery, callback_data: str):
     del callback_data
     logger.warning('%s pressed button Don\'t touch new release',
                    returnHelper.return_name(query))
-    bins = {'run': 1}
-    aero.write(item='deploy', bins=bins, aerospike_set='remaster')
+    db().set_parameters('run_mode', 'last')
     await query.answer('Ok, I won\'t touch new releases by myself.')
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='admin_menu'), filters.restricted, filters.admin)

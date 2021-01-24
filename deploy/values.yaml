@@ -37,3 +37,7 @@ ymreleasebot:
     telegram:
       name: 'telegram'
       value: <value>
+    postgres:
+      name: 'postgres'
+      pass: <value>
+      user: <value>

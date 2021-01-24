@@ -1,28 +1,40 @@
 #!/usr/bin/env python3.8
 # -*- coding: utf-8 -*-
 """
-Input/output for mysql
+Работа с БД в PostgreSQL
 """
+# External
+import json
 from datetime import datetime
 from peewee import *
-from utils import logging
+# Internal
 import config
-
+import re
+from utils import logging
 
 logger = logging.setup()
 
-__all__ = ['MysqlPool']
+__all__ = ['PostgresPool']
 
 class BaseModel(Model):
     class Meta:
-        database = config.mysql
+        database = config.postgres
+
+class App_List(BaseModel):
+    id = IntegerField(primary_key=True)
+    app_name = CharField(unique=True)
+    perimeter = CharField(default=None)
+    release_mode = CharField(default=None)
+    admins_team = CharField(default=None)
+    queues = TextField(default=None)
+    bot_enabled = BooleanField(default=None)
 
 class Chats(BaseModel):
     id = IntegerField()
     tg_id = CharField()
     title = CharField()
     started_by = CharField()
-    date_start = DateTimeField(default=datetime.now)
+    date_start = TimestampField(default=datetime.now)
     notification = CharField(default='none')
     description = CharField()
 
@@ -31,7 +43,7 @@ class Option(BaseModel):
     value = CharField()
 
 class Users(BaseModel):
-    id = IntegerField()
+    id = IntegerField(primary_key=True)
     account_name = CharField(unique=True)
     full_name = CharField()
     tg_login = CharField()
@@ -40,7 +52,7 @@ class Users(BaseModel):
     email = CharField()
     notification = CharField(default='none')
     admin = IntegerField(default=0)
-    date_update = DateTimeField()
+    date_update = TimestampField()
 
 class Duty_List(BaseModel):
     id = IntegerField()
@@ -51,15 +63,39 @@ class Duty_List(BaseModel):
     full_text = CharField()
     tg_login = CharField()
 
-class MysqlPool:
+class Parameters(BaseModel):
+    id = IntegerField(index=True)
+    name = CharField()
+    value = CharField()
+    description = CharField()
+
+class PostgresPool:
 
     def __init__(self):
-        self.db = config.mysql
+        self.db = config.postgres
+
+    # ---------------------------------
+    # ----- AppList -------------------
+
+    def get_application_metainfo(self, app_name) -> list:
+        # Сходить в AppList и получить конфигурацию деплоя конкретного приложения - очереди, режим выкладки и прочее
+        logger.debug('get application metainfo %s ', app_name)
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            db_query = App_List.select().where(App_List.app_name == app_name)
+            for v in db_query:
+                result = vars(v)['__data__']
+            return result
+        except Exception as e:
+            logger.exception('exception in get application metainfo %s', e)
+        finally:
+            self.db.close()
 
     async def set_chats(self, tg_id, title, started_by, notification):
         """
         """
-        logger.info('sret chat called for %s %s %s notification %s', tg_id, title, started_by, notification)
+        logger.info('set chat called for %s %s %s notification %s', tg_id, title, started_by, notification)
         try:
             self.db.connect(reuse_if_open=True)
             db_chat, _ = Chats.get_or_create(tg_id=tg_id)
@@ -73,41 +109,6 @@ class MysqlPool:
         finally:
             self.db.close()
 
-    def db_get_option(self, name):
-        """
-            Get value from db key
-            :param name:
-            :return:
-        """
-        logger.info('db_get_option started %s %s', self, name)
-        try:
-            self.db.connect(reuse_if_open=True)
-            db_option, _ = Option.get_or_create(name=name)
-            db_option.save()
-            return db_option.value
-        except Exception:
-            logger.exception('db_get_option')
-        finally:
-            self.db.close()
-
-    def db_set_option(self, name, value):
-        """
-            Set value to db
-            :param name:
-            :param value:
-        """
-        logger.info('db_set_option started %s %s', self, name)
-        try:
-            self.db.connect(reuse_if_open=True)
-            db_option, _ = Option.get_or_create(name=name)
-            db_option.value = value
-            db_option.save()
-            if value:
-                logger.debug('saved %s to %s', value, name)
-        except Exception as e:
-            logger.exception('db set option %s', str(e))
-        finally:
-            self.db.close()
 
     async def get_subscribers_to_something(self, notification) -> list:
         """
@@ -297,5 +298,34 @@ class MysqlPool:
             return result
         except Exception as e:
             logger.exception('exception in db get duty personal tg_login %s', str(e))
+        finally:
+            self.db.close()
+
+    def get_parameters(self, name) -> list:
+        # Сходить в parameters
+        logger.debug('get parameters %s ', name)
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            db_query = Parameters.select().where(Parameters.name == name)
+            for v in db_query:
+                result.append((vars(v))['__data__'])
+            logger.debug('get parameters for %s %s', name, result)
+            return result
+        except Exception as e:
+            logger.exception('exception in get parameters %s', e)
+        finally:
+            self.db.close()
+
+    def set_parameters(self, name, value):
+        # Записать в parameters
+        logger.info('set parameters %s %s ', name, value)
+        try:
+            self.db.connect(reuse_if_open=True)
+            db_rec, _ = Parameters.get_or_create(name=name)
+            db_rec.value = value
+            db_rec.save()
+        except Exception as e:
+            logger.exception('exception in set parameters %s', e)
         finally:
             self.db.close()

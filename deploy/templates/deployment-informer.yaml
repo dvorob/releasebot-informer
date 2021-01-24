@@ -35,6 +35,9 @@ spec:
             - prefix: secret_mysql_
               secretRef:
                 name: {{ $conf.secrets.mysql.name }}
+            - prefix: secret_postgres_
+              secretRef:
+                name: {{ $conf.secrets.postgres.name }}
             - prefix: secret_telegram_
               secretRef:
                 name: {{ $conf.secrets.telegram.name }}

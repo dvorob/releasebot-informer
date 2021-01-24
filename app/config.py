@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from os import getenv
-from playhouse.pool import PooledMySQLDatabase
+from playhouse.pool import PostgresqlDatabase, PooledPostgresqlDatabase
 
 bot_token = getenv('secret_telegram_token')
 bot_master = {'vorobiev_telegram_id': 279933948,
@@ -17,15 +17,26 @@ bot_master = {'vorobiev_telegram_id': 279933948,
               'titov_telegram_id': 81194573,
               'grachev_telegram_id': 170541899,
               'gromov_telegram_id': 390182439,
-              'avdonin_telegram_id': 145902753
+              'avdonin_telegram_id': 145902753,
+              'smirnov_telegram_id': 160932394
               }
 
-mysql = PooledMySQLDatabase(
-    'xerxes',
-    host='mysql.xerxes.svc.ugr-base1.kube.yamoney.ru',
-    user=getenv('secret_mysql_user'),
-    passwd=getenv('secret_mysql_pass'),
-    max_connections=8,
+# mysql = PooledMySQLDatabase(
+#     'xerxes',
+#     host='mysql.xerxes.svc.ugr-base1.kube.yamoney.ru',
+#     user=getenv('secret_mysql_user'),
+#     passwd=getenv('secret_mysql_pass'),
+#     max_connections=8,
+#     stale_timeout=300)
+
+#PG configuration
+postgres = PooledPostgresqlDatabase(
+    'release_bot',
+    user=getenv('secret_postgres_user').rstrip(),
+    password=getenv('secret_postgres_pass').rstrip(),
+    host='ugr-pgtools2.yamoney.ru',
+    port=7432,
+    max_connections=32,
     stale_timeout=300)
 
 couch_db = {
