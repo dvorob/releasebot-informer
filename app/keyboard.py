@@ -5,7 +5,7 @@ Build different menus
 from aiogram import types
 from aiogram.utils.callback_data import CallbackData
 from utils.jiratools import JiraConnection
-from utils import logging, filters, aero
+from utils import logging, filters
 from utils.database import PostgresPool as db
 import config
 

@@ -7,11 +7,9 @@ This part of YMReleaseBot is name informer. Essentially, a telegram wrapper.
 - Python 3.8
 - Docker
 - aiogram
-- aerospike
 - exchangelib
 - Jira
-- PyMySQL (plans to get rid of in favor an aerospike)
-- peewee plans to get rid of in favor an aerospike
+- peewee
 - aiohttp
 - emoji
 - apscheduler

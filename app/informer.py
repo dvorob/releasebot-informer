@@ -21,7 +21,7 @@ from aiogram.utils.markdown import bold
 from aiohttp import web
 from enum import Enum
 from utils.jiratools import JiraConnection, JiraTransitions
-from utils import aero, logging, returnHelper, initializeBot, filters, couch_client
+from utils import logging, returnHelper, initializeBot, filters, couch_client
 from utils.initializeBot import dp, bot
 from utils.database import PostgresPool as db
 from datetime import timedelta, datetime
@@ -159,7 +159,6 @@ def main_menu_message() -> str:
 @initializeBot.dp.message_handler(filters.restricted, commands=['write_my_chat_id'])
 async def write_chat_id(message: types.Message):
     """
-        Will write to aerospike set 'informer' to item @tg_username
         {@tg_username: tg_chat_id}
         Using for private notifications
     """
