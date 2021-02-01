@@ -20,7 +20,7 @@ from aiogram.utils.exceptions import ChatNotFound, BotBlocked
 from aiogram.utils.markdown import bold
 from aiohttp import web
 from enum import Enum
-from utils.jiratools import JiraConnection, JiraTransitions
+from utils.jiratools import JiraConnection, JiraTransitions, jira_get_approvers_list
 from utils import logging, returnHelper, initializeBot, filters, couch_client
 from utils.initializeBot import dp, bot
 from utils.database import PostgresPool as db
@@ -599,20 +599,16 @@ async def process_return_queue_callback(query: types.CallbackQuery, callback_dat
     try:
         await returnHelper.return_one_second(query)
         jira_issue_id = callback_data['issue']
-        # Получить список согласующих (через releasebot-api)
-        request_api_v1 = requests.get(f'{config.api_chat_id}/{jira_issue_id}')
-        chat_id_recipients = request_api_v1.json()
+        # Получить список согласующих
+        chat_id_recipients = jira_get_approvers_list(jira_issue_id)
         logger.info('chat_id_recipients: %s', chat_id_recipients)
 
-        if str(query.message.chat.id) in chat_id_recipients:
-            msg = f'Вернул в очередь **{jira_issue_id}**. Попробую выкатить позже.'
-            # Передвинем таску в начало доски и снимем её с бота
-            jira_object = JiraConnection()
-            jira_object.assign_issue(jira_issue_id, None)
-            jira_object.transition_issue(jira_issue_id, JiraTransitions.FULL_WAIT.value)
-            jira_object.add_comment(jira_issue_id, "Задача была возвращена в очередь одним из согласующих через телеграм.")
-        else:
-            msg = 'Вы не в списке согласующих, вернуть задачу в очередь не смогу.\n'
+        msg = f'Вернул в очередь **{jira_issue_id}**. Попробую выкатить позже.'
+        # Передвинем таску в начало доски и снимем её с бота
+        jira_object = JiraConnection()
+        jira_object.assign_issue(jira_issue_id, None)
+        jira_object.transition_issue(jira_issue_id, JiraTransitions.FULL_WAIT.value)
+        jira_object.add_comment(jira_issue_id, "Задача была возвращена в очередь одним из согласующих через телеграм.")
 
         await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)
     except Exception:
@@ -736,6 +732,18 @@ async def get_user_info(message: types.Message):
         msg = 'Пожалуйста, попробуйте еще раз: /who username'
     await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
+async def send_message_to_approvers(issue_key: str, message: str):
+    """
+       (issue_key='ADMSYS-10000', message='Алярма')
+       Отправить сообщение согласующим. Согласующие - те, кто указаны в релизной таске, в виде рабочих аккаунтов.
+       Функции нужно знать номер релиза и сообщение, дальше она сделает все сама. 
+    """
+    try:
+        list_chat_id_recipients = jiratools.jira_get_approvers_list(issue_key)
+        logger.info('-- SEND MESSAGE TO APPROVERS %s %s %s', issue_key, list_chat_id_recipients, message)
+        send_message_to_users(list_chat_id_recipients, message)
+    except Exception as e:
+        logger.exception('Exception in SEND MESSAGE TO APPROVERS %s', e)
 
 async def send_message_to_users(request):
     """
@@ -795,7 +803,7 @@ async def inform_duty(request):
 
 async def inform_subscribers(request):
     """
-    Внешняя ручка для информирования дежурных
+    Внешняя ручка для информирования подписанных на информинги =)
     {'notification': 'all', 'message': str}
     notification можно найти в таблице Xerxes.Users в соответствующем поле
     """

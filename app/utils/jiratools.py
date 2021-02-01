@@ -75,3 +75,20 @@ class JiraConnection:
             self.jira.transition_issue(jira_issue_id, transition_id, resolution=resolution)
         except jira.exceptions.JIRAError as err:
             logger.error('transition_issue %s', err)
+
+#########################################################################################
+#        Custom functions
+#########################################################################################
+
+def jira_get_approvers_list(issue_key: str) -> list:
+    """
+       Отобрать список имейлов согласующих из jira_таски и обрезать от них email, оставив только account_name
+    """
+    try:
+        issue = JiraConnection().issue(issue_key)
+        approvers = [re.sub('@.*$', '', item.emailAddress) for item in issue.fields.customfield_15408
+                    if "@" in item.emailAddress]
+        logger.info('-- JIRA GET APPROVERS LIST %s %s', issue, approvers)
+        return approvers
+    except Exception as e:
+        logger.exception('Exception in JIRA GET APPROVERS LIST %s', e)
