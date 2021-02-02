@@ -226,7 +226,7 @@ async def create_duty_message(duty_date) -> str:
 async def create_duty_message_personal(duty_date, tg_login) -> str:
     dutymen_array = await db().get_duty_personal(duty_date, tg_login)
     if len(dutymen_array) > 0:
-        msg = f"Дежурства начиная с <b>{duty_date.strftime('%Y-%m-%d')}</b> для <b>@{tg_login}</b>:\n"
+        msg = f"Дежурства начиная с *{duty_date.strftime('%Y-%m-%d')}* для @{tg_login}:\n"
 
         for d in dutymen_array:
             msg += f"\n· {d['area']} - *{d['duty_date']}*"

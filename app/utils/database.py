@@ -293,7 +293,10 @@ class PostgresPool:
             self.db.connect(reuse_if_open=True)
             result = []
             logger.info('get duty personal for %s %s', duty_date, tg_login)
-            db_query = Duty_List.select().where(Duty_List.duty_date >= duty_date, Duty_List.tg_login == tg_login)
+            db_query = (Duty_List
+                        .select()
+                        .where(Duty_List.duty_date >= duty_date, Duty_List.tg_login == tg_login)
+                        .order_by(Duty_List.duty_date.asc()))
             for v in db_query:
                 result.append((vars(v))['__data__'])
             logger.info('get duty for %s %s %s', duty_date, tg_login, result)
