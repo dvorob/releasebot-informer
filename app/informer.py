@@ -704,7 +704,7 @@ async def get_user_info(message: types.Message):
     """
     logger.info('-- GET USER INFO started by %s', returnHelper.return_name(message))
     incoming = message.text.split()
-    if (len(incoming) == 2) or (len(incoming) == 3) :
+    if (len(incoming) == 2) or (len(incoming) == 3):
         probably_username  = incoming[1:]
         try:
             if bool(re.search('[а-яА-Я]', probably_username[0])):

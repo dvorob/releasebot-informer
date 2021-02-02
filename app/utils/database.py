@@ -202,7 +202,9 @@ class PostgresPool:
             logger.info('Search users by fullname for %s', full_name)
             self.db.connect(reuse_if_open=True)
             if (type(full_name) == str):
-                full_name = re.split(' ', full_name)
+                full_name = re.split(' ', value)
+
+            full_name = [name.replace('ё', 'е') for name in full_name]
 
             if len(full_name) > 1:
                 db_users = Users.select().where(
