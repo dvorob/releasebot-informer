@@ -205,7 +205,7 @@ async def duty_admin_personal(message: types.Message):
 
         duty_date = get_duty_date(datetime.today())
         msg = await create_duty_message_personal(duty_date, re.sub('@', '', message.from_user.username))
-        await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+        await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.MARKDOWN)
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
 
@@ -229,7 +229,7 @@ async def create_duty_message_personal(duty_date, tg_login) -> str:
         msg = f"Дежурства начиная с <b>{duty_date.strftime('%Y-%m-%d')}</b> для <b>@{tg_login}</b>:\n"
 
         for d in dutymen_array:
-            msg += f"\n· {d['duty_date']}"
+            msg += f"\n· {d['area']} - *{d['duty_date']}*"
         logger.info('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
     else:
         msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
