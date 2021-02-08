@@ -121,7 +121,7 @@ async def start(message: types.Message):
                     await db().db_set_users(users['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), notification=None, email=None)
                 await message.reply(text=start_menu_message(message),
                                     reply_markup=keyboard.main_menu(),
-                                    parse_mode=ParseMode.MARKDOWN)
+                                    parse_mode=ParseMode.HTML)
         else:
             not_familiar_msg = emojize(f'Здравствуй, {bold(message.from_user.full_name)}!\n'
                                        f'Я не нашел записи с твоим телеграмм-аккаунтом в своей базе. :confused:\n'
@@ -204,7 +204,7 @@ async def duty_admin_personal(message: types.Message):
         message.bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.typing)
         duty_date = get_duty_date(datetime.today())
         msg = await create_duty_message_personal(duty_date, re.sub('@', '', message.from_user.username))
-        await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.MARKDOWN)
+        await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
 
         message.bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.typing)
     except Exception as e:
@@ -227,7 +227,7 @@ async def timetable_personal(message: types.Message):
             await resp.json()
         logger.info('get timetable personal from api: %s %s', resp.status, resp.json())
 
-        await message.answer(resp.json(), reply_markup=to_main_menu(), parse_mode=ParseMode.MARKDOWN)
+        await message.answer(resp.json(), reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
 
@@ -248,10 +248,10 @@ async def create_duty_message(duty_date) -> str:
 async def create_duty_message_personal(duty_date, tg_login) -> str:
     dutymen_array = await db().get_duty_personal(duty_date, tg_login)
     if len(dutymen_array) > 0:
-        msg = f"Дежурства начиная с *{duty_date.strftime('%Y-%m-%d')}* для @{tg_login}:\n"
+        msg = f"Дежурства начиная с <b>{duty_date.strftime('%Y-%m-%d')}</b> для @{tg_login}:\n"
 
         for d in dutymen_array:
-            msg += f"\n· {d['area']} - *{d['duty_date']}*"
+            msg += f"\n· {d['area']} - <b>{d['duty_date']}</b>"
         logger.info('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
     else:
         msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
@@ -338,13 +338,13 @@ async def get_min_inf_board_button(query: types.CallbackQuery, callback_data: st
                 'project = ADMSYS AND issuetype = "Release (conf)" AND '
                 'status IN (Open, "Waiting release") ORDER BY Rank ASC'
             )
-            msg = f'\n - Releases in the progress: *{len(issues_releases_progress)}*'
-            msg += f'\n - In AdmSYS queue: *{len(issues_admsys)}*'
+            msg = f'\n - Releases in the progress: <b>{len(issues_releases_progress)}</b>'
+            msg += f'\n - In AdmSYS queue: <b>{len(issues_admsys)}</b>'
             return msg
 
         information_from_jira = await count_issues()
         await query.message.answer(text=information_from_jira, reply_markup=to_main_menu(),
-                                   parse_mode=ParseMode.MARKDOWN)
+                                   parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception('get_min_inf_board_button')
 
@@ -394,7 +394,7 @@ async def main_menu(query: types.CallbackQuery, callback_data: str):
         logger.info('main_menu started')
         await query.message.answer(text=main_menu_message(),
                                    reply_markup=keyboard.main_menu(),
-                                   parse_mode=ParseMode.MARKDOWN)
+                                   parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception('main_menu_message')
 
@@ -409,9 +409,9 @@ async def admin_menu(query: types.CallbackQuery, callback_data: str):
     del callback_data
     try:
         logger.info('admin menu opened by %s', returnHelper.return_name(query))
-        msg = f'Hi, admin!\nCurrent work mode: *{keyboard.current_mode()}*'
+        msg = f'Hi, admin!\nCurrent work mode: <b>{keyboard.current_mode()}</b>'
         await query.message.reply(text=msg, reply_markup=keyboard.admin_menu(),
-                                  parse_mode=ParseMode.MARKDOWN)
+                                  parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception('admin_menu')
 
@@ -514,9 +514,9 @@ async def admin_menu(query: types.CallbackQuery, callback_data: str):
     del callback_data
     try:
         logger.info('admin menu opened by %s', returnHelper.return_name(query))
-        msg = f'Привет! \nМой текущий рабочий режим: *{keyboard.current_mode()}*'
+        msg = f'Привет! \nМой текущий рабочий режим: <b>{keyboard.current_mode()}</b>'
         await query.message.reply(text=msg, reply_markup=keyboard.admin_menu(),
-                                  parse_mode=ParseMode.MARKDOWN)
+                                  parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception('admin_menu')
 
@@ -528,7 +528,7 @@ async def release_app_list(query: types.CallbackQuery, callback_data: str):
     #issue_key = callback_data['issue_key']
     logger.info('-- RELEASE APP LIST menu opened by %s %s', returnHelper.return_name(query), callback_data)
     msg = f'Релизы, которые я могу выкатить (находятся в статусе Waiting на доске):'
-    await query.message.reply(text=msg, reply_markup=keyboard.release_app_list(), parse_mode=ParseMode.MARKDOWN)
+    await query.message.reply(text=msg, reply_markup=keyboard.release_app_list(), parse_mode=ParseMode.HTML)
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='release_app'), filters.restricted, filters.admin)
 async def release_app(query: types.CallbackQuery, callback_data: str):
@@ -537,7 +537,7 @@ async def release_app(query: types.CallbackQuery, callback_data: str):
     """
     logger.info('-- RELEASE APP started by %s %s', returnHelper.return_name(query), callback_data)
     msg = f"Точно выкатываем {callback_data['issue']} ?"
-    await query.message.reply(text=msg, reply_markup=keyboard.release_app_confirm(callback_data['issue']), parse_mode=ParseMode.MARKDOWN)
+    await query.message.reply(text=msg, reply_markup=keyboard.release_app_confirm(callback_data['issue']), parse_mode=ParseMode.HTML)
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='release_app_confirm'), filters.restricted, filters.admin)
 async def release_app_confirm(query: types.CallbackQuery, callback_data: str):
@@ -560,7 +560,7 @@ async def rollback_app_list(query: types.CallbackQuery, callback_data: str):
     """
     logger.info('-- ROLLBACK APP LIST menu opened by %s %s', returnHelper.return_name(query), callback_data)
     msg = f'Релизы, которые я могу откатить (выехали хотя бы на один хост на доске):'
-    await query.message.reply(text=msg, reply_markup=keyboard.rollback_app_list(), parse_mode=ParseMode.MARKDOWN)
+    await query.message.reply(text=msg, reply_markup=keyboard.rollback_app_list(), parse_mode=ParseMode.HTML)
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='rollback_app'), filters.restricted, filters.admin)
 async def rollback_app(query: types.CallbackQuery, callback_data: str):
@@ -570,7 +570,7 @@ async def rollback_app(query: types.CallbackQuery, callback_data: str):
     #issue_key = callback_data['issue_key']
     logger.info('-- ROLLBACK APP started by %s %s', returnHelper.return_name(query), callback_data)
     msg = f"Точно откатываем {callback_data['issue']} ?"
-    await query.message.reply(text=msg, reply_markup=keyboard.rollback_app_confirm(callback_data['issue']), parse_mode=ParseMode.MARKDOWN)
+    await query.message.reply(text=msg, reply_markup=keyboard.rollback_app_confirm(callback_data['issue']), parse_mode=ParseMode.HTML)
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='rollback_app_confirm'), filters.restricted, filters.admin)
 async def rollback_app_confirm(query: types.CallbackQuery, callback_data: str):
@@ -602,12 +602,12 @@ async def return_to_queue(query: types.CallbackQuery, callback_data: str):
             markup = keyboard.return_queue_menu(waiting_assignee_issues)
             await query.message.reply(text=msg,
                                       reply_markup=markup,
-                                      parse_mode=ParseMode.MARKDOWN)
+                                      parse_mode=ParseMode.HTML)
         else:
-            msg = 'Now there is **nothing** to return to the queue'
+            msg = 'Now there is <b>nothing</b> to return to the queue'
             await query.message.reply(text=msg,
                                       reply_markup=to_main_menu(),
-                                      parse_mode=ParseMode.MARKDOWN)
+                                      parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception('return_to_queue')
 
@@ -625,14 +625,14 @@ async def process_return_queue_callback(query: types.CallbackQuery, callback_dat
         chat_id_recipients = jira_get_approvers_list(jira_issue_id)
         logger.info('chat_id_recipients: %s', chat_id_recipients)
 
-        msg = f'Вернул в очередь **{jira_issue_id}**. Попробую выкатить позже.'
+        msg = f'Вернул в очередь <b>{jira_issue_id}</b>. Попробую выкатить позже.'
         # Передвинем таску в начало доски и снимем её с бота
         jira_object = JiraConnection()
         jira_object.assign_issue(jira_issue_id, None)
         jira_object.transition_issue(jira_issue_id, JiraTransitions.FULL_WAIT.value)
         jira_object.add_comment(jira_issue_id, "Задача была возвращена в очередь одним из согласующих через телеграм.")
 
-        await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)
+        await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception('process_return_queue_callback')
 
@@ -649,7 +649,7 @@ async def subscribe_events(query: types.CallbackQuery, callback_data: str):
         msg = 'Вы можете подписаться на уведомления обо всех релизах.' \
               'Уведомления о ваших релизах будут работать в любом случае, от них отписаться нельзя.'
         await query.message.reply(text=msg, reply_markup=keyboard.subscribe_menu(),
-                                  parse_mode=ParseMode.MARKDOWN)
+                                  parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception("subscribe")
 
@@ -671,7 +671,7 @@ async def subscribe_all(query: types.CallbackQuery, callback_data: str):
         else:
             logger.info('Subscribe got something undefined %s', query.message.chat.id)
         msg = 'Вы подписаны на сообщения обо всех релизах.'
-        await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)
+        await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception("subscribe_all")
 
@@ -693,7 +693,7 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
         else:
             logger.info('Subscribe got something undefined %s', query.message.chat.id)
         msg = 'Вы отписались от сообщений о релизах.'
-        await query.message.reply(text=msg, parse_mode=ParseMode.MARKDOWN)
+        await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception("Error in UNSUBSCRIBE ALL %s", e)
 
@@ -788,7 +788,7 @@ async def send_message_to_users(request):
             logger.info('sending message %s for %s', data_json['text'], set_of_chat_id)
             for chat_id in set_of_chat_id:
                 try:
-                    await bot.send_message(chat_id=chat_id, text=data_json['text'], disable_notification=disable_notification, parse_mode=ParseMode.MARKDOWN)
+                    await bot.send_message(chat_id=chat_id, text=data_json['text'], disable_notification=disable_notification, parse_mode=ParseMode.HTML)
                 except BotBlocked:
                     logger.info('YM release bot was blocked by %s', chat_id)
                 except ChatNotFound:
@@ -835,7 +835,7 @@ async def inform_subscribers(request):
         try:
             subscribers = await db().get_subscribers_to_something('all')
             for chat_id in subscribers:
-                await bot.send_message(chat_id=chat_id, text=data_json['text'], disable_notification=True, parse_mode=ParseMode.MARKDOWN)
+                await bot.send_message(chat_id=chat_id, text=data_json['text'], disable_notification=True, parse_mode=ParseMode.HTML)
         except Exception as e:
             logger.exception('Error inform subscribers %s', e)
     return web.json_response()
@@ -852,8 +852,8 @@ async def inform_today_duty(area, msg):
             try:
                 dutymen = await db().get_users('account_name', d['account_name'])
                 logger.info('informing duty %s %s %s', dutymen[0]['tg_id'], dutymen[0]['tg_login'], msg)
-                await bot.send_message(chat_id=279933948, text=msg, parse_mode=ParseMode.MARKDOWN)
-                await bot.send_message(chat_id=dutymen[0]['tg_id'], text=msg, parse_mode=ParseMode.MARKDOWN)
+                await bot.send_message(chat_id=279933948, text=msg, parse_mode=ParseMode.HTML)
+                await bot.send_message(chat_id=dutymen[0]['tg_id'], text=msg, parse_mode=ParseMode.HTML)
             except BotBlocked:
                 logger.info('YM release bot was blocked by %s', d['tg_login'])
             except ChatNotFound:
@@ -872,7 +872,7 @@ async def unknown_message(message: types.Message):
         msg = emojize(f'{bold(message.from_user.full_name)},\n'
                       f'Я не знаю, как ответить на {message.text} :astonished:\n'
                       'Список того, что я умею - /help')
-        await message.reply(msg, parse_mode=ParseMode.MARKDOWN)
+        await message.reply(msg, parse_mode=ParseMode.HTML)
 
 
 async def on_startup(dispatcher):
