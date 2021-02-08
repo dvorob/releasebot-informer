@@ -786,6 +786,7 @@ async def send_message_to_users(request):
             if 'disable_notification' in data_json:
                 disable_notification = True
             logger.info('sending message %s for %s', data_json['text'], set_of_chat_id)
+            await bot.send_message(chat_id=279933948, text=data_json['text'], parse_mode=ParseMode.HTML)
             for chat_id in set_of_chat_id:
                 try:
                     await bot.send_message(chat_id=chat_id, text=data_json['text'], disable_notification=disable_notification, parse_mode=ParseMode.HTML)
@@ -834,6 +835,7 @@ async def inform_subscribers(request):
     if 'notification' in data_json:
         try:
             subscribers = await db().get_subscribers_to_something('all')
+            await bot.send_message(chat_id=279933948, text=data_json['text'], parse_mode=ParseMode.HTML)
             for chat_id in subscribers:
                 await bot.send_message(chat_id=chat_id, text=data_json['text'], disable_notification=True, parse_mode=ParseMode.HTML)
         except Exception as e:
