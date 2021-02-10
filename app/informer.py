@@ -468,7 +468,11 @@ async def lock_app_release(message: types.Message):
                 logger.info('lock send locked app to api, status is: %s', resp.status)
             get_app =  db().get_application_metainfo(incoming[1])
             logger.info('lock app release %s ', get_app)
-            msg = f'lock app release {get_app}'
+            if 'bot_enabled' in get_app:
+                msg = f"Релизы {get_app['app_name']} <b>разблокированы</b>" if get_app['bot_enabled'] else f"Релизы {get_app['app_name']} <b>заблокированы</b>"
+                msg += f"\n\nИнформация о {get_app['app_name']} в БД бота: \n{get_app}"
+            else:
+                msg = f"Не нашлось сведений о приложении в моей БД"
             await message.answer(text=msg)
         except Exception as exc:
             logger.exception('lock_unlock_task')
@@ -789,7 +793,8 @@ async def send_message_to_users(request):
             await bot.send_message(chat_id=279933948, text=data_json['text'], parse_mode=ParseMode.HTML)
             for chat_id in set_of_chat_id:
                 try:
-                    await bot.send_message(chat_id=chat_id, text=data_json['text'], disable_notification=disable_notification, parse_mode=ParseMode.HTML)
+                    await bot.send_message(chat_id=chat_id, text=data_json['text'], 
+                                           disable_notification=disable_notification, parse_mode=ParseMode.HTML)
                 except BotBlocked:
                     logger.info('YM release bot was blocked by %s', chat_id)
                 except ChatNotFound:
