@@ -470,10 +470,10 @@ async def lock_app_release(message: types.Message):
             logger.info('lock app release %s ', get_app)
             if 'bot_enabled' in get_app:
                 msg = f"Релизы {get_app['app_name']} <b>разблокированы</b>" if get_app['bot_enabled'] else f"Релизы {get_app['app_name']} <b>заблокированы</b>"
-                msg += f"\n\nИнформация о {get_app['app_name']} в БД бота: \n{get_app}"
+                msg += f"\n\n<u>Информация о {get_app['app_name']} в БД бота</u>: \n{get_app}"
             else:
-                msg = f"Не нашлось сведений о приложении в моей БД"
-            await message.answer(text=msg)
+                msg = f"Не нашлось сведений о приложении в моей БД. Звоните Чесновскому."
+            await message.answer(text=msg, parse_mode=ParseMode.HTML)
         except Exception as exc:
             logger.exception('lock_unlock_task')
             return web.json_response({'status': 'error', 'message': str(exc)})
