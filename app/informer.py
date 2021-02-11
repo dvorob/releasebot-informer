@@ -218,18 +218,16 @@ async def timetable_personal(message: types.Message):
     try:
         cli_args = message.text.split()
         after_days = int(cli_args[1]) if (len(cli_args) == 2 and int(cli_args[1]) > 0) else 0
-        start_date = datetime.today() + timedelta(after_days)
-        end_date = datetime.today() + timedelta(after_days + 1)
 
         user_from_db = await db().get_users('tg_id', message.from_user.id)
 
-        header = {'calendar_email': user_from_db[0]['email'], 'start_date': start_date, 'end_date': end_date}
+        params = {'calendar_email': user_from_db[0]['email'], 'timedelta': after_days}
 
-        logger.info('timetable personal: %s %s', message.from_user.username, header)
+        logger.info('timetable personal: %s %s', message.from_user.username, params)
 
         if len(user_from_db) > 0:
             session = await get_session()
-            async with session.get(config.api_get_timetable, headers=header) as resp:
+            async with session.get(config.api_get_timetable, params=params) as resp:
                 await resp.json()
             message = resp.json()
             logger.info('get timetable personal from api: %s %s', resp.status, resp.json())
