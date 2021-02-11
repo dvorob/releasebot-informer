@@ -223,9 +223,7 @@ async def timetable_personal(message: types.Message):
 
         user_from_db = await db().get_users('tg_id', message.from_user.id)
 
-        header = user_from_db[0]
-        header['start_date'] = start_date
-        header['end_date'] = end_date
+        header = {'calendar_email': user_from_db[0]['email'], 'start_date': start_date, 'end_date': end_date}
 
         logger.info('timetable personal: %s %s', message.from_user.username, header)
 
