@@ -221,13 +221,13 @@ async def timetable_personal(message: types.Message):
 
         user_from_db = await db().get_users('tg_id', message.from_user.id)
 
-        params = {'calendar_email': user_from_db[0]['email'], 'timedelta': after_days}
+        header = {'calendar_email': user_from_db[0]['email'], 'timedelta': str(after_days)}
 
-        logger.info('timetable personal: %s %s', message.from_user.username, params)
+        logger.info('timetable personal: %s %s', message.from_user.username, header)
 
         if len(user_from_db) > 0:
             session = await get_session()
-            async with session.get(config.api_get_timetable, params=params) as resp:
+            async with session.get(config.api_get_timetable, headers=header) as resp:
                 await resp.json()
             message = resp.json()
             logger.info('get timetable personal from api: %s %s', resp.status, resp.json())
