@@ -216,20 +216,30 @@ async def timetable_personal(message: types.Message):
     """
     """
     try:
-        logger.info('timetable personal: %s', message.from_user.username)
+        cli_args = message.text.split()
+        after_days = int(cli_args[1]) if (len(cli_args) == 2 and int(cli_args[1]) > 0) else 0
+        start_date = datetime.today() + timedelta(after_days)
+        end_date = datetime.today() + timedelta(after_days + 1)
 
-        start_date = datetime.today()
-        end_date = datetime.today() + timedelta(1)
-        user_from_db = await db().get_users('tg_id', query.message.chat.id)
+        user_from_db = await db().get_users('tg_id', message.from_user.id)
 
-        session = await get_session()
-        async with session.get(config.api_get_timetable, headers=data) as resp:
-            await resp.json()
-        logger.info('get timetable personal from api: %s %s', resp.status, resp.json())
+        header = user_from_db[0]
+        header['start_date'] = start_date
+        header['end_date'] = end_date
 
-        await message.answer(resp.json(), reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+        logger.info('timetable personal: %s %s', message.from_user.username, header)
+
+        if len(user_from_db) > 0:
+            session = await get_session()
+            async with session.get(config.api_get_timetable, headers=header) as resp:
+                await resp.json()
+            message = resp.json()
+            logger.info('get timetable personal from api: %s %s', resp.status, resp.json())
+        else:
+            message = f"Не нашел данных о {message.from_user.username} в своей БД"
+        await message.answer(message, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as e:
-        logger.exception('error in duty admin %s', str(e))
+        logger.exception('error in timetable personal %s', str(e))
 
 ###############################################
 async def create_duty_message(duty_date) -> str:

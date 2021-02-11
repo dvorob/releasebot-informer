@@ -47,8 +47,9 @@ couch_db = {
     'passwd': '2G1FgGEuJtFmZxQWh3aN'
 }
 
-api = 'http://releasebot-api/api-v1'
-api_lock_unlock = f'{api}/tasks/lock_unlock'
+api = 'http://releasebot-api'
+api_lock_unlock = f'{api}/api-v1/tasks/lock_unlock'
+api_get_timetable = f'{api}/exchange/get_timetable'
 
 jira_host = 'https://jira.yamoney.ru'
 jira_user = getenv('secret_jira_user')
