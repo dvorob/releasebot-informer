@@ -221,19 +221,19 @@ async def timetable_personal(message: types.Message):
 
         user_from_db = await db().get_users('tg_id', message.from_user.id)
 
-        header = {'calendar_email': user_from_db[0]['email'], 'timedelta': str(after_days)}
+        header = {'calendar_email': user_from_db[0]['email'], 'afterdays': str(after_days)}
 
         logger.info('timetable personal: %s %s', message.from_user.username, header)
 
         if len(user_from_db) > 0:
             session = await get_session()
             async with session.get(config.api_get_timetable, headers=header) as resp:
-                await resp.json()
-            message = resp.json()
+                data = await resp.json()
+            msg = data['message']
             logger.info('get timetable personal from api: %s %s', resp.status, resp.json())
         else:
-            message = f"Не нашел данных о {message.from_user.username} в своей БД"
-        await message.answer(message, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+            msg = f"Не нашел данных о {message.from_user.username} в своей БД"
+        await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('error in timetable personal %s', str(e))
 
