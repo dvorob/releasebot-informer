@@ -52,7 +52,11 @@ class Users(BaseModel):
     email = CharField()
     notification = CharField(default='none')
     admin = IntegerField(default=0)
-    date_update = TimestampField()
+    date_update = DateField()
+
+class User_Subscriptions(BaseModel):
+    account_name = CharField()
+    subscription = CharField()
 
 class Duty_List(BaseModel):
     id = IntegerField()
@@ -132,7 +136,7 @@ class PostgresPool:
         finally:
             self.db.close()
 
-    async def db_set_users(self, account_name, full_name, tg_login, working_status, tg_id, notification, email):
+    async def set_users(self, account_name, full_name, tg_login, working_status, tg_id, notification, email):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
@@ -154,7 +158,7 @@ class PostgresPool:
                 db_users.email = email
             db_users.save()
         except Exception:
-            logger.exception('exception in db_set_users')
+            logger.exception('exception in set_users')
         finally:
             self.db.close()
 
@@ -332,5 +336,64 @@ class PostgresPool:
             db_rec.save()
         except Exception as e:
             logger.exception('exception in set parameters %s', e)
+        finally:
+            self.db.close()
+
+    async def delete_user_subscription(self, account_name, subscription):
+        # Выставить в users_subscription подписку пользователя
+        logger.debug('delete user subscription %s %s', account_name, subscription)
+        try:
+            self.db.connect(reuse_if_open=True)
+            query = User_Subscriptions.delete().where(
+                User_Subscriptions.account_name == account_name, User_Subscriptions.subscription == subscription)
+            query.execute()
+        except Exception as e:
+            logger.exception('exception in delete user subscription %s', e)
+        finally:
+            self.db.close()
+
+    async def set_user_subscription(self, account_name, subscription):
+        # Выставить в users_subscription подписку пользователя
+        logger.debug('set user subscription %s ', account_name)
+        try:
+            self.db.connect(reuse_if_open=True)
+            db_rec, _ = User_Subscriptions.get_or_create(account_name=account_name, subscription=subscription)
+            db_rec.save()
+        except Exception as e:
+            logger.exception('exception in set user subscription %s', e)
+        finally:
+            self.db.close()
+
+    async def get_user_subscriptions(self, account_name) -> list:
+        # Вернуть все подписки конкретного пользователя
+        logger.debug('get user subscriptions %s ', account_name)
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            db_query = User_Subscriptions.select().where(User_Subscriptions.account_name == account_name)
+            for v in db_query:
+                if ((vars(v))['__data__']):
+                    result.append((vars(v))['__data__']['subscription'])
+            logger.debug('get user subscriptions for %s %s', account_name, result)
+            return result
+        except Exception as e:
+            logger.exception('exception in get user subscriptions %s', e)
+        finally:
+            self.db.close()
+
+    async def get_all_users_with_subscription(self, subscription) -> list:
+        # Вернуть список пользователей (account_name) с конкретной подпиской
+        logger.debug('get all users with subscription %s ', subscription)
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            db_query = User_Subscriptions.select().where(User_Subscriptions.subscription == subscription)
+            for v in db_query:
+                if ((vars(v))['__data__']):
+                    result.append((vars(v))['__data__']['account_name'])
+            logger.debug('get all users with subscription %s %s', subscription, result)
+            return result
+        except Exception as e:
+            logger.exception('exception in get all users with subscription %s', e)
         finally:
             self.db.close()

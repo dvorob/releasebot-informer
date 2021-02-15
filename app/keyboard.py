@@ -61,6 +61,9 @@ def subscribe_menu() -> types.InlineKeyboardMarkup:
                                                               issue='1')),
         types.InlineKeyboardButton("Unsubscribe",
                                    callback_data=posts_cb.new(action='unsubscribe_all',
+                                                              issue='1')),
+        types.InlineKeyboardButton("Timetable Reminder",
+                                   callback_data=posts_cb.new(action='timetable_reminder',
                                                               issue='1'))
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_list, n_cols=2))

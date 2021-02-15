@@ -118,7 +118,7 @@ async def start(message: types.Message):
         if len(user_info)>0:
             for users in user_info:
                 if users["tg_id"] != str(message.from_user.id):
-                    await db().db_set_users(users['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), notification=None, email=None)
+                    await db().set_users(users['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), notification=None, email=None)
                 await message.reply(text=start_menu_message(message),
                                     reply_markup=keyboard.main_menu(),
                                     parse_mode=ParseMode.HTML)
@@ -168,7 +168,7 @@ async def write_chat_id(message: types.Message):
         if len(user_info) > 0:
             logger.info('write my chat id found user info %s', user_info)
             message.from_user.username: message.chat.id
-            await db().db_set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.chat.id), email=None)
+            await db().set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.chat.id), email=None)
             logger.info('wirhte my chat id done for %s %s', str(message.from_user.id), str(message.chat.id))
     except Exception:
         logger.exception('write chat id exception')
@@ -221,21 +221,24 @@ async def timetable_personal(message: types.Message):
 
         user_from_db = await db().get_users('tg_id', message.from_user.id)
 
-        header = {'calendar_email': user_from_db[0]['email'], 'afterdays': str(after_days)}
-
-        logger.info('timetable personal: %s %s', message.from_user.username, header)
-
         if len(user_from_db) > 0:
+
+            header = {'calendar_email': user_from_db[0]['email'], 'afterdays': str(after_days)}
+            logger.info('timetable personal: %s %s', message.from_user.username, header)
+
             session = await get_session()
             async with session.get(config.api_get_timetable, headers=header) as resp:
                 data = await resp.json()
             msg = data['message']
-            logger.info('get timetable personal from api: %s %s', resp.status, resp.json())
+            logger.debug('get timetable personal from api: %s %s', resp.status, resp.json())
         else:
             msg = f"Не нашел данных о {message.from_user.username} в своей БД"
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+
     except Exception as e:
         logger.exception('error in timetable personal %s', str(e))
+        msg = 'Что-то пошло не так, обратитесь к моим администраторам.'
+        await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
 
 ###############################################
 async def create_duty_message(duty_date) -> str:
@@ -675,7 +678,7 @@ async def subscribe_all(query: types.CallbackQuery, callback_data: str):
         logger.info('Subscribe a %s chat %s ', query.message.chat.type, query.message.chat)
         if (query.message.chat.type == 'private'):
             user_from_db = await db().get_users('tg_id', query.message.chat.id)
-            await db().db_set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='all', email=None)
+            await db().set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='all', email=None)
         elif (query.message.chat.type == 'group'):
             await db().set_chats(query.message.chat.id, title=query.message.chat.title, started_by=query.message.from_user.username, notification='all')
         else:
@@ -697,7 +700,7 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
         logger.info('-- UNSUBSCRIBE ALL %s chat %s ', query.message.chat.type, query.message.chat)
         if (query.message.chat.type == 'private'):
             user_from_db = await db().get_users('tg_id', query.message.chat.id)
-            await db().db_set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='none', email=None)
+            await db().set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='none', email=None)
         elif (query.message.chat.type == 'group'):
             await db().set_chats(query.message.chat.id, title=query.message.chat.title, started_by=query.message.from_user.username, notification='none')
         else:
@@ -707,6 +710,32 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
     except Exception as e:
         logger.exception("Error in UNSUBSCRIBE ALL %s", e)
 
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='timetable_reminder'), filters.restricted)
+async def timetable_reminder(query: types.CallbackQuery, callback_data: str):
+    """
+    Отписать пользователя от всех уведомлений.
+    {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
+    """
+    try:
+        del callback_data
+        logger.info('-- TIMETABLE REMINDER %s chat %s ', query.message.chat.type, query.message.chat)
+        if (query.message.chat.type == 'private'):
+            user_from_db = await db().get_users('tg_id', query.message.chat.id)
+            user_subscriptions = await db().get_user_subscriptions(user_from_db[0]['account_name'])
+            if 'timetable' in user_subscriptions:
+                await db().delete_user_subscription(user_from_db[0]['account_name'], 'timetable')
+                msg = 'Вы отписались от напоминаний о расписании встреч.'
+            else:
+                await db().set_user_subscription(user_from_db[0]['account_name'], 'timetable')
+                msg = 'Вы подписаны на напоминания о расписании встреч.'
+        else:
+            msg = 'Подписаться на календарь можно только для аккаунтов в AD'
+            logger.info('Подписаться на календарь можно только для аккаунтов в AD %s', query.message.chat.id)
+
+        await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
+    except Exception as e:
+        logger.exception("Error in TIMETABLE REMINDER %s", e)
 
 @initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['where_app'])
 async def where_app_hosts(message: types.Message):

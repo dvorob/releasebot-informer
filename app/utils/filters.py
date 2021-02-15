@@ -48,9 +48,7 @@ async def admin(message: types.message) -> bool:
 
 async def restricted(message: types.message) -> bool:
     """
-        Universal access restriction function
-        :param message: main function
-        :return: Error msg to telegram or main function
+        Проверка, что пользователь есть в БД бота (== он заведён в AD и активен). Если нет - это не наш юзер, отвечать ему не нужно.
     """
     try:
         user_info = await db().search_users_by_account(str(message.from_user.username))
@@ -61,6 +59,8 @@ async def restricted(message: types.message) -> bool:
             #               2 - что у найденного пользователя есть account_name в AD
         if len(user_info) > 0:
             logger.info('restricted allow for %s', user_info[0]['account_name'])
+            if str(message.from_user.id) != user_info[0]['tg_id']:
+                await db().set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), notification=None, email=None)
             return True
         else:
             logger.info('restricted user not found %s %s ', message.from_user.username, warning_message)
