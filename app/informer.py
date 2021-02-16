@@ -812,9 +812,9 @@ async def send_message_to_users(request):
     {'accounts': [list of account_names], 'jira_tasks': [list of tasks_id], 'text': str}
     """
     data_json = await request.json()
-    logger.info('-- SEND MESSAGE TO USERS %s %s', data_json, type(data_json))
     disable_notification = False
     if 'accounts' in data_json:
+        logger.info(f"-- SEND MESSAGE TO USERS {data_json['accounts']}")
         try:
             set_of_chat_id = []
             for acc in data_json['accounts']:
@@ -824,8 +824,8 @@ async def send_message_to_users(request):
                         set_of_chat_id.append(user_from_db[0]['tg_id'])
             if 'disable_notification' in data_json:
                 disable_notification = True
-            logger.info('sending message %s for %s', data_json['text'], set_of_chat_id)
-            await bot.send_message(chat_id=279933948, text=data_json['text'], parse_mode=ParseMode.HTML)
+            logger.info('sending message for %s', set_of_chat_id)
+            # await bot.send_message(chat_id=279933948, text=data_json['text'], parse_mode=ParseMode.HTML)
             for chat_id in set_of_chat_id:
                 try:
                     await bot.send_message(chat_id=chat_id, text=data_json['text'], 
@@ -838,6 +838,7 @@ async def send_message_to_users(request):
             logger.exception('Error send message to users %s', str(e))
 
     if 'jira_tasks' in data_json:
+        logger.info(f"-- SEND MESSAGE TO USERS {data_json['jira_tasks']}")
         for task in data_json['jira_tasks']:
             try:
                 JiraConnection().add_comment(JiraConnection().jira_issue(task), data_json['text'])
@@ -854,7 +855,7 @@ async def inform_duty(request):
     areas - задаются в календаре AdminsOnDuty, перед именем дежурного
     """
     data_json = await request.json()
-    logger.info('-- INFORM DUTY %s %s', data_json, type(data_json))
+    logger.info(f"-- INFORM DUTY {data_json}")
     if 'areas' in data_json:
         try:
             for area in data_json['areas']:
@@ -871,11 +872,11 @@ async def inform_subscribers(request):
     notification можно найти в таблице Xerxes.Users в соответствующем поле
     """
     data_json = await request.json()
-    logger.info('-- INFORM SUBSCRIBERS %s %s', data_json, type(data_json))
+    logger.info(f"-- INFORM SUBSCRIBERS {data_json}")
     if 'notification' in data_json:
         try:
             subscribers = await db().get_subscribers_to_something('all')
-            await bot.send_message(chat_id=279933948, text=data_json['text'], parse_mode=ParseMode.HTML)
+            # await bot.send_message(chat_id=279933948, text=data_json['text'], parse_mode=ParseMode.HTML)
             for chat_id in subscribers:
                 await bot.send_message(chat_id=chat_id, text=data_json['text'], disable_notification=True, parse_mode=ParseMode.HTML)
         except Exception as e:
@@ -894,7 +895,7 @@ async def inform_today_duty(area, msg):
             try:
                 dutymen = await db().get_users('account_name', d['account_name'])
                 logger.info('informing duty %s %s %s', dutymen[0]['tg_id'], dutymen[0]['tg_login'], msg)
-                await bot.send_message(chat_id=279933948, text=msg, parse_mode=ParseMode.HTML)
+                # await bot.send_message(chat_id=279933948, text=msg, parse_mode=ParseMode.HTML)
                 await bot.send_message(chat_id=dutymen[0]['tg_id'], text=msg, parse_mode=ParseMode.HTML)
             except BotBlocked:
                 logger.info('YM release bot was blocked by %s', d['tg_login'])
