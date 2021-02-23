@@ -714,8 +714,6 @@ async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='timetable_reminder'), filters.restricted)
 async def timetable_reminder(query: types.CallbackQuery, callback_data: str):
     """
-    Отписать пользователя от всех уведомлений.
-    {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     try:
         del callback_data
@@ -736,6 +734,27 @@ async def timetable_reminder(query: types.CallbackQuery, callback_data: str):
         await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception("Error in TIMETABLE REMINDER %s", e)
+
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='statistics_reminder'), filters.restricted)
+async def statistics_reminder(query: types.CallbackQuery, callback_data: str):
+    """
+    """
+    try:
+        del callback_data
+        logger.info('-- STATISTICS REMINDER %s chat %s ', query.message.chat.type, query.message.chat)
+        user_from_db = await db().get_users('tg_id', query.message.chat.id)
+        user_subscriptions = await db().get_user_subscriptions(user_from_db[0]['account_name'])
+        if 'statistics' in user_subscriptions:
+            await db().delete_user_subscription(user_from_db[0]['account_name'], 'statistics')
+            msg = 'Вы отписались от рассылки статистики по релизам.'
+        else:
+            await db().set_user_subscription(user_from_db[0]['account_name'], 'statistics')
+            msg = 'Вы подписаны на рассылку статистики по релизам.'
+        await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
+    except Exception as e:
+        logger.exception("Error in STATISTICS REMINDER %s", e)
+
 
 @initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['where_app'])
 async def where_app_hosts(message: types.Message):
