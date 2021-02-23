@@ -55,6 +55,7 @@ class Users(BaseModel):
     date_update = DateField()
 
 class User_Subscriptions(BaseModel):
+    id = IntegerField(primary_key=True)
     account_name = CharField()
     subscription = CharField()
 
@@ -387,11 +388,12 @@ class PostgresPool:
         try:
             self.db.connect(reuse_if_open=True)
             result = []
-            db_query = User_Subscriptions.select().where(User_Subscriptions.subscription == subscription)
+            db_query = (Users.select()
+                             .join(User_Subscriptions, on=(User_Subscriptions.account_name == Users.account_name))
+                             .where(User_Subscriptions.subscription == subscription))
             for v in db_query:
-                if ((vars(v))['__data__']):
-                    result.append((vars(v))['__data__']['account_name'])
-            logger.debug('get all users with subscription %s %s', subscription, result)
+                if ((vars(v))):
+                    result.append((vars(v))['__data__'])
             return result
         except Exception as e:
             logger.exception('exception in get all users with subscription %s', e)

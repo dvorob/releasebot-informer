@@ -661,7 +661,9 @@ async def subscribe_events(query: types.CallbackQuery, callback_data: str):
         logger.info('subscribe_events opened by %s', returnHelper.return_name(query))
         msg = 'Вы можете подписаться на уведомления обо всех релизах.' \
               'Уведомления о ваших релизах будут работать в любом случае, от них отписаться нельзя.'
-
+        user_from_db = await db().get_users('tg_id', query.message.chat.id)
+        user_subscriptions = await db().get_current_user_subscription(user_from_db[0]['account_name'])
+        msg += '\n\n<b>Ваши текущие подписки</b>:\n' + user_subscriptions
         await query.message.reply(text=msg, reply_markup=keyboard.subscribe_menu(),
                                   parse_mode=ParseMode.HTML)
     except Exception:
@@ -903,10 +905,9 @@ async def inform_subscribers(request):
     logger.info(f"-- INFORM SUBSCRIBERS {data_json}")
     if 'notification' in data_json:
         try:
-            subscribers = await db().get_subscribers_to_something('all')
-            # await bot.send_message(chat_id=279933948, text=data_json['text'], parse_mode=ParseMode.HTML)
-            for chat_id in subscribers:
-                await bot.send_message(chat_id=chat_id, text=data_json['text'], disable_notification=True, parse_mode=ParseMode.HTML)
+            subscribers = await db().get_all_users_with_subscription(data_json['notification'])
+            for users in subscribers:
+                await bot.send_message(chat_id=users['tg_id'], text=data_json['text'], disable_notification=True, parse_mode=ParseMode.HTML)
         except Exception as e:
             logger.exception('Error inform subscribers %s', e)
     return web.json_response()
@@ -951,10 +952,7 @@ async def get_current_user_subscription(account_name) -> str:
     """
     user_subscriptions = await db().get_user_subscriptions(account_name)
     user_notification = await db().get_users('account_name', account_name)
-    all_subscriptions = []
-    all_subscriptions = all_subscriptions + user_subscriptions
-    all_subscriptions.append(user_notification[0]['notification'])
-    logger.info('GET CURR STATS %s %s %s', user_subscriptions, user_notification, all_subscriptions)
+    all_subscriptions = [] + user_subscriptions.append(user_notification[0]['notification'])
     msg = ''
     for subs in all_subscriptions:
         if subs == 'all':
@@ -963,6 +961,8 @@ async def get_current_user_subscription(account_name) -> str:
             msg += 'Статистика по релизам вечером\n'
         elif subs == 'timetable':
             msg += 'Напоминание о встречах утром\n'
+        elif subs == 'none':
+            msg += ''
         else:
             msg += subs + '\n'
     return msg

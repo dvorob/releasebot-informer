@@ -29,7 +29,7 @@ def main_menu() -> types.InlineKeyboardMarkup:
             types.InlineKeyboardButton("Документация", url=url_wiki),
             types.InlineKeyboardButton("Логи бота",
                                        url=url_kibana),
-            types.InlineKeyboardButton(text="Админское",
+            types.InlineKeyboardButton(text="Админское меню",
                                        callback_data=posts_cb.new(action='admin_menu',
                                                                   issue='1')),
             types.InlineKeyboardButton("Вернуть релиз в очередь",
