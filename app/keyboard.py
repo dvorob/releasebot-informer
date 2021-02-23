@@ -56,20 +56,17 @@ def subscribe_menu() -> types.InlineKeyboardMarkup:
         :return:
     """
     button_list = [
-        types.InlineKeyboardButton("Subscribe to all events",
-                                   callback_data=posts_cb.new(action='subscribe_all',
+        types.InlineKeyboardButton("События по релизам",
+                                   callback_data=posts_cb.new(action='release_events',
                                                               issue='1')),
-        types.InlineKeyboardButton("Unsubscribe",
-                                   callback_data=posts_cb.new(action='unsubscribe_all',
-                                                              issue='1')),
-        types.InlineKeyboardButton("Timetable Reminder",
+        types.InlineKeyboardButton("Расписание встреч",
                                    callback_data=posts_cb.new(action='timetable_reminder',
                                                               issue='1')),
         types.InlineKeyboardButton("Статистика по релизам",
                                    callback_data=posts_cb.new(action='statistics_reminder',
                                                               issue='1'))
     ]
-    return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_list, n_cols=2))
+    return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_list, n_cols=1))
 
 
 def return_queue_menu(waiting_assignee_issues) -> types.InlineKeyboardMarkup:

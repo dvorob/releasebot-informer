@@ -667,26 +667,27 @@ async def subscribe_events(query: types.CallbackQuery, callback_data: str):
         logger.exception("subscribe")
 
 
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='subscribe_all'), filters.restricted)
-async def subscribe_all(query: types.CallbackQuery, callback_data: str):
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='release_events'), filters.restricted)
+async def release_events(query: types.CallbackQuery, callback_data: str):
     """
-        Push 1 to some db table, you will subscribed
-        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     try:
         del callback_data
-        logger.info('Subscribe a %s chat %s ', query.message.chat.type, query.message.chat)
-        if (query.message.chat.type == 'private'):
-            user_from_db = await db().get_users('tg_id', query.message.chat.id)
-            await db().set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='all', email=None)
-        elif (query.message.chat.type == 'group'):
-            await db().set_chats(query.message.chat.id, title=query.message.chat.title, started_by=query.message.from_user.username, notification='all')
+        logger.info('-- RELEASE EVENTS a %s chat %s ', query.message.chat.type, query.message.chat)
+        # if (query.message.chat.type == 'private'):
+        user_from_db = await db().get_users('tg_id', query.message.chat.id)
+        if user_from_db[0]['notification'] == 'all':
+            await db().set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='none', email=None)
+            msg = 'Вы отписаны от уведомлений по всем релизам.'
         else:
-            logger.info('Subscribe got something undefined %s', query.message.chat.id)
+            await db().set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='all', email=None)
+            msg = 'Вы подписаны на уведомления по всем релизам.'
+        # elif (query.message.chat.type == 'group'):
+        #     await db().set_chats(query.message.chat.id, title=query.message.chat.title, started_by=query.message.from_user.username, notification='all')
         msg = 'Вы подписаны на сообщения обо всех релизах.'
         await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
-    except Exception:
-        logger.exception("subscribe_all")
+    except Exception as e:
+        logger.exception("-- RELEASE EVENTS %s", e)
 
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='unsubscribe_all'), filters.restricted)
@@ -723,7 +724,7 @@ async def timetable_reminder(query: types.CallbackQuery, callback_data: str):
             user_subscriptions = await db().get_user_subscriptions(user_from_db[0]['account_name'])
             if 'timetable' in user_subscriptions:
                 await db().delete_user_subscription(user_from_db[0]['account_name'], 'timetable')
-                msg = 'Вы отписались от напоминаний о расписании встреч.'
+                msg = 'Вы отписаны от напоминаний о расписании встреч.'
             else:
                 await db().set_user_subscription(user_from_db[0]['account_name'], 'timetable')
                 msg = 'Вы подписаны на напоминания о расписании встреч.'
@@ -747,7 +748,7 @@ async def statistics_reminder(query: types.CallbackQuery, callback_data: str):
         user_subscriptions = await db().get_user_subscriptions(user_from_db[0]['account_name'])
         if 'statistics' in user_subscriptions:
             await db().delete_user_subscription(user_from_db[0]['account_name'], 'statistics')
-            msg = 'Вы отписались от рассылки статистики по релизам.'
+            msg = 'Вы отписаны от рассылки статистики по релизам.'
         else:
             await db().set_user_subscription(user_from_db[0]['account_name'], 'statistics')
             msg = 'Вы подписаны на рассылку статистики по релизам.'
