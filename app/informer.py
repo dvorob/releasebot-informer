@@ -661,6 +661,7 @@ async def subscribe_events(query: types.CallbackQuery, callback_data: str):
         logger.info('subscribe_events opened by %s', returnHelper.return_name(query))
         msg = 'Вы можете подписаться на уведомления обо всех релизах.' \
               'Уведомления о ваших релизах будут работать в любом случае, от них отписаться нельзя.'
+
         await query.message.reply(text=msg, reply_markup=keyboard.subscribe_menu(),
                                   parse_mode=ParseMode.HTML)
     except Exception:
@@ -682,9 +683,11 @@ async def release_events(query: types.CallbackQuery, callback_data: str):
         else:
             await db().set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='all', email=None)
             msg = 'Вы подписаны на уведомления по всем релизам.'
+
+        user_subscriptions = await get_current_user_subscription(user_from_db[0]['account_name'])
+        msg += '\n\n<b>Ваши подписки</b>:\n' + user_subscriptions
         # elif (query.message.chat.type == 'group'):
         #     await db().set_chats(query.message.chat.id, title=query.message.chat.title, started_by=query.message.from_user.username, notification='all')
-        msg = 'Вы подписаны на сообщения обо всех релизах.'
         await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception("-- RELEASE EVENTS %s", e)
@@ -731,7 +734,9 @@ async def timetable_reminder(query: types.CallbackQuery, callback_data: str):
         else:
             msg = 'Подписаться на календарь можно только для аккаунтов в AD'
             logger.info('Подписаться на календарь можно только для аккаунтов в AD %s', query.message.chat.id)
-
+        
+        user_subscriptions = await get_current_user_subscription(user_from_db[0]['account_name'])
+        msg += '\n\n<b>Ваши подписки</b>:\n' + user_subscriptions
         await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception("Error in TIMETABLE REMINDER %s", e)
@@ -752,6 +757,9 @@ async def statistics_reminder(query: types.CallbackQuery, callback_data: str):
         else:
             await db().set_user_subscription(user_from_db[0]['account_name'], 'statistics')
             msg = 'Вы подписаны на рассылку статистики по релизам.'
+        
+        user_subscriptions = await get_current_user_subscription(user_from_db[0]['account_name'])
+        msg += '\n\n<b>Ваши подписки</b>:\n' + user_subscriptions
         await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception("Error in STATISTICS REMINDER %s", e)
@@ -936,6 +944,28 @@ async def unknown_message(message: types.Message):
                       f'Я не знаю, как ответить на {message.text} :astonished:\n'
                       'Список того, что я умею - /help')
         await message.reply(msg, parse_mode=ParseMode.HTML)
+
+
+async def get_current_user_subscription(account_name) -> str:
+    """
+    """
+    user_subscriptions = await db().get_user_subscriptions(account_name)
+    user_notification = await db().get_users('account_name', account_name)
+    all_subscriptions = []
+    all_subscriptions = all_subscriptions + user_subscriptions
+    all_subscriptions.append(user_notification[0]['notification'])
+    logger.info('GET CURR STATS %s %s %s', user_subscriptions, user_notification, all_subscriptions)
+    msg = ''
+    for subs in all_subscriptions:
+        if subs == 'all':
+            msg += 'Все события о релизах\n'
+        elif subs == 'statistics':
+            msg += 'Статистика по релизам вечером\n'
+        elif subs == 'timetable':
+            msg += 'Напоминание о встречах утром\n'
+        else:
+            msg += subs + '\n'
+    return msg
 
 
 async def on_startup(dispatcher):

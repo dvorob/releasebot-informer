@@ -20,28 +20,28 @@ def main_menu() -> types.InlineKeyboardMarkup:
     try:
         url_jira_board = 'https://jira.yamoney.ru/secure/RapidBoard.jspa?rapidView=715'
         url_kibana = 'https://kibana.yamoney.ru/goto/2319c2bcfb9ae9fda8e9669ef73830b4'
-        url_wiki = 'https://wiki.yamoney.ru/x/03AAD'
+        url_wiki = 'https://wiki.yamoney.ru/display/admins/ReleaseBot.Informer'
         button_list = [
-            types.InlineKeyboardButton(text="Show duty admin",
+            types.InlineKeyboardButton(text="Дежурные",
                                        callback_data=posts_cb.new(action='duty_button', issue='1')),
-            types.InlineKeyboardButton("Open release board",
+            types.InlineKeyboardButton("Релизная доска",
                                        url=url_jira_board),
-            types.InlineKeyboardButton("Open documentation", url=url_wiki),
-            types.InlineKeyboardButton("Open logs page",
+            types.InlineKeyboardButton("Документация", url=url_wiki),
+            types.InlineKeyboardButton("Логи бота",
                                        url=url_kibana),
-            types.InlineKeyboardButton(text="Open admin menu",
+            types.InlineKeyboardButton(text="Админское",
                                        callback_data=posts_cb.new(action='admin_menu',
                                                                   issue='1')),
-            types.InlineKeyboardButton("Return task to the queue",
+            types.InlineKeyboardButton("Вернуть релиз в очередь",
                                        callback_data=posts_cb.new(action='return_queue',
                                                                   issue='1')),
-            types.InlineKeyboardButton("Subscribe to events",
+            types.InlineKeyboardButton("Подписки и уведомления",
                                        callback_data=posts_cb.new(action='subscribe', issue='1')),
-            types.InlineKeyboardButton("Get minimum information from release board",
+            types.InlineKeyboardButton("Краткая инфа с релизной доски",
                                        callback_data=posts_cb.new(action='get_min_inf_board',
                                                                   issue='1')),
         ]
-        footer = types.InlineKeyboardButton("Get extended information from release board",
+        footer = types.InlineKeyboardButton("Расширенная инфа с релизной доски",
                                             callback_data=posts_cb.new(action='get_ext_inf_board',
                                                                        issue='1'))
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_list, n_cols=2,
