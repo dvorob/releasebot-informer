@@ -662,7 +662,7 @@ async def subscribe_events(query: types.CallbackQuery, callback_data: str):
         msg = 'Вы можете подписаться на уведомления обо всех релизах.' \
               'Уведомления о ваших релизах будут работать в любом случае, от них отписаться нельзя.'
         user_from_db = await db().get_users('tg_id', query.message.chat.id)
-        user_subscriptions = await db().get_current_user_subscription(user_from_db[0]['account_name'])
+        user_subscriptions = await get_current_user_subscription(user_from_db[0]['account_name'])
         msg += '\n\n<b>Ваши текущие подписки</b>:\n' + user_subscriptions
         await query.message.reply(text=msg, reply_markup=keyboard.subscribe_menu(),
                                   parse_mode=ParseMode.HTML)
@@ -688,33 +688,9 @@ async def release_events(query: types.CallbackQuery, callback_data: str):
 
         user_subscriptions = await get_current_user_subscription(user_from_db[0]['account_name'])
         msg += '\n\n<b>Ваши подписки</b>:\n' + user_subscriptions
-        # elif (query.message.chat.type == 'group'):
-        #     await db().set_chats(query.message.chat.id, title=query.message.chat.title, started_by=query.message.from_user.username, notification='all')
         await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception("-- RELEASE EVENTS %s", e)
-
-
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='unsubscribe_all'), filters.restricted)
-async def unsubscribe_all(query: types.CallbackQuery, callback_data: str):
-    """
-    Отписать пользователя от всех уведомлений.
-    {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
-    """
-    try:
-        del callback_data
-        logger.info('-- UNSUBSCRIBE ALL %s chat %s ', query.message.chat.type, query.message.chat)
-        if (query.message.chat.type == 'private'):
-            user_from_db = await db().get_users('tg_id', query.message.chat.id)
-            await db().set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='none', email=None)
-        elif (query.message.chat.type == 'group'):
-            await db().set_chats(query.message.chat.id, title=query.message.chat.title, started_by=query.message.from_user.username, notification='none')
-        else:
-            logger.info('Subscribe got something undefined %s', query.message.chat.id)
-        msg = 'Вы отписались от сообщений о релизах.'
-        await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
-    except Exception as e:
-        logger.exception("Error in UNSUBSCRIBE ALL %s", e)
 
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='timetable_reminder'), filters.restricted)

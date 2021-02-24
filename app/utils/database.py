@@ -115,28 +115,6 @@ class PostgresPool:
             self.db.close()
 
 
-    async def get_subscribers_to_something(self, notification) -> list:
-        """
-            Get list of employee and Chats who subscribed to events
-            :return: list of tg_chat_id
-        """
-        try:
-            self.db.connect(reuse_if_open=True)
-            db_chats = Chats.select(Chats.tg_id).where(Chats.notification == notification, Chats.tg_id.is_null(False))
-            db_users = Users.select(Users.tg_id).where(Users.notification == notification, Users.tg_id.is_null(False))
-            logger.info('Get subscribers for %s db chats = %s   db users = %s', notification, db_chats, db_users)
-            result = []
-
-            for line in db_chats:
-                result.append(line.tg_id)
-            for line in db_users:
-                result.append(line.tg_id)
-            return result
-        except Exception as e:
-            logger.exception('get subscribers to something error %s', str(e))
-        finally:
-            self.db.close()
-
     async def set_users(self, account_name, full_name, tg_login, working_status, tg_id, notification, email):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
