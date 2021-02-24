@@ -85,21 +85,21 @@ async def help_description(message: types.Message):
                   f'Если Telegram ID не заполнен, нажми <u><b>/start</b></u> .\n'
                   f'Во всех остальных случаях обратись к администраторам группы Admsys.\n'
                   f'\nВот список всего, что я умею:\n'
-                  f'<u>/start</u> -- запишет твой Telegram-ID в базу (нужно, чтобы отправлять тебе уведомления от бота).\n'
                   f'<u>/duty </u><b>N</b> -- покажет дежурных через N дней; N задавать необязательно, по умолчанию отобразятся деурные на сегодня.\n'
                   f'<u>/who </u><b>username</b> -- найдет инфо о пользователе; работает с ТГ-логином, аккаунтом или почтой.\n'
+                  f'<u>/timetable </u><b>N</b> -- расписание вашего календаря; как включить читайте здесь - https://wiki.yamoney.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster.\n'
                   f'\nОписание кнопок:\n'
-                  f'<u><b>Show duty admin</b></u> -- показать дежурных админов.\n'
-                  f'<u><b>Open release board</b></u> -- открыть релизную доску Admsys.\n'
-                  f'<u><b>Open documentation</b></u> -- открыть Wiki с документацией по боту.\n'
-                  f'<u><b>Open logs page</b></u> -- открыть Kibana с логами бота.\n'
-                  f'<u><b>Open admin menu</b></u> -- админское меню, доступно только администраторам.\n'
-                  f'<u><b>Return task to the queue</b></u> -- вернет список Jira-тасок, которые можно вернуть в начало релизной очереди.\n'
-                  f'<u><b>Subscribe to events</b></u> -- подписаться на все уведомления от бота.\n'
+                  f'<u><b>Дежурные</b></u> -- показать дежурных админов.\n'
+                  f'<u><b>Релизная доска</b></u> -- открыть релизную доску Admsys.\n'
+                  f'<u><b>Документация</b></u> -- открыть Wiki с документацией по боту.\n'
+                  f'<u><b>Логи бота</b></u> -- открыть Kibana с логами бота.\n'
+                  f'<u><b>Админское меню</b></u> -- админское меню, доступно только администраторам.\n'
+                  f'<u><b>Вернуть релиз в очередь</b></u> -- вернет список Jira-тасок, которые можно вернуть в начало релизной очереди.\n'
+                  f'<u><b>Подписки и уведомления</b></u> -- подписаться на все уведомления от бота.\n'
                   f'Там же можно и отписаться от уведомлений.\n'
                   f'<b>Важно:</b> на персональные уведомления (о своих релизах) подписывться не нужно -- они работают по умолчанию.\n'
-                  f'<u><b>Get minimum information from release board</b></u> -- покажет статистику о текущем состоянии релизной доски.\n'
-                  f'<u><b>Get extended information from release board</b></u> -- то же, но в расширенном варианте.\n')
+                  f'<u><b>Краткая инфа с релизной доски</b></u> -- покажет статистику о текущем состоянии релизной доски.\n'
+                  f'<u><b>Расширенная инфа с релизной доски</b></u> -- то же, но в расширенном варианте.\n')
     try:
         await message.answer(text=msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as exc:
@@ -237,7 +237,7 @@ async def timetable_personal(message: types.Message):
 
     except Exception as e:
         logger.exception('error in timetable personal %s', str(e))
-        msg = 'Что-то пошло не так, обратитесь к моим администраторам.'
+        msg = 'Что-то пошло не так. Вероятно, вы не выдали доступ до своего календаря. Подробнее читайте здесь -- https://wiki.yamoney.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster'
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
 
 ###############################################
@@ -679,7 +679,7 @@ async def release_events(query: types.CallbackQuery, callback_data: str):
         logger.info('-- RELEASE EVENTS a %s chat %s ', query.message.chat.type, query.message.chat)
         user_from_db = await db().get_users('tg_id', query.message.chat.id)
         user_subscriptions = await db().get_user_subscriptions(user_from_db[0]['account_name'])
-        if 'release_events' in user_from_db[0]['notification']:
+        if 'release_events' in user_subscriptions:
             await db().delete_user_subscription(user_from_db[0]['account_name'], 'release_events')
             msg = 'Вы отписаны от уведомлений по всем релизам.'
         else:
@@ -930,11 +930,11 @@ async def get_current_user_subscription(account_name) -> str:
     msg = ''
     for subs in user_subscriptions:
         if subs == 'release_events':
-            msg += 'Все события о релизах\n'
+            msg += ' - Все события о релизах\n'
         elif subs == 'statistics':
-            msg += 'Статистика по релизам вечером\n'
+            msg += ' - Статистика по релизам вечером\n'
         elif subs == 'timetable':
-            msg += 'Напоминание о встречах утром\n'
+            msg += ' - Напоминание о встречах утром\n'
         elif subs == 'none':
             msg += ''
         else:
