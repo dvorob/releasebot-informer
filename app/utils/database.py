@@ -29,15 +29,6 @@ class App_List(BaseModel):
     queues = TextField(default=None)
     bot_enabled = BooleanField(default=None)
 
-class Chats(BaseModel):
-    id = IntegerField()
-    tg_id = CharField()
-    title = CharField()
-    started_by = CharField()
-    date_start = TimestampField(default=datetime.now)
-    notification = CharField(default='none')
-    description = CharField()
-
 class Option(BaseModel):
     name = CharField(unique=True)
     value = CharField()
@@ -94,23 +85,6 @@ class PostgresPool:
             return result
         except Exception as e:
             logger.exception('exception in get application metainfo %s', e)
-        finally:
-            self.db.close()
-
-    async def set_chats(self, tg_id, title, started_by, notification):
-        """
-        """
-        logger.info('set chat called for %s %s %s notification %s', tg_id, title, started_by, notification)
-        try:
-            self.db.connect(reuse_if_open=True)
-            db_chat, _ = Chats.get_or_create(tg_id=tg_id)
-            logger.info('a chat object is %s', db_chat)
-            db_chat.title = title
-            db_chat.started_by = started_by
-            db_chat.notification = notification
-            db_chat.save()
-        except Exception:
-            logger.exception("set chats error")
         finally:
             self.db.close()
 
@@ -353,7 +327,7 @@ class PostgresPool:
             for v in db_query:
                 if ((vars(v))['__data__']):
                     result.append((vars(v))['__data__']['subscription'])
-            logger.debug('get user subscriptions for %s %s', account_name, result)
+            logger.info('get user subscriptions for %s %s', account_name, result)
             return result
         except Exception as e:
             logger.exception('exception in get user subscriptions %s', e)

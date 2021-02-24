@@ -659,7 +659,7 @@ async def subscribe_events(query: types.CallbackQuery, callback_data: str):
     del callback_data
     try:
         logger.info('subscribe_events opened by %s', returnHelper.return_name(query))
-        msg = 'Вы можете подписаться на уведомления обо всех релизах.' \
+        msg = 'Вы можете подписаться на уведомления обо всех релизах. ' \
               'Уведомления о ваших релизах будут работать в любом случае, от них отписаться нельзя.'
         user_from_db = await db().get_users('tg_id', query.message.chat.id)
         user_subscriptions = await get_current_user_subscription(user_from_db[0]['account_name'])
@@ -677,13 +677,13 @@ async def release_events(query: types.CallbackQuery, callback_data: str):
     try:
         del callback_data
         logger.info('-- RELEASE EVENTS a %s chat %s ', query.message.chat.type, query.message.chat)
-        # if (query.message.chat.type == 'private'):
         user_from_db = await db().get_users('tg_id', query.message.chat.id)
-        if user_from_db[0]['notification'] == 'all':
-            await db().set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='none', email=None)
+        user_subscriptions = await db().get_user_subscriptions(user_from_db[0]['account_name'])
+        if 'release_events' in user_from_db[0]['notification']:
+            await db().delete_user_subscription(user_from_db[0]['account_name'], 'release_events')
             msg = 'Вы отписаны от уведомлений по всем релизам.'
         else:
-            await db().set_users(user_from_db[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=None, notification='all', email=None)
+            await db().set_user_subscription(user_from_db[0]['account_name'], 'release_events')
             msg = 'Вы подписаны на уведомления по всем релизам.'
 
         user_subscriptions = await get_current_user_subscription(user_from_db[0]['account_name'])
@@ -874,7 +874,7 @@ async def inform_duty(request):
 async def inform_subscribers(request):
     """
     Внешняя ручка для информирования подписанных на информинги =)
-    {'notification': 'all', 'message': str}
+    {'notification': 'release_events', 'message': str}
     notification можно найти в таблице Xerxes.Users в соответствующем поле
     """
     data_json = await request.json()
@@ -927,11 +927,9 @@ async def get_current_user_subscription(account_name) -> str:
     """
     """
     user_subscriptions = await db().get_user_subscriptions(account_name)
-    user_notification = await db().get_users('account_name', account_name)
-    all_subscriptions = [] + user_subscriptions.append(user_notification[0]['notification'])
     msg = ''
-    for subs in all_subscriptions:
-        if subs == 'all':
+    for subs in user_subscriptions:
+        if subs == 'release_events':
             msg += 'Все события о релизах\n'
         elif subs == 'statistics':
             msg += 'Статистика по релизам вечером\n'
