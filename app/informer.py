@@ -585,6 +585,7 @@ async def rollback_app(query: types.CallbackQuery, callback_data: str):
     msg = f"Точно откатываем {callback_data['issue']} ?"
     await query.message.reply(text=msg, reply_markup=keyboard.rollback_app_confirm(callback_data['issue']), parse_mode=ParseMode.HTML)
 
+
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='rollback_app_confirm'), filters.restricted, filters.admin)
 async def rollback_app_confirm(query: types.CallbackQuery, callback_data: str):
     """
@@ -598,6 +599,18 @@ async def rollback_app_confirm(query: types.CallbackQuery, callback_data: str):
     except Exception as e:
         logger.error('Error in ROLLBACK APP CONFIRM %s', e)
     await query.answer(f"Откатываю релиз {callback_data['issue']}. Потому что я красавчик.")
+
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='restart_calypso'), filters.restricted, filters.admin)
+async def restart_calypso(query: types.CallbackQuery, callback_data: str):
+    """
+       Написать Антону =)
+    """
+    del callback_data
+    # chat_id = '390182439'
+    # msg = 'Привет, это Ксеркс! Можешь проверить, у нас Шопы в порядке?'
+    await bot.send_message(chat_id=chat_id, text=msg, parse_mode=ParseMode.HTML)
+    await query.answer('Начинаю рандом-рестарт вплоть до полного восстановления')
 
 ##############################################################################################
 
