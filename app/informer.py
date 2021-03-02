@@ -812,18 +812,6 @@ async def get_user_info(message: types.Message):
         msg = 'Пожалуйста, попробуйте еще раз: /who username'
     await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
-async def send_message_to_approvers(issue_key: str, message: str):
-    """
-       (issue_key='ADMSYS-10000', message='Алярма')
-       Отправить сообщение согласующим. Согласующие - те, кто указаны в релизной таске, в виде рабочих аккаунтов.
-       Функции нужно знать номер релиза и сообщение, дальше она сделает все сама. 
-    """
-    try:
-        list_chat_id_recipients = jiratools.jira_get_approvers_list(issue_key)
-        logger.info('-- SEND MESSAGE TO APPROVERS %s %s %s', issue_key, list_chat_id_recipients, message)
-        send_message_to_users(list_chat_id_recipients, message)
-    except Exception as e:
-        logger.exception('Exception in SEND MESSAGE TO APPROVERS %s', e)
 
 async def send_message_to_users(request):
     """
@@ -839,7 +827,7 @@ async def send_message_to_users(request):
             for acc in data_json['accounts']:
                 user_from_db = await db().get_users('account_name', acc)
                 if len(user_from_db) > 0:
-                    if user_from_db[0]['tg_id'] != None:
+                    if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                         set_of_chat_id.append(user_from_db[0]['tg_id'])
             if 'disable_notification' in data_json:
                 disable_notification = True
