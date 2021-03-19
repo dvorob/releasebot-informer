@@ -123,8 +123,7 @@ def admin_menu() -> types.InlineKeyboardMarkup:
         types.InlineKeyboardButton('Don\'t touch new release',
                                    callback_data=posts_cb.new(action='dont_touch', issue='1')),
         types.InlineKeyboardButton('Release', callback_data=posts_cb.new(action='release_app_list', issue='1')),
-        types.InlineKeyboardButton('Rollback', callback_data=posts_cb.new(action='rollback_app_list', issue='1')),
-        types.InlineKeyboardButton('stop calypso, start calypso', callback_data=posts_cb.new(action='restart_calypso', issue='1'))
+        types.InlineKeyboardButton('Rollback', callback_data=posts_cb.new(action='rollback_app_list', issue='1'))
     ]
     to_main = types.InlineKeyboardButton('Main menu', callback_data=posts_cb.new(action='main',
                                                                                  issue='1'))
