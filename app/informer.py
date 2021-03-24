@@ -85,11 +85,11 @@ async def help_description(message: types.Message):
                   f'Если в ответе ты видишь корректный логин, всё Ок.\n'
                   f'Если Telegram ID не заполнен, нажми <u><b>/start</b></u> .\n'
                   f'Во всех остальных случаях обратись к администраторам группы Admsys.\n'
-                  f'\n:point-right: Вот список всего, что я умею:\n'
+                  f'\n:point_right: Вот список всего, что я умею:\n'
                   f'<u>/duty </u><b>N</b> -- покажет дежурных через N дней; N задавать необязательно, по умолчанию отобразятся деурные на сегодня.\n'
                   f'<u>/who </u><b>username</b> -- найдет инфо о пользователе; работает с ТГ-логином, аккаунтом или почтой.\n'
                   f'<u>/timetable </u><b>N</b> -- расписание вашего календаря; как включить читайте здесь - https://wiki.yamoney.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster.\n'
-                  f'\n:point-right: Описание кнопок:\n'
+                  f'\n:point_right: Описание кнопок:\n'
                   f'<u><b>Дежурные</b></u> -- показать дежурных админов.\n'
                   f'<u><b>Релизная доска</b></u> -- открыть релизную доску Admsys.\n'
                   f'<u><b>Документация</b></u> -- открыть Wiki с документацией по боту.\n'
@@ -105,7 +105,7 @@ async def help_description(message: types.Message):
     user_info = await db().search_users_by_account(message.from_user.username)
     if len(user_info)>0:
         if user_info[0]['admin'] == 1:
-            msg += emojize(f'\n:vulcan: <u>Админские команы</u>:'
+            msg += emojize(f'\n:raised_hand: <u>Админские команы</u>:'
                   f'\n<u>/where_app </u><b>app_name</b> -- найти расположение приложения. Можно передать shiro, iva-back-shiro1 и комбинации через пробел.'
                   f'\n<u>/app </u><b>app_name</b> -- инфа по приложению из БД бота (то, что он получает из metaconfig.yaml). Если инфы нет - бот ничего не покатит.'
                   f'\n<u>/lock </u><b>app_name</b> -- /lock shiro залочит выкладки приложений. Меняет значение bot_enabled = false (оно же есть в metaconfig.yaml, но истина - в БД).'
@@ -331,7 +331,7 @@ async def get_ext_inf_board_button(query: types.CallbackQuery, callback_data: st
             text = 'Я не смог найти тасок на релизной доске'
             logger.error('get_ext_inf_board_button, can\'t find issues in Jira')
         await query.message.answer(text=text, reply_markup=to_main_menu(),
-                                   parse_mode=ParseMode.MARKDOWN)
+                                   parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception('get_ext_inf_board')
 
@@ -852,32 +852,36 @@ async def send_message_to_users(request):
     data_json = await request.json()
     disable_notification = False
     if 'accounts' in data_json:
-        logger.info(f"-- SEND MESSAGE TO USERS {data_json['accounts']}")
-        try:
-            set_of_chat_id = []
-            for acc in data_json['accounts']:
-                user_from_db = await db().get_users('account_name', acc)
-                if len(user_from_db) > 0:
-                    if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
-                        set_of_chat_id.append(user_from_db[0]['tg_id'])
-            if 'disable_notification' in data_json:
-                disable_notification = True
-            logger.info('sending message for %s', set_of_chat_id)
-            # await bot.send_message(chat_id=279933948, text=data_json['text'], parse_mode=ParseMode.HTML)
-            for chat_id in set_of_chat_id:
-                try:
-                    await bot.send_message(chat_id=chat_id, text=data_json['text'], 
-                                           disable_notification=disable_notification, parse_mode=ParseMode.HTML)
-                except BotBlocked:
-                    logger.info('YM release bot was blocked by %s', chat_id)
-                except ChatNotFound:
-                    logger.error('Chat not found with: %s', chat_id)
-        except Exception as e:
-            logger.exception('Error send message to users %s', str(e))
+        logger.info(f"-- SEND MESSAGE TO USERS {data_json['accounts']} {data_json['text']}")
+        set_of_chat_id = []
+        for acc in data_json['accounts']:
+            user_from_db = await db().get_users('account_name', acc)
+            if len(user_from_db) > 0:
+                if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
+                    set_of_chat_id.append(user_from_db[0]['tg_id'])
+        if 'disable_notification' in data_json:
+            disable_notification = data_json['disable_notification']
+        logger.info('sending message for %s', set_of_chat_id)
+        for chat_id in set_of_chat_id:
+            try:
+                logger.info(f"Sending for chat_id {chat_id} {data_json['text']}")
+                await bot.send_message(chat_id=chat_id, text=data_json['text'], 
+                                       disable_notification=disable_notification, parse_mode=ParseMode.HTML)
+            except BotBlocked:
+                logger.info('YM release bot was blocked by %s', chat_id)
+            except ChatNotFound:
+                logger.error('Chat not found with: %s', chat_id)
+            except Exception as e:
+                logger.exception('Error sending to chat_id %s', str(e))
 
     if 'jira_tasks' in data_json:
         logger.info(f"-- SEND MESSAGE TO USERS {data_json['jira_tasks']}")
         for task in data_json['jira_tasks']:
+
+            # if 'inform_approvers' in data_json:
+            #     if data_json[]
+            # if 'inform_watchers' in data_json:
+            #     if data_json[]
             try:
                 JiraConnection().add_comment(JiraConnection().jira_issue(task), data_json['text'])
             except Exception as e:
@@ -942,17 +946,17 @@ async def inform_today_duty(area, msg):
                 logger.exception('Error in INFORM TODAY DUTY %s', e)  
 
 
-@initializeBot.dp.message_handler()
+@initializeBot.dp.message_handler(filters.restricted)
 async def unknown_message(message: types.Message):
     """
     """
     logger.info('-- UNKNOWN MESSAGE start')
-    is_restricted = await filters.restricted(message)
-    if is_restricted:
-        msg = emojize(f'{bold(message.from_user.full_name)},\n'
-                      f'Я не знаю, как ответить на {message.text} :astonished:\n'
-                      'Список того, что я умею - /help')
-        await message.reply(msg, parse_mode=ParseMode.HTML)
+    # is_restricted = await filters.restricted(message)
+    # if is_restricted:
+    msg = emojize(f'{bold(message.from_user.full_name)},\n'
+                  f'Я не знаю, как ответить на {message.text} :astonished:\n'
+                  'Список того, что я умею - /help')
+    await message.reply(msg, parse_mode=ParseMode.HTML)
 
 
 async def get_current_user_subscription(account_name) -> str:

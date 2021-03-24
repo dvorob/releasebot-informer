@@ -123,10 +123,15 @@ class PostgresPool:
         result = []
         try:
             self.db.connect(reuse_if_open=True)
-            db_users = Users.select().where(getattr(Users, field) == value)
+            if field in ('tg_login', 'account_name'):
+                db_users = Users.select().where(fn.Lower(getattr(Users, field)) == fn.Lower(value))
+            else:
+                db_users = Users.select().where(getattr(Users, field) == value)
+
             for v in db_users:
                 result.append((vars(v))['__data__'])
             return result
+
         except Exception:
             logger.exception('exception in db get users')
             return result

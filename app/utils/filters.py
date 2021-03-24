@@ -36,14 +36,19 @@ async def admin(message: types.message) -> bool:
         :return: True or false
     """
     try:
-        if message.from_user.id not in config.bot_master.values():
-            await message.answer(text='You are not admin')
-            logger.warning('Attempt to enter the admin menu from %s',
-                           returnHelper.return_name(message))
+        user_info = await db().search_users_by_account(str(message.from_user.username))
+        if len(user_info) > 0:
+            if user_info[0]['admin'] == 1:
+                return True
+            else:
+                await message.answer(text='Извините, вы не в списке админов.')
+                logger.warning('Attempt to enter the admin menu from %s',
+                               returnHelper.return_name(message))
+                return False
+        else:
             return False
-        return True
-    except Exception:
-        logger.exception('admin filter')
+    except Exception as e:
+        logger.exception('-- Error in admin filter', str(e))
 
 
 async def restricted(message: types.message) -> bool:
