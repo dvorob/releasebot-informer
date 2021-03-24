@@ -475,7 +475,7 @@ async def lock_app_release(message: types.Message):
             async with session.post(config.api_lock_unlock, headers=locked_app) as resp:
                 await resp.json()
                 logger.info('lock send locked app to api, status is: %s', resp.status)
-            get_app =  db().get_application_metainfo(incoming[1])
+            get_app = db().get_application_metainfo(incoming[1])
             logger.info('lock app release %s ', get_app)
             if 'bot_enabled' in get_app:
                 msg = f"Релизы {get_app['app_name']} <b>разблокированы</b>" if get_app['bot_enabled'] else f"Релизы {get_app['app_name']} <b>заблокированы</b>"
@@ -754,6 +754,29 @@ async def statistics_reminder(query: types.CallbackQuery, callback_data: str):
         await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception("Error in STATISTICS REMINDER %s", e)
+
+
+@initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['app'])
+async def app_info(message: types.Message):
+    """
+    Вытащить инфу о приложении из БД Бота
+    """
+    logger.info( '-- APP INFO started by %s', returnHelper.return_name(message))
+    incoming = message.text.split()
+    try:
+        if len(incoming) >= 2:
+            app_name_list = incoming[1:]
+            msg = '<u><b>Результаты поиска</b></u>:'
+            for app_name in app_name_list:
+                app_info = db().get_application_metainfo(app_name)
+                for key in app_info:
+                    msg += f'\n <strong>{key}</strong>: {app_info[key]} \n'
+                msg += f'\n'
+        else:
+            msg = 'Error: app_name not found'
+        await message.answer(text=msg, parse_mode=ParseMode.HTML)
+    except Exception as e:
+        logger.exception('Error in APP INFO %s', e)
 
 
 @initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['where_app'])
