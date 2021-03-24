@@ -77,6 +77,7 @@ async def help_description(message: types.Message):
     logger.info('help function was called by %s', returnHelper.return_name(message))
     logger.info('Message %s', vars(message.from_user))
     logger.info('Message %s', vars(message.chat))
+
     msg = emojize(f'Привет, <b>{message.from_user.full_name}</b>! :raised_hand:\n'
                   f'\nЧтобы начать со мной взаимодействовать, нужно быть сотрудником компании.\n'
                   f'Если ты с нами, скорее всего, мы уже знакомы. Проверить это можно, спросив меня:\n'
@@ -84,11 +85,11 @@ async def help_description(message: types.Message):
                   f'Если в ответе ты видишь корректный логин, всё Ок.\n'
                   f'Если Telegram ID не заполнен, нажми <u><b>/start</b></u> .\n'
                   f'Во всех остальных случаях обратись к администраторам группы Admsys.\n'
-                  f'\nВот список всего, что я умею:\n'
+                  f'\n:point-right: Вот список всего, что я умею:\n'
                   f'<u>/duty </u><b>N</b> -- покажет дежурных через N дней; N задавать необязательно, по умолчанию отобразятся деурные на сегодня.\n'
                   f'<u>/who </u><b>username</b> -- найдет инфо о пользователе; работает с ТГ-логином, аккаунтом или почтой.\n'
                   f'<u>/timetable </u><b>N</b> -- расписание вашего календаря; как включить читайте здесь - https://wiki.yamoney.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster.\n'
-                  f'\nОписание кнопок:\n'
+                  f'\n:point-right: Описание кнопок:\n'
                   f'<u><b>Дежурные</b></u> -- показать дежурных админов.\n'
                   f'<u><b>Релизная доска</b></u> -- открыть релизную доску Admsys.\n'
                   f'<u><b>Документация</b></u> -- открыть Wiki с документацией по боту.\n'
@@ -100,6 +101,15 @@ async def help_description(message: types.Message):
                   f'<b>Важно:</b> на персональные уведомления (о своих релизах) подписывться не нужно -- они работают по умолчанию.\n'
                   f'<u><b>Краткая инфа с релизной доски</b></u> -- покажет статистику о текущем состоянии релизной доски.\n'
                   f'<u><b>Расширенная инфа с релизной доски</b></u> -- то же, но в расширенном варианте.\n')
+
+    user_info = await db().search_users_by_account(message.from_user.username)
+    if len(user_info)>0:
+        if user_info[0]['admin'] == 1:
+            msg += emojize(f'\n:vulcan: <u>Админские команы</u>:'
+                  f'\n<u>/where_app </u><b>app_name</b> -- найти расположение приложения. Можно передать shiro, iva-back-shiro1 и комбинации через пробел.'
+                  f'\n<u>/app </u><b>app_name</b> -- инфа по приложению из БД бота (то, что он получает из metaconfig.yaml). Если инфы нет - бот ничего не покатит.'
+                  f'\n<u>/lock </u><b>app_name</b> -- /lock shiro залочит выкладки приложений. Меняет значение bot_enabled = false (оно же есть в metaconfig.yaml, но истина - в БД).'
+                  f'\n<u>/unlock </u><b>app_name</b> -- /unlock shiro, соответственно, запустит.')
     try:
         await message.answer(text=msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as exc:
@@ -457,9 +467,7 @@ async def stop_bot(query: types.CallbackQuery, callback_data: str):
 @initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['lock', 'unlock'])
 async def lock_app_release(message: types.Message):
     """
-        Turn off bot
-        :param query:
-        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
+
     """
     logger.info('lock app release started by %s %s', returnHelper.return_name(message), message.get_full_command())
     incoming = message.text.split()
@@ -770,7 +778,7 @@ async def app_info(message: types.Message):
             for app_name in app_name_list:
                 app_info = db().get_application_metainfo(app_name)
                 for key in app_info:
-                    msg += f'\n <strong>{key}</strong>: {app_info[key]} \n'
+                    msg += f'\n <strong>{key}</strong>: {app_info[key]}'
                 msg += f'\n'
         else:
             msg = 'Error: app_name not found'
