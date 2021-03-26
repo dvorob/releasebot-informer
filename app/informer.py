@@ -20,7 +20,7 @@ from aiogram.utils.exceptions import ChatNotFound, BotBlocked
 from aiogram.utils.markdown import bold
 from aiohttp import web
 from enum import Enum
-from utils.jiratools import JiraConnection, JiraTransitions, jira_get_approvers_list
+from utils.jiratools import JiraConnection, JiraTransitions, jira_get_approvers_list, jira_get_watchers_list
 from utils import logging, returnHelper, initializeBot, filters, couch_client
 from utils.initializeBot import dp, bot
 from utils.database import PostgresPool as db
@@ -844,16 +844,34 @@ async def get_user_info(message: types.Message):
     await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
 
+async def send_message_to_tg_chat(chat_id: str, text: str, disable_notification=True, parse_mode=ParseMode.HTML):
+    """
+    Обёртка поверх bot.send_message
+    """
+    try:
+        logger.info(f"Sending for chat_id {chat_id} {text}")
+        await bot.send_message(chat_id=chat_id, text=text, 
+                               disable_notification=disable_notification, parse_mode=parse_mode)
+    except BotBlocked:
+        logger.info('YM release bot was blocked by %s', chat_id)
+    except ChatNotFound:
+        logger.error('Chat not found with: %s', chat_id)
+    except Exception as e:
+        logger.exception('Error sending to chat_id %s', str(e))
+
+
 async def send_message_to_users(request):
     """
     # Внешняя ручка рассылки
     {'accounts': [list of account_names], 'jira_tasks': [list of tasks_id], 'text': str}
     """
     data_json = await request.json()
-    disable_notification = False
+    logger.info(f"-- SEND MESSAGE TO USERS {data_json}")
+    if 'disable_notification' in data_json:
+        disable_notification = data_json['disable_notification']
+    else:
+        disable_notification = False
     if 'accounts' in data_json:
-        logger.info(f"-- SEND MESSAGE TO USERS {data_json['accounts']} {data_json['text']}")
-
         if type(data_json['accounts']) == str:
             data_json['accounts'] = [data_json['accounts']]
         set_of_chat_id = []
@@ -862,31 +880,36 @@ async def send_message_to_users(request):
             if len(user_from_db) > 0:
                 if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                     set_of_chat_id.append(user_from_db[0]['tg_id'])
-        if 'disable_notification' in data_json:
-            disable_notification = data_json['disable_notification']
+
         logger.info('sending message for %s', set_of_chat_id)
         for chat_id in set_of_chat_id:
-            try:
-                logger.info(f"Sending for chat_id {chat_id} {data_json['text']}")
-                await bot.send_message(chat_id=chat_id, text=data_json['text'], 
-                                       disable_notification=disable_notification, parse_mode=ParseMode.HTML)
-            except BotBlocked:
-                logger.info('YM release bot was blocked by %s', chat_id)
-            except ChatNotFound:
-                logger.error('Chat not found with: %s', chat_id)
-            except Exception as e:
-                logger.exception('Error sending to chat_id %s', str(e))
+            await send_message_to_tg_chat(chat_id, data_json['text'], disable_notification, ParseMode.HTML)
 
     if 'jira_tasks' in data_json:
-        logger.info(f"-- SEND MESSAGE TO USERS {data_json['jira_tasks']}")
+        logger.info('Go jira_tasks')
         for task in data_json['jira_tasks']:
 
-            # if 'inform_approvers' in data_json:
-            #     if data_json[]
-            # if 'inform_watchers' in data_json:
-            #     if data_json[]
+            if 'inform_approvers' in data_json:
+                logger.info('Go inform_approvers %s', data_json['inform_approvers'])
+                if data_json['inform_approvers'] == True:
+                    logger.info('It\'s true')
+                    chat_id_approvers = jira_get_approvers_list(task)
+                    for chat_id in chat_id_approvers:
+                        user_from_db = await db().get_users('account_name', chat_id)
+                        if len(user_from_db) > 0:
+                            if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
+                                await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], disable_notification, ParseMode.HTML)
+
+            if 'inform_watchers' in data_json:
+                if data_json['inform_watchers'] == True:
+                    chat_id_watchers = jira_get_watchers_list(task)
+                    for chat_id in chat_id_watchers:
+                        user_from_db = await db().get_users('account_name', chat_id)
+                        if len(user_from_db) > 0:
+                            if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
+                                await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], disable_notification, ParseMode.HTML)
             try:
-                JiraConnection().add_comment(JiraConnection().jira_issue(task), data_json['text'])
+                JiraConnection().add_comment(JiraConnection().issue(task), data_json['text'])
             except Exception as e:
                 logger.exception('Error send message to users when commenting jira task %s', str(e))
 

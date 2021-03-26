@@ -8,6 +8,7 @@ from jira import JIRA
 from utils import logging
 import config
 import jira.exceptions
+import re
 
 __all__ = ['JiraConnection']
 logger = logging.setup()
@@ -32,15 +33,25 @@ class JiraConnection:
         }
         self.jira = JIRA(self.options, basic_auth=(config.jira_user, config.jira_pass))
 
-    def jira_issue(self, query):
+    def issue(self, issue: str) -> jira.Issue:
         """
             Get Jira task information
         """
         try:
-            issue = self.jira.issue(query)
+            issue = self.jira.issue(issue)
             return issue
-        except Exception:
-            logger.exception('jira_issue')
+        except Exception as e:
+            logger.exception('jira issue %s', e)
+
+    def watchers(self, issue: str):
+        """
+            Get Jira watchers information
+        """
+        try:
+            watchers = self.jira.watchers(issue)
+            return watchers
+        except Exception as e:
+            logger.exception('jira issue %s', e)
 
     def jira_search(self, query):
         """
@@ -92,3 +103,18 @@ def jira_get_approvers_list(issue_key: str) -> list:
         return approvers
     except Exception as e:
         logger.exception('Exception in JIRA GET APPROVERS LIST %s', e)
+
+
+def jira_get_watchers_list(issue_key: str) -> list:
+    """
+       Отобрать список имейлов согласующих из jira_таски и обрезать от них email, оставив только account_name
+    """
+    try:
+        watcherList = JiraConnection().watchers(issue_key)
+        logger.info('Get watchers list %s', watcherList)
+        watchers = [re.sub('@.*$', '', w.emailAddress) for w in watcherList.watchers
+                    if "@" in w.emailAddress]
+        logger.info('-- JIRA GET WATCHERS LIST %s %s', issue, approvers)
+        return watchers
+    except Exception as e:
+        logger.exception('Exception in JIRA GET WATCHERS LIST %s', e)
