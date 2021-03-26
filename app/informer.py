@@ -853,6 +853,9 @@ async def send_message_to_users(request):
     disable_notification = False
     if 'accounts' in data_json:
         logger.info(f"-- SEND MESSAGE TO USERS {data_json['accounts']} {data_json['text']}")
+
+        if type(data_json['accounts']) == str:
+            data_json['accounts'] = [data_json['accounts']]
         set_of_chat_id = []
         for acc in data_json['accounts']:
             user_from_db = await db().get_users('account_name', acc)
