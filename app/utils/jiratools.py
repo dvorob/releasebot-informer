@@ -93,12 +93,11 @@ class JiraConnection:
 
 def jira_get_approvers_list(issue_key: str) -> list:
     """
-       Отобрать список имейлов согласующих из jira_таски и обрезать от них email, оставив только account_name
+       Отобрать список акков согласующих из jira_таски и обрезать от них email, оставив только account_name
     """
     try:
         issue = JiraConnection().issue(issue_key)
-        approvers = [re.sub('@.*$', '', item.emailAddress) for item in issue.fields.customfield_15408
-                    if "@" in item.emailAddress]
+        approvers = [item.name for item in issue.fields.customfield_15408]
         logger.info('-- JIRA GET APPROVERS LIST %s %s', issue, approvers)
         return approvers
     except Exception as e:
@@ -107,14 +106,12 @@ def jira_get_approvers_list(issue_key: str) -> list:
 
 def jira_get_watchers_list(issue_key: str) -> list:
     """
-       Отобрать список имейлов согласующих из jira_таски и обрезать от них email, оставив только account_name
+       Отобрать список акков согласующих из jira_таски и обрезать от них email, оставив только account_name
     """
     try:
         watcherList = JiraConnection().watchers(issue_key)
-        logger.info('Get watchers list %s', watcherList)
-        watchers = [re.sub('@.*$', '', w.emailAddress) for w in watcherList.watchers
-                    if "@" in w.emailAddress]
-        logger.info('-- JIRA GET WATCHERS LIST %s %s', issue, approvers)
+        watchers = [w.name for w in watcherList.watchers]
+        logger.info('-- JIRA GET WATCHERS LIST %s %s', issue_key, watchers)
         return watchers
     except Exception as e:
         logger.exception('Exception in JIRA GET WATCHERS LIST %s', e)

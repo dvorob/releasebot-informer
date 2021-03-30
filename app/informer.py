@@ -428,7 +428,7 @@ async def admin_menu(query: types.CallbackQuery, callback_data: str):
     del callback_data
     try:
         logger.info('admin menu opened by %s', returnHelper.return_name(query))
-        msg = f'Hi, admin!\nCurrent work mode: <b>{keyboard.current_mode()}</b>'
+        msg = f'Привет! \nМой текущий рабочий режим: <b>{keyboard.current_mode()}</b>'
         await query.message.reply(text=msg, reply_markup=keyboard.admin_menu(),
                                   parse_mode=ParseMode.HTML)
     except Exception:
@@ -893,18 +893,18 @@ async def send_message_to_users(request):
                 logger.info('Go inform_approvers %s', data_json['inform_approvers'])
                 if data_json['inform_approvers'] == True:
                     logger.info('It\'s true')
-                    chat_id_approvers = jira_get_approvers_list(task)
-                    for chat_id in chat_id_approvers:
-                        user_from_db = await db().get_users('account_name', chat_id)
+                    email_approvers = jira_get_approvers_list(task)
+                    for email in email_approvers:
+                        user_from_db = await db().get_users('account_name', email)
                         if len(user_from_db) > 0:
                             if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                                 await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], disable_notification, ParseMode.HTML)
 
             if 'inform_watchers' in data_json:
                 if data_json['inform_watchers'] == True:
-                    chat_id_watchers = jira_get_watchers_list(task)
-                    for chat_id in chat_id_watchers:
-                        user_from_db = await db().get_users('account_name', chat_id)
+                    email_watchers = jira_get_watchers_list(task)
+                    for email in email_watchers:
+                        user_from_db = await db().get_users('account_name', email)
                         if len(user_from_db) > 0:
                             if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                                 await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], disable_notification, ParseMode.HTML)
