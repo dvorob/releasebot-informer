@@ -89,6 +89,7 @@ async def help_description(message: types.Message):
                   f'<u>/duty </u><b>N</b> -- покажет дежурных через N дней; N задавать необязательно, по умолчанию отобразятся деурные на сегодня.\n'
                   f'<u>/who </u><b>username</b> -- найдет инфо о пользователе; работает с ТГ-логином, аккаунтом или почтой.\n'
                   f'<u>/timetable </u><b>N</b> -- расписание вашего календаря; как включить читайте здесь - https://wiki.yamoney.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster.\n'
+                  f'<u>/app </u><b>app_name</b> -- инфа по параметрам выкладки приложения из БД бота. Если инфы нет - бот ничего не покатит.\n'
                   f'\n:point_right: Описание кнопок:\n'
                   f'<u><b>Дежурные</b></u> -- показать дежурных админов.\n'
                   f'<u><b>Релизная доска</b></u> -- открыть релизную доску Admsys.\n'
@@ -764,7 +765,7 @@ async def statistics_reminder(query: types.CallbackQuery, callback_data: str):
         logger.exception("Error in STATISTICS REMINDER %s", e)
 
 
-@initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['app'])
+@initializeBot.dp.message_handler(filters.restricted, commands=['app'])
 async def app_info(message: types.Message):
     """
     Вытащить инфу о приложении из БД Бота
@@ -777,11 +778,14 @@ async def app_info(message: types.Message):
             msg = '<u><b>Результаты поиска</b></u>:'
             for app_name in app_name_list:
                 app_info = db().get_application_metainfo(app_name)
-                for key in app_info:
-                    msg += f'\n <strong>{key}</strong>: {app_info[key]}'
-                msg += f'\n'
+                if len(app_info) > 0:
+                    for key in app_info:
+                        msg += f'\n <strong>{key}</strong>: {app_info[key]}'
+                    msg += f"\n<a href='https://wiki.yamoney.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster-%D0%A0%D0%B5%D0%B6%D0%B8%D0%BC%D1%8B%D0%B2%D1%8B%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B8Modes'> Подробнее о параметрах</a>\n"
+                else:
+                    msg = 'Приложение не найдено'
         else:
-            msg = 'Error: app_name not found'
+            msg = 'Error: задайте имя приложения'
         await message.answer(text=msg, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('Error in APP INFO %s', e)

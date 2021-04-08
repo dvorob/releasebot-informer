@@ -38,8 +38,13 @@ async def admin(message: types.message) -> bool:
     try:
         user_info = await db().search_users_by_account(str(message.from_user.username))
         if len(user_info) > 0:
-            if user_info[0]['admin'] == 1:
+            if user_info[0]['admin'] == 1 and user_info[0]['working_status'] != 'dismissed':
                 return True
+            elif user_info[0]['working_status'] == 'dismissed':
+                await message.answer(text='Извините, но вы уволились. Вернётесь обратно и сможете насладиться нашим сервисом.')
+                logger.warning('Attempt to enter the admin menu from dismissed %s',
+                               returnHelper.return_name(message))
+                return False
             else:
                 await message.answer(text='Извините, вы не в списке админов.')
                 logger.warning('Attempt to enter the admin menu from %s',
@@ -66,7 +71,11 @@ async def restricted(message: types.message) -> bool:
             logger.info('restricted allow for %s', user_info[0]['account_name'])
             if str(message.from_user.id) != user_info[0]['tg_id']:
                 await db().set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), notification=None, email=None)
-            return True
+            if user_info[0]['working_status'] != 'dismissed':
+                return True
+            else:
+                await message.answer(text='Извините, но вы уволились. Не пишите мне больше, у нас теперь разная жизнь.')
+                return False
         else:
             logger.info('restricted user not found %s %s ', message.from_user.username, warning_message)
             await message.answer(text='Ваш telegram-логин не найден в базе пользователей компании. Обратитесь к администраторам.')
