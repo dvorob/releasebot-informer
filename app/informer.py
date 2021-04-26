@@ -610,6 +610,14 @@ async def rollback_app_confirm(query: types.CallbackQuery, callback_data: str):
     await query.answer(f"Откатываю релиз {callback_data['issue']}. Потому что я красавчик.")
 
 
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='dev_team_members'), filters.restricted)
+async def dev_team_members(query: types.CallbackQuery, callback_data: str):
+    """
+        Выставить у релиза резолюцию "Rollback"
+    """
+    logger.info('-- DEV TEAM MEMBERS menu opened by %s %s', returnHelper.return_name(query), callback_data)
+    msg = get_dev_team_members(dev_team_name)
+    await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
 # @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='restart_calypso'), filters.restricted, filters.admin)
 # async def restart_calypso(query: types.CallbackQuery, callback_data: str):
 #     """
@@ -806,20 +814,10 @@ async def dev_team_info(message: types.Message):
     try:
         if len(incoming) == 2:
             dev_team_name = incoming[1]
-            msg = '<u><b>Результаты поиска</b></u>:'
-            tt_api_response = requests.get(
-                config.tt_api_url + dev_team_name,
-                auth=(config.jira_user, config.jira_pass),
-                verify=False)
-            for d in tt_api_response.json():
-                msg += f"\n <u>Логин</u>: <strong>{d['user']['login']}</strong>"
-                msg += f"\n Имя: <strong>{d['user']['name']}</strong>"
-                msg += f"\n Позиция: <strong>{d['position']['name']}</strong>"
-                msg += f"\n Департамент: <strong>{d['department']['name']}</strong>"
-                msg += f"\n"
+            msg = get_dev_team_members(dev_team_name)
         else:
             msg = 'Ошибка: задайте название одной команды'
-        await message.answer(text=dev_team_name, parse_mode=ParseMode.HTML)
+        await message.answer(text=msg, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('Error in DEV TEAM INFO %s', e)
 
@@ -951,6 +949,19 @@ async def send_message_to_users(request):
 
     return web.json_response()
 
+def get_dev_team_members(dev_team) -> str:
+    msg = '<u><b>Результаты поиска</b></u>:'
+    tt_api_response = requests.get(
+        config.tt_api_url + dev_team_name,
+        auth=(config.jira_user, config.jira_pass),
+        verify=False)
+    for d in tt_api_response.json():
+        msg += f"\n <u>Логин</u>: <strong>{d['user']['login']}</strong>"
+        msg += f"\n Имя: <strong>{d['user']['name']}</strong>"
+        msg += f"\n Позиция: <strong>{d['position']['name']}</strong>"
+        msg += f"\n Департамент: <strong>{d['department']['name']}</strong>"
+        msg += f"\n"
+    return msg
 
 async def inform_duty(request):
     """
