@@ -90,6 +90,7 @@ async def help_description(message: types.Message):
                   f'<u>/who </u><b>username</b> -- найдет инфо о пользователе; работает с ТГ-логином, аккаунтом или почтой.\n'
                   f'<u>/timetable </u><b>N</b> -- расписание вашего календаря; как включить читайте здесь - https://wiki.yamoney.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster.\n'
                   f'<u>/app </u><b>app_name</b> -- инфа по параметрам выкладки приложения из БД бота. Если инфы нет - бот ничего не покатит.\n'
+                  f'<u>/dev_team </u><b>КОМАНДА</b> -- состав команды разработчиков; вытягивается из TeamTransition.\n'
                   f'\n:point_right: Описание кнопок:\n'
                   f'<u><b>Дежурные</b></u> -- показать дежурных админов.\n'
                   f'<u><b>Релизная доска</b></u> -- открыть релизную доску Admsys.\n'
