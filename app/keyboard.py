@@ -87,7 +87,6 @@ def return_queue_menu(waiting_assignee_issues) -> types.InlineKeyboardMarkup:
                            )
     return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_list, n_cols=2))
 
-
 def build_menu(buttons, n_cols, header_buttons=None, footer_buttons=None) -> list:
     """
         Helper function for build menu
@@ -107,6 +106,7 @@ def build_menu(buttons, n_cols, header_buttons=None, footer_buttons=None) -> lis
         return menu
     except Exception as e:
         logger.exception('Error in BUILD MENU %s', e)
+
 def admin_menu() -> types.InlineKeyboardMarkup:
     """
         Build admin menu keyboard
@@ -187,6 +187,25 @@ def rollback_app_confirm(issue) -> types.InlineKeyboardMarkup:
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_confirm, n_cols=1, footer_buttons=rollback_app_list))
     except Exception as e:
         logger.exception('Error in KEYBOARD ROLLBACK APP CONFIRM %s', e)
+
+
+# def dev_team_members(dev_team) -> types.InlineKeyboardMarkup:
+#     """
+#     """
+#     # try:
+#     #     logger.info('-- KEYBOARD DEV TEAM MEMBERS ASK %s', dev_team)
+#     #     ask_members_button = types.InlineKeyboardButton('Состав команды', callback_data=posts_cb.new(action='rollback_app_list', issue='1'))
+#     #     return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_confirm, n_cols=1, footer_buttons=rollback_app_list))
+#     # except Exception as e:
+#     #     logger.exception('Error in KEYBOARD ROLLBACK APP CONFIRM %s', e)
+#     # msg = get_dev_team_members(dev_team_name)
+#     # await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
+#     try:
+#         logger.info('-- KEYBOARD DEV TEM MEMBERS build menu for issue %s', issue)
+#         kb = [types.InlineKeyboardButton('Состав команды', callback_data=posts_cb.new(action='dev_team_members', issue=dev_team))]
+#         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(kb, n_cols=1, footer_buttons=rollback_app_list))
+#     except Exception as e:
+#         logger.exception('Error in KEYBOARD DEV TEAM MEMBERS %s', e)
 
 def current_mode() -> str:
     """

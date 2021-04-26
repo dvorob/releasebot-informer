@@ -392,6 +392,7 @@ async def duty_button(query: types.CallbackQuery, callback_data: str):
         logger.exception('duty_button')
 
 
+
 def to_main_menu() -> types.InlineKeyboardMarkup:
     """
         Return to main menu button
@@ -611,13 +612,33 @@ async def rollback_app_confirm(query: types.CallbackQuery, callback_data: str):
 
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='dev_team_members'), filters.restricted)
-async def dev_team_members(query: types.CallbackQuery, callback_data: str):
+async def dev_team_members_answer(query: types.CallbackQuery, callback_data: str):
     """
-        Выставить у релиза резолюцию "Rollback"
     """
-    logger.info('-- DEV TEAM MEMBERS menu opened by %s %s', returnHelper.return_name(query), callback_data)
-    msg = get_dev_team_members(dev_team_name)
-    await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
+    #issue_key = callback_data['issue_key']
+    logger.info('-- DEV TEAM MEMBERS started by %s %s', returnHelper.return_name(query), callback_data)
+    try:
+        msg = await get_dev_team_members(callback_data['issue'])
+    except Exception as e:
+        logger.error('Error in DEV TEAM MEMBERS %s', e)
+    logger.info(msg)
+    await query.answer(msg)
+
+def dev_team_members(dev_team) -> types.InlineKeyboardMarkup:
+    """
+    """
+    # try:
+    #     logger.info('-- KEYBOARD DEV TEAM MEMBERS ASK %s', dev_team)
+    #     ask_members_button = types.InlineKeyboardButton('Состав команды', callback_data=posts_cb.new(action='rollback_app_list', issue='1'))
+    #     return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_confirm, n_cols=1, footer_buttons=rollback_app_list))
+    # except Exception as e:
+    #     logger.exception('Error in KEYBOARD ROLLBACK APP CONFIRM %s', e)
+    # msg = get_dev_team_members(dev_team_name)
+    # await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
+    keyboard_main_menu = [[types.InlineKeyboardButton('Состав команды',
+                                                      callback_data=keyboard.posts_cb.new(action='dev_team_members', issue=dev_team))]]
+    return types.InlineKeyboardMarkup(inline_keyboard=keyboard_main_menu)
+
 # @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='restart_calypso'), filters.restricted, filters.admin)
 # async def restart_calypso(query: types.CallbackQuery, callback_data: str):
 #     """
@@ -799,7 +820,7 @@ async def app_info(message: types.Message):
                     msg = 'Приложение не найдено'
         else:
             msg = 'Ошибка: задайте имя приложения'
-        await message.answer(text=msg, parse_mode=ParseMode.HTML)
+        await message.answer(text=msg, reply_markup=dev_team_members(app_info['dev_team']), parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('Error in APP INFO %s', e)
 
@@ -814,7 +835,7 @@ async def dev_team_info(message: types.Message):
     try:
         if len(incoming) == 2:
             dev_team_name = incoming[1]
-            msg = get_dev_team_members(dev_team_name)
+            msg = await get_dev_team_members(dev_team_name)
         else:
             msg = 'Ошибка: задайте название одной команды'
         await message.answer(text=msg, parse_mode=ParseMode.HTML)
@@ -949,10 +970,11 @@ async def send_message_to_users(request):
 
     return web.json_response()
 
-def get_dev_team_members(dev_team) -> str:
+async def get_dev_team_members(dev_team) -> str:
+    logger.info('GET DEV TEAM MEMBERS for %s', dev_team)
     msg = '<u><b>Результаты поиска</b></u>:'
     tt_api_response = requests.get(
-        config.tt_api_url + dev_team_name,
+        config.tt_api_url + dev_team,
         auth=(config.jira_user, config.jira_pass),
         verify=False)
     for d in tt_api_response.json():
