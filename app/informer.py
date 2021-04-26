@@ -779,17 +779,49 @@ async def app_info(message: types.Message):
             for app_name in app_name_list:
                 app_info = db().get_application_metainfo(app_name)
                 if len(app_info) > 0:
-                    for key in app_info:
-                        msg += f'\n <strong>{key}</strong>: {app_info[key]}'
+                    msg += f'\n Имя приложения: <strong>{app_info["app_name"]}</strong>'
+                    msg += f'\n Периметр: <strong>{app_info["perimeter"]}</strong>'
+                    msg += f'\n Release_mode: <strong>{app_info["release_mode"]}</strong>'
+                    msg += f'\n Администраторы: <strong>{app_info["admins_team"]}</strong>'
+                    msg += f'\n Разработчики: <a href="/dev_team {app_info["dev_team"]}">{app_info["dev_team"]}</a>'
+                    msg += f'\n Релизные очереди: <strong>{app_info["queues"]}</strong>'
+                    msg += f'\n Бот включен: <strong>{app_info["bot_enabled"]}</strong>'
                     msg += f"\n<a href='https://wiki.yamoney.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster-%D0%A0%D0%B5%D0%B6%D0%B8%D0%BC%D1%8B%D0%B2%D1%8B%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B8Modes'> Подробнее о параметрах</a>\n"
                 else:
                     msg = 'Приложение не найдено'
         else:
-            msg = 'Error: задайте имя приложения'
+            msg = 'Ошибка: задайте имя приложения'
         await message.answer(text=msg, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('Error in APP INFO %s', e)
 
+
+@initializeBot.dp.message_handler(filters.restricted, commands=['dev_team', 'command', 'devteam'])
+async def dev_team_info(message: types.Message):
+    """
+    Вытащить инфу о приложении из БД Бота
+    """
+    logger.info( '-- DEV TEAM INFO started by %s', returnHelper.return_name(message))
+    incoming = message.text.split()
+    try:
+        if len(incoming) == 2:
+            dev_team_name = incoming[1]
+            msg = '<u><b>Результаты поиска</b></u>:'
+            tt_api_response = requests.get(
+                config.tt_api_url + dev_team_name,
+                auth=(config.jira_user, config.jira_pass),
+                verify=False)
+            for d in tt_api_response.json():
+                msg += f"\n <u>Логин</u>: <strong>{d['user']['login']}</strong>"
+                msg += f"\n Имя: <strong>{d['user']['name']}</strong>"
+                msg += f"\n Позиция: <strong>{d['position']['name']}</strong>"
+                msg += f"\n Департамент: <strong>{d['department']['name']}</strong>"
+                msg += f"\n"
+        else:
+            msg = 'Ошибка: задайте название одной команды'
+        await message.answer(text=dev_team_name, parse_mode=ParseMode.HTML)
+    except Exception as e:
+        logger.exception('Error in DEV TEAM INFO %s', e)
 
 @initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['where_app'])
 async def where_app_hosts(message: types.Message):

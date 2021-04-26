@@ -56,6 +56,8 @@ jira_user = getenv('secret_jira_user')
 jira_pass = getenv('secret_jira_pass')
 jira_options = {'server': jira_host, 'verify': False}
 
+tt_api_url = 'https://jira.yamoney.ru/rest/teamtransitions/2.0/member/'
+
 waiting_assignee_releases = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
                      'status = "TO DO" ORDER BY Rank ASC'
 
