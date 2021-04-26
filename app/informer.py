@@ -622,7 +622,7 @@ async def dev_team_members_answer(query: types.CallbackQuery, callback_data: str
     except Exception as e:
         logger.error('Error in DEV TEAM MEMBERS %s', e)
     logger.info(msg)
-    await query.answer(msg)
+    await query.message.reply(msg, parse_mode=ParseMode.HTML)
 
 def dev_team_members(dev_team) -> types.InlineKeyboardMarkup:
     """
