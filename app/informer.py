@@ -884,13 +884,18 @@ async def get_user_info(message: types.Message):
             if len(user_info) > 0:
                 msg = '<u><b>Нашёл</b></u>:'
                 for user in user_info:
-                    msg += f'\n Account name: <strong>{user["account_name"]}</strong>'
-                    msg += f'\n Full name: <strong>{user["full_name"]}</strong>'
-                    msg += f'\n Email: <strong>{user["email"]}</strong>'
-                    msg += f'\n Telegram login: <strong>@{user["tg_login"]}</strong>'
-                    msg += f'\n Telegram ID: <strong>{user["tg_id"]}</strong>'
-                    msg += f'\n Is employee: <strong>{user["working_status"]}</strong>'
-                    msg += f'\n Notification: <strong>{user["notification"]}</strong>\n'
+                    msg += f'\n Логин: <strong>{user["account_name"]}</strong>'
+                    msg += f'\n ФИО: <strong>{user["full_name"]}</strong>'
+                    msg += f'\n Почта: <strong>{user["email"]}</strong>'
+                    msg += f'\n Телеграм: <strong>@{user["tg_login"]}</strong>'
+                    msg += f'\n Телеграм ID: <strong>{user["tg_id"]}</strong>'
+                    msg += f'\n Рабочий статус: <strong>{user["working_status"]}</strong>'
+                    msg += f'\n Нотификации: <strong>{user["notification"]}</strong>'
+                    user_teams = await get_user_membership(user["account_name"])
+                    if len(user_teams) > 0:
+                        for t in user_teams:
+                            msg += f'\n Команда: <strong>{t["dev_team"]} ({t["team_name"]})</strong>'
+                    msg += '\n'
             else:
                 msg = 'Пользователей в моей базе не найдено'
         except Exception as e:
@@ -979,7 +984,7 @@ async def get_dev_team_members(dev_team) -> str:
         auth=(config.jira_user, config.jira_pass),
         verify=False)
     for d in tt_api_response.json():
-        msg += f"\n <u>Логин</u>: <strong>{d['user']['login']}</strong>"
+        msg += f"\n <u>Логин</u>: <a href='https://staff.yooteam.ru/#/{d['user']['login']}'><strong>{d['user']['login']}</strong></a>"
         msg += f"\n Имя: <strong>{d['user']['name']}</strong>"
         msg += f"\n Позиция: <strong>{d['position']['name']}</strong>"
         msg += f"\n Департамент: <strong>{d['department']['name']}</strong>"
@@ -990,6 +995,19 @@ async def get_dev_team_members(dev_team) -> str:
                 msg += f"\n Telegram: <strong>@{user_from_db[0]['tg_login']}</strong>"
         msg += f"\n"
     return msg
+
+async def get_user_membership(login) -> str:
+    logger.info('GET USER MEMBERSHIP for %s', login)
+    msg = ''
+    tt_api_response = requests.get(
+        config.tt_api_url + 'login/' + login,
+        auth=(config.jira_user, config.jira_pass),
+        verify=False)
+    teams = []
+    for d in tt_api_response.json():
+        if d['user']['login'] == login:
+            teams.append({'dev_team': d['team']['key'], 'team_name': d['team']['name']})
+    return teams
 
 async def inform_duty(request):
     """
