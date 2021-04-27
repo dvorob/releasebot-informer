@@ -51,6 +51,8 @@ api = 'http://releasebot-api'
 api_lock_unlock = f'{api}/api-v1/tasks/lock_unlock'
 api_get_timetable = f'{api}/exchange/get_timetable'
 
+staff_url = 'https://staff.yooteam.ru/#/'
+
 jira_host = 'https://jira.yamoney.ru'
 jira_user = getenv('secret_jira_user')
 jira_pass = getenv('secret_jira_pass')

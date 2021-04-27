@@ -821,7 +821,11 @@ async def app_info(message: types.Message):
                     msg = 'Приложение не найдено'
         else:
             msg = 'Ошибка: задайте имя приложения'
-        await message.answer(text=msg, reply_markup=dev_team_members(app_info['dev_team']), parse_mode=ParseMode.HTML)
+        logger.info('--- APP INFO %s %s', app_info, msg)
+        if app_info['dev_team']:
+            await message.answer(text=msg, reply_markup=dev_team_members(app_info['dev_team']), parse_mode=ParseMode.HTML)
+        else:
+            await message.answer(text=msg, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('Error in APP INFO %s', e)
 
@@ -884,7 +888,7 @@ async def get_user_info(message: types.Message):
             if len(user_info) > 0:
                 msg = '<u><b>Нашёл</b></u>:'
                 for user in user_info:
-                    msg += f'\n Логин: <strong>{user["account_name"]}</strong>'
+                    msg += f'\n Логин: <a href=\"{config.staff_url}{user["account_name"]}\"><strong>{user["account_name"]}</strong></a>'
                     msg += f'\n ФИО: <strong>{user["full_name"]}</strong>'
                     msg += f'\n Почта: <strong>{user["email"]}</strong>'
                     msg += f'\n Телеграм: <strong>@{user["tg_login"]}</strong>'
@@ -937,7 +941,7 @@ async def send_message_to_users(request):
             data_json['accounts'] = [data_json['accounts']]
         set_of_chat_id = []
         for acc in data_json['accounts']:
-            user_from_db = await db().get_users('account_name', acc)
+            user_from_db = await db().get_users('account_name', re.sub('@yamoney.ru|@yoomoney.ru|@', '', acc))
             if len(user_from_db) > 0:
                 if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                     set_of_chat_id.append(user_from_db[0]['tg_id'])
@@ -984,7 +988,7 @@ async def get_dev_team_members(dev_team) -> str:
         auth=(config.jira_user, config.jira_pass),
         verify=False)
     for d in tt_api_response.json():
-        msg += f"\n <u>Логин</u>: <a href='https://staff.yooteam.ru/#/{d['user']['login']}'><strong>{d['user']['login']}</strong></a>"
+        msg += f"\n <u>Логин</u>: <a href='{config.staff_url}{d['user']['login']}'><strong>{d['user']['login']}</strong></a>"
         msg += f"\n Имя: <strong>{d['user']['name']}</strong>"
         msg += f"\n Позиция: <strong>{d['position']['name']}</strong>"
         msg += f"\n Департамент: <strong>{d['department']['name']}</strong>"
