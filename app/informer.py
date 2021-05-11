@@ -197,7 +197,7 @@ async def duty_admin(message: types.Message):
         message.bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.typing)
         cli_args = message.text.split()
         # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов
-        after_days = int(cli_args[1]) if (len(cli_args) == 2 and int(cli_args[1]) > 0) else 0
+        after_days = int(cli_args[1]) if (len(cli_args) == 2 and float(cli_args[1]).is_integer()) else 0
         duty_date = get_duty_date(datetime.today()) + timedelta(after_days)
         msg = await create_duty_message(duty_date)
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
@@ -928,7 +928,10 @@ async def send_message_to_tg_chat(chat_id: str, text: str, disable_notification=
 async def send_message_to_users(request):
     """
     # Внешняя ручка рассылки
-    {'accounts': [list of account_names], 'jira_tasks': [list of tasks_id], 'text': str}
+    {'accounts': [list of account_names], 'jira_tasks': [list of tasks_id], 'text': str, 
+      'inform_approvers': True, 'inform_watchers': True}
+    'inform_approvers': True - отправит уведомление согласующим таски. Номер таски обязателене
+    'inform_watchers': True - отправит уведомление наблюдающим за таской. Номер таски обязателене
     """
     data_json = await request.json()
     logger.info(f"-- SEND MESSAGE TO USERS {data_json}")
@@ -950,8 +953,7 @@ async def send_message_to_users(request):
         for chat_id in set_of_chat_id:
             await send_message_to_tg_chat(chat_id, data_json['text'], disable_notification, ParseMode.HTML)
 
-    if 'jira_tasks' in data_json:
-        logger.info('Go jira_tasks')
+    if 'jira_tasks' in data_json and len(data_json['text']) > 0:
         for task in data_json['jira_tasks']:
 
             if 'inform_approvers' in data_json:
@@ -963,8 +965,8 @@ async def send_message_to_users(request):
                         user_from_db = await db().get_users('account_name', email)
                         if len(user_from_db) > 0:
                             if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
-                                await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], disable_notification, ParseMode.HTML)
-
+                                await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], 
+                                                              disable_notification, ParseMode.HTML)
             if 'inform_watchers' in data_json:
                 if data_json['inform_watchers'] == True:
                     email_watchers = jira_get_watchers_list(task)
@@ -972,11 +974,12 @@ async def send_message_to_users(request):
                         user_from_db = await db().get_users('account_name', email)
                         if len(user_from_db) > 0:
                             if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
-                                await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], disable_notification, ParseMode.HTML)
-            try:
-                JiraConnection().add_comment(JiraConnection().issue(task), data_json['text'])
-            except Exception as e:
-                logger.exception('Error send message to users when commenting jira task %s', str(e))
+                                await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], 
+                                                              disable_notification, ParseMode.HTML)
+            # try:
+            #     JiraConnection().add_comment(JiraConnection().issue(task), data_json['text'])
+            # except Exception as e:
+            #     logger.exception('Error send message to users when commenting jira task %s', str(e))
 
     return web.json_response()
 
