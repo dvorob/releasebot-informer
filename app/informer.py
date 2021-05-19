@@ -830,7 +830,7 @@ async def app_info(message: types.Message):
         logger.exception('Error in APP INFO %s', e)
 
 
-@initializeBot.dp.message_handler(filters.restricted, commands=['dev_team', 'command', 'devteam'])
+@initializeBot.dp.message_handler(filters.restricted, commands=['dev_team', 'command', 'devteam', 'team'])
 async def dev_team_info(message: types.Message):
     """
     Вытащить инфу о приложении из БД Бота

@@ -34,7 +34,7 @@ postgres = PooledPostgresqlDatabase(
     'release_bot',
     user=getenv('secret_postgres_user').rstrip(),
     password=getenv('secret_postgres_pass').rstrip(),
-    host='ugr-pgtools.yamoney.ru',
+    host='iva-pgtools2.yamoney.ru',
     port=7432,
     max_connections=32,
     stale_timeout=300)
