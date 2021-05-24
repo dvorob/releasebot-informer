@@ -628,28 +628,9 @@ async def dev_team_members_answer(query: types.CallbackQuery, callback_data: str
 def dev_team_members(dev_team) -> types.InlineKeyboardMarkup:
     """
     """
-    # try:
-    #     logger.info('-- KEYBOARD DEV TEAM MEMBERS ASK %s', dev_team)
-    #     ask_members_button = types.InlineKeyboardButton('Состав команды', callback_data=posts_cb.new(action='rollback_app_list', issue='1'))
-    #     return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_confirm, n_cols=1, footer_buttons=rollback_app_list))
-    # except Exception as e:
-    #     logger.exception('Error in KEYBOARD ROLLBACK APP CONFIRM %s', e)
-    # msg = get_dev_team_members(dev_team_name)
-    # await query.message.reply(text=msg, parse_mode=ParseMode.HTML)
     keyboard_main_menu = [[types.InlineKeyboardButton('Состав команды',
                                                       callback_data=keyboard.posts_cb.new(action='dev_team_members', issue=dev_team))]]
     return types.InlineKeyboardMarkup(inline_keyboard=keyboard_main_menu)
-
-# @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='restart_calypso'), filters.restricted, filters.admin)
-# async def restart_calypso(query: types.CallbackQuery, callback_data: str):
-#     """
-#        Написать Антону =)
-#     """
-#     del callback_data
-#     # chat_id = '390182439'
-#     # msg = 'Привет, это Ксеркс! Можешь проверить, у нас Шопы в порядке?'
-#     await bot.send_message(chat_id=chat_id, text=msg, parse_mode=ParseMode.HTML)
-#     await query.answer('Начинаю рандом-рестарт вплоть до полного восстановления')
 
 ##############################################################################################
 
@@ -987,7 +968,7 @@ async def get_dev_team_members(dev_team) -> str:
     logger.info('GET DEV TEAM MEMBERS for %s', dev_team)
     msg = '<u><b>Результаты поиска</b></u>:'
     tt_api_response = requests.get(
-        config.tt_api_url + dev_team,
+        config.tt_api_url + dev_team.upper(),
         auth=(config.jira_user, config.jira_pass),
         verify=False)
     for d in tt_api_response.json():
