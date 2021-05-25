@@ -789,6 +789,7 @@ async def app_info(message: types.Message):
             msg = '<u><b>Результаты поиска</b></u>:'
             for app_name in app_name_list:
                 app_info = db().get_application_metainfo(app_name)
+                logger.info('Got application metainfo %s', app_name)
                 if len(app_info) > 0:
                     msg += f'\n Имя приложения: <strong>{app_info["app_name"]}</strong>'
                     msg += f'\n Периметр: <strong>{app_info["perimeter"]}</strong>'
@@ -803,7 +804,7 @@ async def app_info(message: types.Message):
         else:
             msg = 'Ошибка: задайте имя приложения'
         logger.info('--- APP INFO %s %s', app_info, msg)
-        if app_info['dev_team']:
+        if 'dev_team' in app_info:
             await message.answer(text=msg, reply_markup=dev_team_members(app_info['dev_team']), parse_mode=ParseMode.HTML)
         else:
             await message.answer(text=msg, parse_mode=ParseMode.HTML)
@@ -910,7 +911,7 @@ async def send_message_to_users(request):
     """
     # Внешняя ручка рассылки
     {'accounts': [list of account_names], 'jira_tasks': [list of tasks_id], 'text': str, 
-      'inform_approvers': True, 'inform_watchers': True}
+      'inform_approvers': True, 'inform_watchers': True, 'text_jira': str}
     'inform_approvers': True - отправит уведомление согласующим таски. Номер таски обязателене
     'inform_watchers': True - отправит уведомление наблюдающим за таской. Номер таски обязателене
     """
@@ -934,12 +935,12 @@ async def send_message_to_users(request):
         for chat_id in set_of_chat_id:
             await send_message_to_tg_chat(chat_id, data_json['text'], disable_notification, ParseMode.HTML)
 
-    if 'jira_tasks' in data_json and len(data_json['text']) > 0:
+    if 'jira_tasks' in data_json:
         for task in data_json['jira_tasks']:
 
-            if 'inform_approvers' in data_json:
+            if 'inform_approvers' in data_json and 'text' in data_json:
                 logger.info('Go inform_approvers %s', data_json['inform_approvers'])
-                if data_json['inform_approvers'] == True:
+                if data_json['inform_approvers'] == True and len(data_json['text']) > 0:
                     logger.info('It\'s true')
                     email_approvers = jira_get_approvers_list(task)
                     for email in email_approvers:
@@ -948,8 +949,8 @@ async def send_message_to_users(request):
                             if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                                 await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], 
                                                               disable_notification, ParseMode.HTML)
-            if 'inform_watchers' in data_json:
-                if data_json['inform_watchers'] == True:
+            if 'inform_watchers' in data_json and 'text' in data_json:
+                if data_json['inform_watchers'] == True and len(data_json['text']) > 0:
                     email_watchers = jira_get_watchers_list(task)
                     for email in email_watchers:
                         user_from_db = await db().get_users('account_name', email)
@@ -957,10 +958,12 @@ async def send_message_to_users(request):
                             if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                                 await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], 
                                                               disable_notification, ParseMode.HTML)
-            # try:
-            #     JiraConnection().add_comment(JiraConnection().issue(task), data_json['text'])
-            # except Exception as e:
-            #     logger.exception('Error send message to users when commenting jira task %s', str(e))
+            if 'text_jira' in data_json:
+                try:
+                    logger.info('Leave comment to %s %s', JiraConnection().issue(task), data_json['text_jira'] )
+                    JiraConnection().add_comment(JiraConnection().issue(task), data_json['text_jira'])
+                except Exception as e:
+                    logger.exception('Error send message to users when commenting jira task %s', str(e))
 
     return web.json_response()
 

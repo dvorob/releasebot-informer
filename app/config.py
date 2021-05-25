@@ -60,28 +60,28 @@ jira_options = {'server': jira_host, 'verify': False}
 
 tt_api_url = 'https://jira.yamoney.ru/rest/teamtransitions/2.0/member/'
 
-waiting_assignee_releases = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
+waiting_assignee_releases = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" AND ' \
                      'status = "TO DO" ORDER BY Rank ASC'
 
-search_issues_wait = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
+search_issues_wait = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" AND ' \
                      'status IN (Open, "Waiting release", "TO DO") ORDER BY Rank ASC'
 
-issues_waiting = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
+issues_waiting = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" AND ' \
                  'status IN ("Waiting release") ORDER BY Rank ASC'
 
-issues_confirm_full_resolved = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
+issues_confirm_full_resolved = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" AND ' \
                                '(status IN (CONFIRM, "FULL DEPLOY") OR (status in (Resolved) AND updated >= startOfDay())) ' \
                                'ORDER BY Rank ASC'
 
-search_issues_work = 'project = ADMSYS AND issuetype = "Release (conf)" AND status IN ' \
+search_issues_work = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" AND status IN ' \
                      '("PARTIAL DEPLOY", CONFIRM, "FULL DEPLOY") ORDER BY Rank ASC'
 
-search_issues_completed = 'project = ADMSYS AND issuetype = "Release (conf)" ' \
+search_issues_completed = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" ' \
                           'AND status = Resolved ORDER BY Rank ASC'
 
-issues_waiting_confirm = 'project = ADMSYS AND issuetype = "Release (conf)" AND ' \
+issues_waiting_confirm = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" AND ' \
                  'status IN ("Open", "На согласовании", "Waiting release", "TO DO") ' \
                  'ORDER BY Rank ASC'
 
-issues_not_closed_resolved = 'project = ADMSYS AND issuetype = "Release (conf)" ' \
+issues_not_closed_resolved = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" ' \
                            'AND status NOT IN (Closed, Resolved) ORDER BY Rank ASC'
