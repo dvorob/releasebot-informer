@@ -18,6 +18,7 @@ from aiogram.types import ParseMode, ChatActions, Update, ContentType
 from aiogram.utils.emoji import emojize
 from aiogram.utils.exceptions import ChatNotFound, BotBlocked
 from aiogram.utils.markdown import bold
+from aiogram.utils.markdown import quote_html
 from aiohttp import web
 from enum import Enum
 from utils.jiratools import JiraConnection, JiraTransitions, jira_get_approvers_list, jira_get_watchers_list
@@ -789,7 +790,7 @@ async def app_info(message: types.Message):
             msg = '<u><b>Результаты поиска</b></u>:'
             for app_name in app_name_list:
                 app_info = db().get_application_metainfo(app_name)
-                logger.info('Got application metainfo %s', app_name)
+                logger.info('Got application metainfo %s', app_info)
                 if len(app_info) > 0:
                     msg += f'\n Имя приложения: <strong>{app_info["app_name"]}</strong>'
                     msg += f'\n Периметр: <strong>{app_info["perimeter"]}</strong>'
@@ -803,8 +804,7 @@ async def app_info(message: types.Message):
                     msg = 'Приложение не найдено'
         else:
             msg = 'Ошибка: задайте имя приложения'
-        logger.info('--- APP INFO %s %s', app_info, msg)
-        if 'dev_team' in app_info:
+        if app_info is not None:
             await message.answer(text=msg, reply_markup=dev_team_members(app_info['dev_team']), parse_mode=ParseMode.HTML)
         else:
             await message.answer(text=msg, parse_mode=ParseMode.HTML)
@@ -891,12 +891,15 @@ async def get_user_info(message: types.Message):
     await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
 
-async def send_message_to_tg_chat(chat_id: str, text: str, disable_notification=True, parse_mode=ParseMode.HTML):
+async def send_message_to_tg_chat(chat_id: str, text: str, disable_notification=True, parse_mode=ParseMode.HTML, 
+                                  quote_html=False):
     """
     Обёртка поверх bot.send_message
     """
+    if quote_html:
+        text = quote_html(text)
     try:
-        logger.info(f"Sending for chat_id {chat_id} {text}")
+        logger.info(f"Sending for chat_id {chat_id} {text} {parse_mode}")
         await bot.send_message(chat_id=chat_id, text=text, 
                                disable_notification=disable_notification, parse_mode=parse_mode)
     except BotBlocked:
@@ -921,6 +924,12 @@ async def send_message_to_users(request):
         disable_notification = data_json['disable_notification']
     else:
         disable_notification = False
+
+    if 'quote_html' in data_json:
+        quote_html = data_json['quote_html']
+    else:
+        quote_html = False
+
     if 'accounts' in data_json:
         if type(data_json['accounts']) == str:
             data_json['accounts'] = [data_json['accounts']]
@@ -933,7 +942,7 @@ async def send_message_to_users(request):
 
         logger.info('sending message for %s', set_of_chat_id)
         for chat_id in set_of_chat_id:
-            await send_message_to_tg_chat(chat_id, data_json['text'], disable_notification, ParseMode.HTML)
+            await send_message_to_tg_chat(chat_id, data_json['text'], disable_notification, ParseMode.HTML, quote_html)
 
     if 'jira_tasks' in data_json:
         for task in data_json['jira_tasks']:
@@ -948,7 +957,7 @@ async def send_message_to_users(request):
                         if len(user_from_db) > 0:
                             if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                                 await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], 
-                                                              disable_notification, ParseMode.HTML)
+                                                              disable_notification, ParseMode.HTML, quote_html)
             if 'inform_watchers' in data_json and 'text' in data_json:
                 if data_json['inform_watchers'] == True and len(data_json['text']) > 0:
                     email_watchers = jira_get_watchers_list(task)
@@ -957,7 +966,7 @@ async def send_message_to_users(request):
                         if len(user_from_db) > 0:
                             if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                                 await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], 
-                                                              disable_notification, ParseMode.HTML)
+                                                              disable_notification, ParseMode.HTML, quote_html)
             if 'text_jira' in data_json:
                 try:
                     logger.info('Leave comment to %s %s', JiraConnection().issue(task), data_json['text_jira'] )
