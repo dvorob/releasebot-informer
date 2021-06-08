@@ -194,7 +194,7 @@ async def duty_admin(message: types.Message):
         Берется из xerxes.duty_list (таблица заполняется модулем Assistant, раз в час на основании календаря AdminsOnDuty)
     """
     try:
-        logger.info('def duties admin started: %s', returnHelper.return_name(message))
+        logger.info('def duties admin started: %s %s', returnHelper.return_name(message), message.chat.id)
         message.bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.typing)
         cli_args = message.text.split()
         # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов
@@ -800,14 +800,16 @@ async def app_info(message: types.Message):
                     msg += f'\n Релизные очереди: <strong>{app_info["queues"]}</strong>'
                     msg += f'\n Бот включен: <strong>{app_info["bot_enabled"]}</strong>'
                     msg += f"\n<a href='https://wiki.yamoney.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster-%D0%A0%D0%B5%D0%B6%D0%B8%D0%BC%D1%8B%D0%B2%D1%8B%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B8Modes'> Подробнее о параметрах</a>\n"
+                    dev_team_name = app_info["dev_team"]
                 else:
                     msg = 'Приложение не найдено'
         else:
             msg = 'Ошибка: задайте имя приложения'
-        if app_info is not None:
-            await message.answer(text=msg, reply_markup=dev_team_members(app_info['dev_team']), parse_mode=ParseMode.HTML)
-        else:
-            await message.answer(text=msg, parse_mode=ParseMode.HTML)
+        if 'dev_team_name' in locals():
+            if dev_team_name is not None:
+                await message.answer(text=msg, reply_markup=dev_team_members(dev_team_name), parse_mode=ParseMode.HTML)
+                return True
+        await message.answer(text=msg, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('Error in APP INFO %s', e)
 
@@ -892,16 +894,18 @@ async def get_user_info(message: types.Message):
 
 
 async def send_message_to_tg_chat(chat_id: str, text: str, disable_notification=True, parse_mode=ParseMode.HTML, 
-                                  quote_html=False):
+                                  escape_html=False):
     """
     Обёртка поверх bot.send_message
     """
-    if quote_html:
-        text = quote_html(text)
     try:
-        logger.info(f"Sending for chat_id {chat_id} {text} {parse_mode}")
-        await bot.send_message(chat_id=chat_id, text=text, 
-                               disable_notification=disable_notification, parse_mode=parse_mode)
+        logger.info(f"Sending for chat_id {chat_id} {parse_mode} {escape_html} {text}")
+        if escape_html:
+            await bot.send_message(chat_id=chat_id, text=quote_html(text), 
+                                   disable_notification=disable_notification, parse_mode=parse_mode)
+        else:
+            await bot.send_message(chat_id=chat_id, text=text, 
+                       disable_notification=disable_notification, parse_mode=parse_mode)
     except BotBlocked:
         logger.info('YM release bot was blocked by %s', chat_id)
     except ChatNotFound:
@@ -925,10 +929,10 @@ async def send_message_to_users(request):
     else:
         disable_notification = False
 
-    if 'quote_html' in data_json:
-        quote_html = data_json['quote_html']
+    if 'escape_html' in data_json:
+        escape_html = data_json['escape_html']
     else:
-        quote_html = False
+        escape_html = False
 
     if 'accounts' in data_json:
         if type(data_json['accounts']) == str:
@@ -942,7 +946,7 @@ async def send_message_to_users(request):
 
         logger.info('sending message for %s', set_of_chat_id)
         for chat_id in set_of_chat_id:
-            await send_message_to_tg_chat(chat_id, data_json['text'], disable_notification, ParseMode.HTML, quote_html)
+            await send_message_to_tg_chat(chat_id, data_json['text'], disable_notification, ParseMode.HTML, escape_html)
 
     if 'jira_tasks' in data_json:
         for task in data_json['jira_tasks']:
@@ -957,7 +961,7 @@ async def send_message_to_users(request):
                         if len(user_from_db) > 0:
                             if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                                 await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], 
-                                                              disable_notification, ParseMode.HTML, quote_html)
+                                                              disable_notification, ParseMode.HTML, escape_html)
             if 'inform_watchers' in data_json and 'text' in data_json:
                 if data_json['inform_watchers'] == True and len(data_json['text']) > 0:
                     email_watchers = jira_get_watchers_list(task)
@@ -966,7 +970,7 @@ async def send_message_to_users(request):
                         if len(user_from_db) > 0:
                             if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                                 await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], 
-                                                              disable_notification, ParseMode.HTML, quote_html)
+                                                              disable_notification, ParseMode.HTML, escape_html)
             if 'text_jira' in data_json:
                 try:
                     logger.info('Leave comment to %s %s', JiraConnection().issue(task), data_json['text_jira'] )
@@ -1035,12 +1039,19 @@ async def inform_subscribers(request):
     data_json = await request.json()
     logger.info(f"-- INFORM SUBSCRIBERS {data_json}")
     if 'notification' in data_json:
-        try:
-            subscribers = await db().get_all_users_with_subscription(data_json['notification'])
-            for users in subscribers:
-                await bot.send_message(chat_id=users['tg_id'], text=data_json['text'], disable_notification=True, parse_mode=ParseMode.HTML)
-        except Exception as e:
-            logger.exception('Error inform subscribers %s', e)
+        subscribers = await db().get_all_users_with_subscription(data_json['notification'])
+        logger.info('Inform subscribers going through list %s', subscribers)
+        for users in subscribers:
+            try:
+                logger.info('Inform subscribers sending message to %s %s %s', users['tg_login'], users['tg_id'], data_json['text'])
+                await bot.send_message(chat_id=users['tg_id'], text=data_json['text'], 
+                                       disable_notification=True, parse_mode=ParseMode.HTML)
+            except BotBlocked:
+                logger.info('Error Inform subscribers bot was blocked by %s', users)
+            except ChatNotFound:
+                logger.error('Error Inform subscribers Chat not found: %s', users)        
+            except Exception as e:
+                logger.exception('Error inform subscribers %s', e)
     return web.json_response()
 
 
