@@ -1,11 +1,11 @@
-aiogram==2.6
-aiohttp==3.6.2
+aiogram
+aiohttp
 apscheduler
 asyncio
 couchdb
 emoji
-jira==2.0.0
+jira
 nest_asyncio
-peewee==3.10.0
+peewee
 psycopg2-binary
-python_telegram_bot==12.0.0
+python_telegram_bot
