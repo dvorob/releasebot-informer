@@ -9,3 +9,4 @@ nest_asyncio
 peewee
 psycopg2-binary
 python_telegram_bot
+requests_ntlm

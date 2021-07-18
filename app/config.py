@@ -21,14 +21,6 @@ bot_master = {'vorobiev_telegram_id': 279933948,
               'smirnov_telegram_id': 160932394
               }
 
-# mysql = PooledMySQLDatabase(
-#     'xerxes',
-#     host='mysql.xerxes.svc.ugr-base1.kube.yamoney.ru',
-#     user=getenv('secret_mysql_user'),
-#     passwd=getenv('secret_mysql_pass'),
-#     max_connections=8,
-#     stale_timeout=300)
-
 #PG configuration
 postgres = PooledPostgresqlDatabase(
     'release_bot',
@@ -51,7 +43,7 @@ api = 'http://releasebot-api'
 api_lock_unlock = f'{api}/api-v1/tasks/lock_unlock'
 api_get_timetable = f'{api}/exchange/get_timetable'
 
-staff_url = 'https://staff.yooteam.ru/#/'
+staff_url = 'https://staff.yooteam.ru'
 
 jira_host = 'https://jira.yamoney.ru'
 jira_user = getenv('secret_jira_user')

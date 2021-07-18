@@ -26,6 +26,7 @@ from utils import logging, returnHelper, initializeBot, filters, couch_client
 from utils.initializeBot import dp, bot
 from utils.database import PostgresPool as db
 from datetime import timedelta, datetime
+from requests_ntlm import HttpNtlmAuth
 
 loop = asyncio.get_event_loop()
 
@@ -250,10 +251,11 @@ async def timetable_personal(message: types.Message):
 
     except Exception as e:
         logger.exception('error in timetable personal %s', str(e))
-        msg = 'Что-то пошло не так. Вероятно, вы не выдали доступ до своего календаря. Подробнее читайте здесь -- https://wiki.yamoney.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster'
+        msg = 'Что-то пошло не так. Вероятно, вы не выдали доступ до своего календаря. ' \
+              'Подробнее читайте здесь -- https://wiki.yamoney.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster'
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
 
-###############################################
+
 async def create_duty_message(duty_date) -> str:
     dutymen_array = await db().get_duty(duty_date)
     if len(dutymen_array) > 0:
@@ -872,8 +874,10 @@ async def get_user_info(message: types.Message):
             if len(user_info) > 0:
                 msg = '<u><b>Нашёл</b></u>:'
                 for user in user_info:
-                    msg += f'\n Логин: <a href=\"{config.staff_url}{user["account_name"]}\"><strong>{user["account_name"]}</strong></a>'
-                    msg += f'\n ФИО: <strong>{user["full_name"]}</strong>'
+                    msg += f'\n Логин: <a href=\"{config.staff_url}/#/{user["account_name"]}\"><strong>{user["account_name"]}</strong></a>'
+                    user_from_staff = await get_user_from_staff(user["account_name"])
+                    if len(user_from_staff) > 0:
+                        msg += f'\n ФИО: <strong>{user_from_staff["firstName"]} {user_from_staff["lastName"]}</strong>'
                     msg += f'\n Почта: <strong>{user["email"]}</strong>'
                     msg += f'\n Телеграм: <strong>@{user["tg_login"]}</strong>'
                     msg += f'\n Телеграм ID: <strong>{user["tg_id"]}</strong>'
@@ -988,7 +992,7 @@ async def get_dev_team_members(dev_team) -> str:
         auth=(config.jira_user, config.jira_pass),
         verify=False)
     for d in tt_api_response.json():
-        msg += f"\n <u>Логин</u>: <a href='{config.staff_url}{d['user']['login']}'><strong>{d['user']['login']}</strong></a>"
+        msg += f"\n <u>Логин</u>: <a href='{config.staff_url}/#/{d['user']['login']}'><strong>{d['user']['login']}</strong></a>"
         msg += f"\n Имя: <strong>{d['user']['name']}</strong>"
         msg += f"\n Позиция: <strong>{d['position']['name']}</strong>"
         msg += f"\n Департамент: <strong>{d['department']['name']}</strong>"
@@ -999,6 +1003,7 @@ async def get_dev_team_members(dev_team) -> str:
                 msg += f"\n Telegram: <strong>@{user_from_db[0]['tg_login']}</strong>"
         msg += f"\n"
     return msg
+
 
 async def get_user_membership(login) -> str:
     logger.info('GET USER MEMBERSHIP for %s', login)
@@ -1012,6 +1017,14 @@ async def get_user_membership(login) -> str:
         if d['user']['login'] == login:
             teams.append({'dev_team': d['team']['key'], 'team_name': d['team']['name']})
     return teams
+
+
+async def get_user_from_staff(login) -> dict:
+    users_dict = {}
+    users_dict = requests.get(f'{config.staff_url}/1c82_lk/hs/staff/v1/persons/{login}', 
+                            auth=HttpNtlmAuth(config.jira_user, config.jira_pass), verify=False)
+    return users_dict.json()
+
 
 async def inform_duty(request):
     """
@@ -1080,7 +1093,7 @@ async def inform_today_duty(area, msg):
 async def unknown_message(message: types.Message):
     """
     """
-    logger.info('-- UNKNOWN MESSAGE start')
+    logger.info('-- UNKNOWN MESSAGE start %s %s', message, message.chat)
     # is_restricted = await filters.restricted(message)
     # if is_restricted:
     msg = emojize(f'{bold(message.from_user.full_name)},\n'
