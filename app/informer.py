@@ -1099,7 +1099,7 @@ async def get_app(request):
             return ''
         app_info = db().get_application_metainfo(app_name)
         app_info['version'] = db().get_last_success_app_version(app_name)
-        return app_info
+        return web.json_response(app_info)
     except Exception as e:
         logger.exception('Error in get app %s', str(e))
 

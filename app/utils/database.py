@@ -89,7 +89,7 @@ class PostgresPool:
 
     def get_application_metainfo(self, app_name) -> list:
         # Сходить в AppList и получить конфигурацию деплоя конкретного приложения - очереди, режим выкладки и прочее
-        logger.debug('get application metainfo %s ', app_name)
+        logger.info('get application metainfo %s ', app_name)
         try:
             self.db.connect(reuse_if_open=True)
             result = []
@@ -375,6 +375,7 @@ class PostgresPool:
         # Вернет версию компоненты, успешно выехавшую на бой, отступив на offset релизов. 
         # Последня - это offset=0, предпоследняя - offset=1. Для роллбека
         try:
+            logger.info('get_last_success_app_version %s ', app_name)
             result = ''
             self.db.connect(reuse_if_open=True)
             db_result = (Releases_List
