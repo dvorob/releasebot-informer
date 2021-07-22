@@ -66,6 +66,19 @@ class Parameters(BaseModel):
     value = CharField()
     description = CharField()
 
+class Releases_List(BaseModel):
+    id = IntegerField(primary_key=True)
+    jira_task = CharField(unique=True)
+    app_name = CharField(default=None)
+    app_version = CharField(default=None)
+    fullname = CharField(default=None)
+    date_create = DateField(default=datetime.now)
+    date_update = DateField(default=None)
+    resolution = CharField(default=None)
+    is_rollbacked = BooleanField(default=None)
+    is_static_released = BooleanField(default=None)
+    notifications_sent = TextField(default=None)
+
 class PostgresPool:
 
     def __init__(self):
@@ -355,5 +368,29 @@ class PostgresPool:
             return result
         except Exception as e:
             logger.exception('exception in get all users with subscription %s', e)
+        finally:
+            self.db.close()
+
+    def get_last_success_app_version(self, app_name, offset=0):
+        # Вернет версию компоненты, успешно выехавшую на бой, отступив на offset релизов. 
+        # Последня - это offset=0, предпоследняя - offset=1. Для роллбека
+        try:
+            result = ''
+            self.db.connect(reuse_if_open=True)
+            db_result = (Releases_List
+                        .select(Releases_List.app_version)
+                        .where(Releases_List.app_name == app_name, Releases_List.resolution == 'Выполнен')
+                        .order_by(Releases_List.id.desc())
+                        .offset(offset)
+                        .limit(1))
+            for r in db_result:
+                if r.app_version:
+                    result = r.app_version
+                else:
+                    result = ''
+            return result
+        except Exception as e:
+            logger.exception('exception in get last success app version %s', e)
+            return result
         finally:
             self.db.close()

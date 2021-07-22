@@ -1088,6 +1088,21 @@ async def inform_today_duty(area, msg):
             except Exception as e:
                 logger.exception('Error in INFORM TODAY DUTY %s', e)  
 
+async def get_app(request):
+    """
+    Запросить инфу о приложении из БД бота
+    """
+    logger.info(f"-- GET APP {request}")
+    try:
+        app_name = request.match_info.get('app_name', None)
+        if not app_name:
+            return ''
+        app_info = db().get_application_metainfo(app_name)
+        app_info['version'] = db().get_last_success_app_version(app_name)
+        return app_info
+    except Exception as e:
+        logger.exception('Error in get app %s', str(e))
+
 
 @initializeBot.dp.message_handler(filters.restricted)
 async def unknown_message(message: types.Message):
@@ -1161,6 +1176,7 @@ def start_webserver():
     app.add_routes([web.post('/send_message', send_message_to_users)])
     app.add_routes([web.post('/inform_duty', inform_duty)])
     app.add_routes([web.post('/inform_subscribers', inform_subscribers)])
+    app.add_routes([web.get('/get_app/{app_name}', get_app)])
     loop.run_until_complete(runner.setup())
     site = web.TCPSite(runner, port=8080)
     loop.run_until_complete(site.start())
