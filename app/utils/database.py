@@ -29,6 +29,7 @@ class App_List(BaseModel):
     queues = TextField(default=None)
     bot_enabled = BooleanField(default=None)
     dev_team = CharField(default=None)
+    jira_com = CharField(default=None)
 
 class Option(BaseModel):
     name = CharField(unique=True)

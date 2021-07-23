@@ -33,6 +33,7 @@ class JiraConnection:
         }
         self.jira = JIRA(self.options, basic_auth=(config.jira_user, config.jira_pass))
 
+
     def issue(self, issue: str) -> jira.Issue:
         """
             Get Jira task information
@@ -42,6 +43,7 @@ class JiraConnection:
             return issue
         except Exception as e:
             logger.exception('jira issue %s', e)
+
 
     def watchers(self, issue: str):
         """
@@ -53,6 +55,7 @@ class JiraConnection:
         except Exception as e:
             logger.exception('jira issue %s', e)
 
+
     def jira_search(self, query):
         """
             Get list of Jira tasks
@@ -60,12 +63,14 @@ class JiraConnection:
         issues = self.jira.search_issues(query, maxResults=1000)
         return issues
 
+
     def add_comment(self, jira_issue_id, comment):
         """
             Add comment to Jira task
             :return:
         """
         self.jira.add_comment(jira_issue_id, comment)
+
 
     def assign_issue(self, jira_issue_id, for_whom_assign):
         """
@@ -75,17 +80,36 @@ class JiraConnection:
         """
         self.jira.assign_issue(jira_issue_id, for_whom_assign)
 
+
     def transition_issue(self, jira_issue_id, transition_id):
         try:
             self.jira.transition_issue(jira_issue_id, transition_id)
         except jira.exceptions.JIRAError as err:
             logger.error('transition_issue %s', err)
 
+
     def transition_issue_with_resolution(self, jira_issue_id, transition_id, resolution):
         try:
             self.jira.transition_issue(jira_issue_id, transition_id, resolution=resolution)
         except jira.exceptions.JIRAError as err:
             logger.error('transition_issue %s', err)
+
+
+    def get_app_info_from_com(self, jira_task):
+        issue = self.jira.issue(jira_task)
+        if issue.fields.customfield_13796 != None:
+            # Получим номер COM (системы) из релизной таски (обязательное к заполнению поле)
+            issue_com = issue.fields.customfield_13796
+            # RepoSlug
+            repo_slug = self.get_field_value(issue_com, 'customfield_19193')
+            perimeter = self.get_field_value(issue_com, 'customfield_17710', value=True)
+            dev_team = self.get_field_value(issue_com, 'customfield_16890', key=True)
+            adm_team = self.get_field_value(issue_com, 'customfield_16990', key=True)
+            logger.info(f'Found COM and got app info {jira_task} {repo_slug} {perimeter} {dev_team} {adm_team}')
+            return {'repo_slug': repo_slug, 'perimeter': perimeter, 'dev_team': dev_team, 'adm_team': adm_team}
+        else:
+            logger.info(f'-- GET APP INFO FROM COM com field is not filled {jira_task}')
+            return False
 
 #########################################################################################
 #        Custom functions
