@@ -1096,12 +1096,35 @@ async def get_app(request):
     try:
         app_name = request.match_info.get('app_name', None)
         if not app_name:
-            return ''
+            return web.HTTPBadRequest(body='app_name shoud be defined')
         app_info = db().get_application_metainfo(app_name)
-        app_info['version'] = db().get_last_success_app_version(app_name)
+        if len(app_info) > 0:
+            app_info['version'] = db().get_last_success_app_version(app_name)
         return web.json_response(app_info)
     except Exception as e:
         logger.exception('Error in get app %s', str(e))
+
+
+async def get_duty_external(request):
+    """
+    Запросить инфу о приложении из БД бота
+    """
+    try:
+        area = request.match_info.get('area', None)
+        # Если параметр зоны ответственности не задан, вернем все дежурных
+        if not area:
+            dutymen_array = await db().get_duty(get_duty_date(datetime.today()))
+        else:
+            dutymen_array = await db().get_duty_in_area(get_duty_date(datetime.today()), area)
+
+        logger.info(f"-- GET DUTY EXTERNAL {request} {dutymen_array}")
+        response = []
+        if len(dutymen_array) > 0:
+            for d in dutymen_array:
+                response.append(d['account_name'])
+        return web.json_response(response)
+    except Exception as e:
+        logger.exception('Error in get app external %s', str(e))
 
 
 @initializeBot.dp.message_handler(filters.restricted)
@@ -1177,6 +1200,8 @@ def start_webserver():
     app.add_routes([web.post('/inform_duty', inform_duty)])
     app.add_routes([web.post('/inform_subscribers', inform_subscribers)])
     app.add_routes([web.get('/get_app/{app_name}', get_app)])
+    app.add_routes([web.get('/get_duty/{area}', get_duty_external)])
+    app.add_routes([web.get('/get_duty', get_duty_external)])
     loop.run_until_complete(runner.setup())
     site = web.TCPSite(runner, port=8080)
     loop.run_until_complete(site.start())

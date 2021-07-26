@@ -93,7 +93,7 @@ class PostgresPool:
         logger.info('get application metainfo %s ', app_name)
         try:
             self.db.connect(reuse_if_open=True)
-            result = []
+            result = {}
             db_query = App_List.select().where(App_List.app_name == app_name)
             for v in db_query:
                 result = vars(v)['__data__']
@@ -249,20 +249,22 @@ class PostgresPool:
         finally:
             self.db.close()
 
+
     async def get_duty_in_area(self, duty_date, area) -> list:
         # Сходить в таблицу xerxes.duty_list за дежурными на заданную дату и зону ответственности
         try:
             self.db.connect(reuse_if_open=True)
             result = []
-            db_query = Duty_List.select().where(Duty_List.duty_date == duty_date, Duty_List.area == area)
+            db_query = Duty_List.select().where(Duty_List.duty_date == duty_date, Duty_List.area.startswith(area))
             for v in db_query:
                 result.append((vars(v))['__data__'])
-            logger.info('get duty for %s %s %s', duty_date, area, result)
+            logger.info('get duty in area for %s %s %s', duty_date, area, result)
             return result
         except Exception as e:
             logger.exception('exception in db get duty in area %s', str(e))
         finally:
             self.db.close()
+
 
     async def get_duty_personal(self, duty_date, tg_login) -> list:
         # Сходить в таблицу xerxes.duty_list за расписание дежурств конкретного администратора
