@@ -484,22 +484,28 @@ async def lock_app_release(message: types.Message):
             locked_app = {"lock": "", "unlock": incoming[1]}
 
         logger.info('lock app release sent %s', locked_app)
-        try:
-            session = await get_session()
-            async with session.post(config.api_lock_unlock, headers=locked_app) as resp:
-                await resp.json()
-                logger.info('lock send locked app to api, status is: %s', resp.status)
-            get_app = db().get_application_metainfo(incoming[1])
-            logger.info('lock app release %s ', get_app)
-            if 'bot_enabled' in get_app:
-                msg = f"Релизы {get_app['app_name']} <b>разблокированы</b>" if get_app['bot_enabled'] else f"Релизы {get_app['app_name']} <b>заблокированы</b>"
-                msg += f"\n\n<u>Информация о {get_app['app_name']} в БД бота</u>: \n{get_app}"
-            else:
-                msg = f"Не нашлось сведений о приложении в моей БД. Звоните Чесновскому."
-            await message.answer(text=msg, parse_mode=ParseMode.HTML)
-        except Exception as exc:
-            logger.exception('lock_unlock_task')
-            return web.json_response({'status': 'error', 'message': str(exc)})
+        await lock_releases(locked_app)
+        get_app = db().get_application_metainfo(incoming[1])
+        logger.info('lock app release %s ', get_app)
+        if 'bot_enabled' in get_app:
+            msg = f"Релизы {get_app['app_name']} <b>разблокированы</b>" if get_app['bot_enabled'] else f"Релизы {get_app['app_name']} <b>заблокированы</b>"
+            msg += f"\n\n<u>Информация о {get_app['app_name']} в БД бота</u>: \n{get_app}"
+        else:
+            msg = f"Не нашлось сведений о приложении в моей БД. Звоните Чесновскому."
+        await message.answer(text=msg, parse_mode=ParseMode.HTML)
+
+
+async def lock_releases(locked_app):
+    logger.info('-- LOCK RELEASE %s', locked_app)
+    try:
+        session = await get_session()
+        async with session.post(config.api_lock_unlock, headers=locked_app) as resp:
+            await resp.json()
+            logger.info('lock send locked app to api, status is: %s', resp.status)
+        return True
+    except Exception as exc:
+        logger.exception('lock_unlock_task')
+        return str(exc)
 
 ##############################################################################################
 #              Кнопки админского меню
@@ -1068,6 +1074,31 @@ async def inform_subscribers(request):
     return web.json_response()
 
 
+async def lock_apps(request):
+    """
+    Внешняя ручка для блокировки приложений
+    {'lock': ['shiro', 'shop'], 'unlock': ['makeupd']}
+    Если засунуть в нее одно и то же приложение, то финальным отработает unlock
+    """
+    data_json = await request.json()
+    logger.info(f"-- LOCK APPS {data_json}")
+    locked_app = {'lock': '', 'unlock': ''}
+    processed_apps = []
+    if 'lock' in data_json:
+        locked_app["lock"] = ','.join(data_json['lock'])
+        processed_apps = processed_apps + data_json['lock']
+    if 'unlock' in data_json:
+        locked_app["unlock"] = ','.join(data_json['unlock'])
+        processed_apps = processed_apps + data_json['unlock']
+    await lock_releases(locked_app)
+    app_statuses = []
+    for app in processed_apps:
+        get_app = db().get_application_metainfo(app)
+        app_statuses.append(get_app)
+    logger.info('-- Lock apps app statuses %s', app_statuses)
+    return web.json_response(app_statuses)
+
+
 async def inform_today_duty(area, msg):
     """
     Функция отправки сообщения сегодняшнему дежурному
@@ -1199,6 +1230,7 @@ def start_webserver():
     app.add_routes([web.post('/send_message', send_message_to_users)])
     app.add_routes([web.post('/inform_duty', inform_duty)])
     app.add_routes([web.post('/inform_subscribers', inform_subscribers)])
+    app.add_routes([web.post('/lock_apps', lock_apps)])
     app.add_routes([web.get('/get_app/{app_name}', get_app)])
     app.add_routes([web.get('/get_duty/{area}', get_duty_external)])
     app.add_routes([web.get('/get_duty', get_duty_external)])
