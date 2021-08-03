@@ -90,7 +90,7 @@ async def help_description(message: types.Message):
                   f'\n:point_right: Вот список всего, что я умею:\n'
                   f'<u>/duty </u><b>N</b> -- покажет дежурных через N дней; N задавать необязательно, по умолчанию отобразятся деурные на сегодня.\n'
                   f'<u>/who </u><b>username</b> -- найдет инфо о пользователе; работает с ТГ-логином, аккаунтом или почтой.\n'
-                  f'<u>/timetable </u><b>N</b> -- расписание вашего календаря; как включить читайте здесь - https://wiki.yamoney.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster.\n'
+                  f'<u>/timetable </u><b>N</b> -- расписание вашего календаря; как включить читайте здесь - https://wiki.yooteam.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster.\n'
                   f'<u>/app </u><b>app_name</b> -- инфа по параметрам выкладки приложения из БД бота. Если инфы нет - бот ничего не покатит.\n'
                   f'<u>/dev_team </u><b>КОМАНДА</b> -- состав команды разработчиков; вытягивается из TeamTransition.\n'
                   f'\n:point_right: Описание кнопок:\n'
@@ -141,7 +141,7 @@ async def start(message: types.Message):
                                        f'Я не нашел записи с твоим телеграмм-аккаунтом в своей базе. :confused:\n'
                                        f'Пожалуйста, обратись к системным администраторам группы admsys@\n'
                                        f'На всякий случай, подробнее обо мне можно прочесть здесь:\n'
-                                       f'wiki.yamoney.ru/display/admins/CD_Bot.HowTo.User')
+                                       f'wiki.yooteam.ru/display/admins/CD_Bot.HowTo.User')
             await message.reply(text=not_familiar_msg)
 
     except Exception:
@@ -252,7 +252,7 @@ async def timetable_personal(message: types.Message):
     except Exception as e:
         logger.exception('error in timetable personal %s', str(e))
         msg = 'Что-то пошло не так. Вероятно, вы не выдали доступ до своего календаря. ' \
-              'Подробнее читайте здесь -- https://wiki.yamoney.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster'
+              'Подробнее читайте здесь -- https://wiki.yooteam.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster'
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
 
 
@@ -807,7 +807,7 @@ async def app_info(message: types.Message):
                     msg += f'\n Разработчики: <a href="/dev_team {app_info["dev_team"]}">{app_info["dev_team"]}</a>'
                     msg += f'\n Релизные очереди: <strong>{app_info["queues"]}</strong>'
                     msg += f'\n Бот включен: <strong>{app_info["bot_enabled"]}</strong>'
-                    msg += f"\n<a href='https://wiki.yamoney.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster-%D0%A0%D0%B5%D0%B6%D0%B8%D0%BC%D1%8B%D0%B2%D1%8B%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B8Modes'> Подробнее о параметрах</a>\n"
+                    msg += f"\n<a href='https://wiki.yooteam.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster-%D0%A0%D0%B5%D0%B6%D0%B8%D0%BC%D1%8B%D0%B2%D1%8B%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B8Modes'> Подробнее о параметрах</a>\n"
                     dev_team_name = app_info["dev_team"]
                 else:
                     msg = 'Приложение не найдено'

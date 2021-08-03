@@ -20,7 +20,7 @@ def main_menu() -> types.InlineKeyboardMarkup:
     try:
         url_jira_board = 'https://jira.yamoney.ru/secure/RapidBoard.jspa?rapidView=715'
         url_kibana = 'https://kibana.yamoney.ru/goto/2319c2bcfb9ae9fda8e9669ef73830b4'
-        url_wiki = 'https://wiki.yamoney.ru/display/admins/ReleaseBot.Informer'
+        url_wiki = 'https://wiki.yooteam.ru/display/admins/ReleaseBot.Informer'
         button_list = [
             types.InlineKeyboardButton(text="Дежурные",
                                        callback_data=posts_cb.new(action='duty_button', issue='1')),
