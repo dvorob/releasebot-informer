@@ -5,21 +5,6 @@ from os import getenv
 from playhouse.pool import PostgresqlDatabase, PooledPostgresqlDatabase
 
 bot_token = getenv('secret_telegram_token')
-bot_master = {'vorobiev_telegram_id': 279933948,
-              'reytsman_telegram_id': 254802165,
-              'spiridonov_telegram_id': 104632759,
-              'krepyshev_telegram_id': 132381920,
-              'uchaev_telegram_id': 386533784,
-              'podlipaev_telegram_id': 325499139,
-              'kim_telegram_id': 930740404,
-              'igoshin_telegram_id': 153780462,
-              'batuto_telegram_id': 124171502,
-              'titov_telegram_id': 81194573,
-              'grachev_telegram_id': 170541899,
-              'gromov_telegram_id': 390182439,
-              'avdonin_telegram_id': 145902753,
-              'smirnov_telegram_id': 160932394
-              }
 
 #PG configuration
 postgres = PooledPostgresqlDatabase(

@@ -320,7 +320,7 @@ class PostgresPool:
         try:
             self.db.connect(reuse_if_open=True)
             query = User_Subscriptions.delete().where(
-                User_Subscriptions.account_name == account_name, User_Subscriptions.subscription == subscription)
+                fn.Lower(User_Subscriptions.account_name) == fn.Lower(account_name), User_Subscriptions.subscription == subscription)
             query.execute()
         except Exception as e:
             logger.exception('exception in delete user subscription %s', e)
@@ -332,7 +332,7 @@ class PostgresPool:
         logger.debug('set user subscription %s ', account_name)
         try:
             self.db.connect(reuse_if_open=True)
-            db_rec, _ = User_Subscriptions.get_or_create(account_name=account_name, subscription=subscription)
+            db_rec, _ = User_Subscriptions.get_or_create(account_name=fn.Lower(account_name), subscription=subscription)
             db_rec.save()
         except Exception as e:
             logger.exception('exception in set user subscription %s', e)
@@ -345,7 +345,7 @@ class PostgresPool:
         try:
             self.db.connect(reuse_if_open=True)
             result = []
-            db_query = User_Subscriptions.select().where(User_Subscriptions.account_name == account_name)
+            db_query = User_Subscriptions.select().where(fn.Lower(User_Subscriptions.account_name) == fn.Lower(account_name))
             for v in db_query:
                 if ((vars(v))['__data__']):
                     result.append((vars(v))['__data__']['subscription'])
@@ -363,7 +363,7 @@ class PostgresPool:
             self.db.connect(reuse_if_open=True)
             result = []
             db_query = (Users.select()
-                             .join(User_Subscriptions, on=(User_Subscriptions.account_name == Users.account_name))
+                             .join(User_Subscriptions, on=(fn.Lower(User_Subscriptions.account_name) == fn.Lower(Users.account_name)))
                              .where(User_Subscriptions.subscription == subscription))
             for v in db_query:
                 if ((vars(v))):

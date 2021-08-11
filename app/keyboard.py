@@ -24,22 +24,17 @@ def main_menu() -> types.InlineKeyboardMarkup:
         button_list = [
             types.InlineKeyboardButton(text="Дежурные",
                                        callback_data=posts_cb.new(action='duty_button', issue='1')),
-            types.InlineKeyboardButton("Релизная доска",
-                                       url=url_jira_board),
+            types.InlineKeyboardButton("Релизная доска", url=url_jira_board),
             types.InlineKeyboardButton("Документация", url=url_wiki),
-            types.InlineKeyboardButton("Логи бота",
-                                       url=url_kibana),
+            types.InlineKeyboardButton("Логи бота", url=url_kibana),
             types.InlineKeyboardButton(text="Админское меню",
-                                       callback_data=posts_cb.new(action='admin_menu',
-                                                                  issue='1')),
+                                       callback_data=posts_cb.new(action='admin_menu', issue='1')),
             types.InlineKeyboardButton("Вернуть релиз в очередь",
-                                       callback_data=posts_cb.new(action='return_queue',
-                                                                  issue='1')),
+                                       callback_data=posts_cb.new(action='return_queue', issue='1')),
             types.InlineKeyboardButton("Подписки и уведомления",
                                        callback_data=posts_cb.new(action='subscribe', issue='1')),
             types.InlineKeyboardButton("Краткая инфа с релизной доски",
-                                       callback_data=posts_cb.new(action='get_min_inf_board',
-                                                                  issue='1')),
+                                       callback_data=posts_cb.new(action='get_min_inf_board', issue='1')),
         ]
         footer = types.InlineKeyboardButton("Расширенная инфа с релизной доски",
                                             callback_data=posts_cb.new(action='get_ext_inf_board',
@@ -57,14 +52,11 @@ def subscribe_menu() -> types.InlineKeyboardMarkup:
     """
     button_list = [
         types.InlineKeyboardButton("События по релизам",
-                                   callback_data=posts_cb.new(action='release_events',
-                                                              issue='1')),
+                                   callback_data=posts_cb.new(action='release_events', issue='1')),
         types.InlineKeyboardButton("Расписание встреч",
-                                   callback_data=posts_cb.new(action='timetable_reminder',
-                                                              issue='1')),
+                                   callback_data=posts_cb.new(action='timetable_reminder', issue='1')),
         types.InlineKeyboardButton("Статистика по релизам",
-                                   callback_data=posts_cb.new(action='statistics_reminder',
-                                                              issue='1'))
+                                   callback_data=posts_cb.new(action='statistics_reminder', issue='1'))
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_list, n_cols=1))
 

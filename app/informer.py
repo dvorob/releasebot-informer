@@ -25,6 +25,7 @@ from utils.jiratools import JiraConnection, JiraTransitions, jira_get_approvers_
 from utils import logging, returnHelper, initializeBot, filters, couch_client
 from utils.initializeBot import dp, bot
 from utils.database import PostgresPool as db
+import utils.messages as messages
 from datetime import timedelta, datetime
 from requests_ntlm import HttpNtlmAuth
 
@@ -42,133 +43,36 @@ async def errors_handler(update: Update, exception: Exception):
 
 @initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['promo'])
 async def marketing_send(message: types.Message):
-    """
-        Will show description all commands, handled by /help
-        :param message: _ContextInstanceMixin__context_instance
+    """Массовая рассылка спама, информинга. Для ручной отправки.
     """
     logger.info('Marketing send was started')
-    msg = emojize(f'Привет! :raised_hand:\n'
-                  f'Я переехал на свою внутреннюю базу данных пользователей.\n'
-                  f'Все телеграм-логины и id (есть и такая сущность), которые мне были известны, тоже переехали в неё.\n'
-                  f'Если вы получили это сообщение -- у вас всё в порядке и уведомляния работают.\n'
-                  f'Если кому-то из ваших коллег не приходят уведомления, отправьте им эту инструкцию:\n'
-                  f'--------------------------\n'
-                  f'1. Спросите у меня <b>/who "nickname" </b>,\n'
-                  f'(вместо "nickname" можно подставить тг-логин, AD-логин или корпоративную почту).\n'
-                  f'Если я вас узнаю, я верну сообщение с заполненными параметрами, среди которых должны быть заполнены:\n'
-                  f'<b>Telegram Login</b> и <b>Telegram ID </b>:\n'
-                  f'2. Если что-то среди этих параметров не заполнено, нажмите <b>/start</b> и затем спросите <b>/who ...</b> еще раз.\n'
-                  f'3. Если это не помогло, зайдите, пожалуйста, в Диму Воробьёва -- @dvorob .\n'
-                  f'--------------------------\n'
-                  f'Хорошего дня!\n')
     #chats = await db().get_all_tg_id()
     logger.debug(chats)
     for chat_id in chats:
         try:
             #if chat_id["admin"] == 1:
-            await initializeBot.bot.send_message(chat_id=chat_id["tg_id"], text=msg, parse_mode=ParseMode.HTML)
+            await initializeBot.bot.send_message(chat_id=chat_id["tg_id"], text=emojize(messages.spam), parse_mode=ParseMode.HTML)
         except Exception as exc:
             logger.exception('Marketing sending error %s %s ', chat_id, str(exc))
 
 @initializeBot.dp.message_handler(filters.restricted, commands=['help'])
 async def help_description(message: types.Message):
+    """/help - выдает статичное сообщение с подсказкой по работе с ботом.
     """
-        Will show description all commands, handled by /help
-        :param message: _ContextInstanceMixin__context_instance
-    """
-    logger.info('help function was called by %s', returnHelper.return_name(message))
-    logger.info('Message %s', vars(message.from_user))
-    logger.info('Message %s', vars(message.chat))
-
-    msg = emojize(f'Привет, <b>{message.from_user.full_name}</b>! :raised_hand:\n'
-                  f'\nЧтобы начать со мной взаимодействовать, нужно быть сотрудником компании.\n'
-                  f'Если ты с нами, скорее всего, мы уже знакомы. Проверить это можно, спросив меня:\n'
-                  f'<b>/who мой_никнейм</b> (вместо мой_никней можно указать логин в ТГ, корпоративную учетку или имя (полное) с фамилией).\n'
-                  f'Если в ответе ты видишь корректный логин, всё Ок.\n'
-                  f'Если Telegram ID не заполнен, нажми <u><b>/start</b></u> .\n'
-                  f'Во всех остальных случаях обратись к администраторам группы Admsys.\n'
-                  f'\n:point_right: Вот список всего, что я умею:\n'
-                  f'<u>/duty </u><b>N</b> -- покажет дежурных через N дней; N задавать необязательно, по умолчанию отобразятся деурные на сегодня.\n'
-                  f'<u>/who </u><b>username</b> -- найдет инфо о пользователе; работает с ТГ-логином, аккаунтом или почтой.\n'
-                  f'<u>/timetable </u><b>N</b> -- расписание вашего календаря; как включить читайте здесь - https://wiki.yooteam.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster.\n'
-                  f'<u>/app </u><b>app_name</b> -- инфа по параметрам выкладки приложения из БД бота. Если инфы нет - бот ничего не покатит.\n'
-                  f'<u>/dev_team </u><b>КОМАНДА</b> -- состав команды разработчиков; вытягивается из TeamTransition.\n'
-                  f'\n:point_right: Описание кнопок:\n'
-                  f'<u><b>Дежурные</b></u> -- показать дежурных админов.\n'
-                  f'<u><b>Релизная доска</b></u> -- открыть релизную доску Admsys.\n'
-                  f'<u><b>Документация</b></u> -- открыть Wiki с документацией по боту.\n'
-                  f'<u><b>Логи бота</b></u> -- открыть Kibana с логами бота.\n'
-                  f'<u><b>Админское меню</b></u> -- админское меню, доступно только администраторам.\n'
-                  f'<u><b>Вернуть релиз в очередь</b></u> -- вернет список Jira-тасок, которые можно вернуть в начало релизной очереди.\n'
-                  f'<u><b>Подписки и уведомления</b></u> -- подписаться на все уведомления от бота.\n'
-                  f'Там же можно и отписаться от уведомлений.\n'
-                  f'<b>Важно:</b> на персональные уведомления (о своих релизах) подписывться не нужно -- они работают по умолчанию.\n'
-                  f'<u><b>Краткая инфа с релизной доски</b></u> -- покажет статистику о текущем состоянии релизной доски.\n'
-                  f'<u><b>Расширенная инфа с релизной доски</b></u> -- то же, но в расширенном варианте.\n')
-
-    user_info = await db().search_users_by_account(message.from_user.username)
-    if len(user_info)>0:
-        if user_info[0]['admin'] == 1:
-            msg += emojize(f'\n:raised_hand: <u>Админские команы</u>:'
-                  f'\n<u>/where_app </u><b>app_name</b> -- найти расположение приложения. Можно передать shiro, iva-back-shiro1 и комбинации через пробел.'
-                  f'\n<u>/app </u><b>app_name</b> -- инфа по приложению из БД бота (то, что он получает из metaconfig.yaml). Если инфы нет - бот ничего не покатит.'
-                  f'\n<u>/lock </u><b>app_name</b> -- /lock shiro залочит выкладки приложений. Меняет значение bot_enabled = false (оно же есть в metaconfig.yaml, но истина - в БД).'
-                  f'\n<u>/unlock </u><b>app_name</b> -- /unlock shiro, соответственно, запустит.')
+    logger.info(f'Help function was called by {returnHelper.return_name(message)}'
+                f' {vars(message.from_user)} {vars(message.chat)}')
     try:
-        await message.answer(text=msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
-    except Exception as exc:
-        logger.exception('Help sending error %s %s ', msg, str(exc))
+        msg = messages.help_common % message.from_user.full_name
 
-@initializeBot.dp.message_handler(filters.restricted, commands=['start'])
-async def start(message: types.Message):
-    """
-        Start function, handled by /start
-        :param message: dict with information
-        :type message: _ContextInstanceMixin__context_instance
-    """
-    try:
-        logger.info('start function by %s', returnHelper.return_name(message))
         user_info = await db().search_users_by_account(message.from_user.username)
         if len(user_info)>0:
-            for users in user_info:
-                if users["tg_id"] != str(message.from_user.id):
-                    await db().set_users(users['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.from_user.id), notification=None, email=None)
-                await message.reply(text=start_menu_message(message),
-                                    reply_markup=keyboard.main_menu(),
-                                    parse_mode=ParseMode.HTML)
-        else:
-            not_familiar_msg = emojize(f'Здравствуй, {bold(message.from_user.full_name)}!\n'
-                                       f'Я не нашел записи с твоим телеграмм-аккаунтом в своей базе. :confused:\n'
-                                       f'Пожалуйста, обратись к системным администраторам группы admsys@\n'
-                                       f'На всякий случай, подробнее обо мне можно прочесть здесь:\n'
-                                       f'wiki.yooteam.ru/display/admins/CD_Bot.HowTo.User')
-            await message.reply(text=not_familiar_msg)
+            if user_info[0]['admin'] == 1:
+                msg += messages.help_admin
+        logger.info(msg)
+        await message.answer(text=emojize(msg), reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+    except Exception as e:
+        logger.exception('Help sending error %s', str(e))
 
-    except Exception:
-        logger.exception('start')
-        not_familiar_msg = emojize(f'Здравствуй, {bold(message.from_user.full_name)}!\n'
-                                   f'В ходе знакомства с тобой произошла ошибка. :confused:\n'
-                                   f'Пожалуйста, обратись к системным администраторам группы admsys@')
-        await message.reply(text=not_familiar_msg)
-
-def start_menu_message(message) -> str:
-    """
-        Start menu message
-        :return: str
-    """
-    return emojize(f'Hello, {bold(message.from_user.full_name)}! :raised_hand:\n'
-                   f'Send /help if you want to read description of commands.\n'
-                   f'Here :point_down: you can see the available buttons.\n')
-
-
-def main_menu_message() -> str:
-    """
-        Main menu message
-        :return: str
-    """
-    msg = emojize('Отправьте /help, чтобы узнать, что я умею.\n'
-                  'Ниже :point_down: меню, но это далеко не всё.')
-    return msg
 
 @initializeBot.dp.message_handler(filters.restricted, commands=['write_my_chat_id'])
 async def write_chat_id(message: types.Message):
@@ -251,9 +155,7 @@ async def timetable_personal(message: types.Message):
 
     except Exception as e:
         logger.exception('error in timetable personal %s', str(e))
-        msg = 'Что-то пошло не так. Вероятно, вы не выдали доступ до своего календаря. ' \
-              'Подробнее читайте здесь -- https://wiki.yooteam.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster'
-        await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+        await message.answer(messages.timetable_error, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
 
 
 async def create_duty_message(duty_date) -> str:
@@ -333,9 +235,8 @@ async def get_ext_inf_board_button(query: types.CallbackQuery, callback_data: st
         if len(final_msg) > 0:
             text = final_msg
         else:
-            text = 'Я не смог найти тасок на релизной доске'
             logger.error('get_ext_inf_board_button, can\'t find issues in Jira')
-        await query.message.answer(text=text, reply_markup=to_main_menu(),
+        await query.message.answer(text=messages.rl_board_empty, reply_markup=to_main_menu(),
                                    parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception('get_ext_inf_board')
@@ -384,10 +285,7 @@ async def duty_button(query: types.CallbackQuery, callback_data: str):
         logger.info('duty_button started from: %s', returnHelper.return_name(query))
         msg = ''
         if int(datetime.today().strftime("%H")) < int(10):
-            msg += f'<strong>Приветствую!</strong>\n' \
-                  f'Сейчас <strong>{datetime.today().strftime("%H:%M")}</strong> утра.\n' \
-                  f'Посмотреть, кто сегодня дежурит после 10:00 можно командой ' \
-                  f'<strong>/duty 1</strong>.\n\n'
+            msg += messages.duty_morning_hello % datetime.today().strftime("%H:%M")
 
         msg += await create_duty_message(get_duty_date(datetime.today()))
         msg += '\n\nЕсли вы хотите узнать дежурных через N дней, отправьте команду /duty N\n\n'
@@ -395,41 +293,33 @@ async def duty_button(query: types.CallbackQuery, callback_data: str):
     except Exception:
         logger.exception('duty_button')
 
-
-
 def to_main_menu() -> types.InlineKeyboardMarkup:
     """
         Return to main menu button
-        :return: InlineKeyboardMarkup object
     """
     keyboard_main_menu = [[types.InlineKeyboardButton('Main menu',
                                                       callback_data=keyboard.posts_cb.new(action='main', issue='1'))]]
     return types.InlineKeyboardMarkup(inline_keyboard=keyboard_main_menu)
 
-
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='main'), filters.restricted)
 async def main_menu(query: types.CallbackQuery, callback_data: str):
     """
         Main menu
-        :param query:
-        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     del callback_data
     try:
         logger.info('main_menu started')
-        await query.message.answer(text=main_menu_message(),
+        await query.message.answer(text=emojize(messages.main_menu),
                                    reply_markup=keyboard.main_menu(),
                                    parse_mode=ParseMode.HTML)
-    except Exception:
-        logger.exception('main_menu_message')
+    except Exception as e:
+        logger.exception('Main menu %s', str(e))
 
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='admin_menu'), filters.restricted, filters.admin)
 async def admin_menu(query: types.CallbackQuery, callback_data: str):
     """
         Open admin menu
-        :param query:
-        :param callback_data
     """
     del callback_data
     try:
@@ -445,8 +335,6 @@ async def admin_menu(query: types.CallbackQuery, callback_data: str):
 async def restart(query: types.CallbackQuery, callback_data: str):
     """
         Restart pod with bot
-        :param query:
-        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     try:
         del callback_data
@@ -461,8 +349,6 @@ async def restart(query: types.CallbackQuery, callback_data: str):
 async def stop_bot(query: types.CallbackQuery, callback_data: str):
     """
         Turn off bot
-        :param query:
-        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
     """
     del callback_data
     logger.warning('%s stopped bot', returnHelper.return_name(query))
