@@ -18,7 +18,7 @@ def main_menu() -> types.InlineKeyboardMarkup:
         :return: main menu
     """
     try:
-        url_jira_board = 'https://jira.yamoney.ru/secure/RapidBoard.jspa?rapidView=715'
+        url_jira_board = f'{config.jira_host}/secure/RapidBoard.jspa?rapidView=715'
         url_kibana = 'https://kibana.yamoney.ru/goto/2319c2bcfb9ae9fda8e9669ef73830b4'
         url_wiki = 'https://wiki.yooteam.ru/display/admins/ReleaseBot.Informer'
         button_list = [
