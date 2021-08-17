@@ -46,6 +46,7 @@ class Users(BaseModel):
     notification = CharField(default='none')
     admin = IntegerField(default=0)
     date_update = DateField()
+    staff_login = CharField()
 
 class User_Subscriptions(BaseModel):
     id = IntegerField(primary_key=True)
@@ -134,7 +135,7 @@ class PostgresPool:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
         # например, найти Воробьева можно запросом get_users('account_name', 'ymvorobevda')
         # всех админов - запросом get_users('admin', 1)
-        logger.info('get_users param1 param2 %s %s', field, value)
+        logger.info(f'get_users {field} = {value}')
         result = []
         try:
             self.db.connect(reuse_if_open=True)
