@@ -129,7 +129,7 @@ async def duty_admin_personal(message: types.Message):
         logger.exception('error in duty admin %s', str(e))
 
 # /timetable command from chatbot
-@initializeBot.dp.message_handler(filters.restricted, commands=['timetable'])
+@initializeBot.dp.message_handler(filters.restricted, commands=['timetable', 'meet', 'meetings'])
 async def timetable_personal(message: types.Message):
     """
     """
@@ -766,15 +766,13 @@ async def get_user_info(message: types.Message):
             if len(user_info) > 0:
                 msg = '<u><b>Нашёл</b></u>:'
                 for user in user_info:
-                    msg += f'\n Логин: <a href=\"{config.staff_url}/#/{user["account_name"]}\"><strong>{user["account_name"]}</strong></a>'
-                    user_from_staff = await get_user_from_staff(user["account_name"])
-                    if len(user_from_staff) > 0:
-                        msg += f'\n ФИО: <strong>{user_from_staff["firstName"]} {user_from_staff["lastName"]}</strong>'
+                    msg += f'\n Логин AD: <strong>{user["account_name"]}</strong></a>'
+                    msg += f'\n Имя: <strong>{user["full_name"]}</strong>'
+                    msg += f'\n Стафф: <a href=\"{config.staff_url}/#/{user["staff_login"]}\"><strong>{user["staff_login"]}</strong>'
                     msg += f'\n Почта: <strong>{user["email"]}</strong>'
                     msg += f'\n Телеграм: <strong>@{user["tg_login"]}</strong>'
                     msg += f'\n Телеграм ID: <strong>{user["tg_id"]}</strong>'
                     msg += f'\n Рабочий статус: <strong>{user["working_status"]}</strong>'
-                    msg += f'\n Нотификации: <strong>{user["notification"]}</strong>'
                     user_teams = await get_user_membership(user["account_name"])
                     if len(user_teams) > 0:
                         for t in user_teams:
