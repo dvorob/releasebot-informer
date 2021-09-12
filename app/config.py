@@ -53,6 +53,9 @@ issues_confirm_full_resolved = 'project in (ADMSYS, DEPLOY) AND issuetype = "Rel
 search_issues_work = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" AND status IN ' \
                      '("PARTIAL DEPLOY", CONFIRM, "FULL DEPLOY") ORDER BY Rank ASC'
 
+search_issues_started = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" AND status IN ' \
+                     '("TO DO", "PARTIAL DEPLOY", CONFIRM, "FULL DEPLOY") ORDER BY Rank ASC'
+
 search_issues_completed = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" ' \
                           'AND status = Resolved ORDER BY Rank ASC'
 

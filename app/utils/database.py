@@ -105,6 +105,22 @@ class PostgresPool:
             self.db.close()
 
 
+    def get_many_applications_metainfo(self, apps_list) -> list:
+        # Сходить в AppList и получить конфигурацию деплоя конкретного приложения - очереди, режим выкладки и прочее
+        logger.info('get many applications metainfo %s ', apps_list)
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            db_query = App_List.select().where(App_List.app_name.in_(apps_list))
+            for v in db_query:
+                result.append(vars(v)['__data__'])
+            return result
+        except Exception as e:
+            logger.exception('exception in get many applications metainfo %s', e)
+        finally:
+            self.db.close()
+
+
     async def set_users(self, account_name, full_name, tg_login, working_status, tg_id, notification, email):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.

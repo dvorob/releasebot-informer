@@ -255,16 +255,15 @@ async def get_min_inf_board_button(query: types.CallbackQuery, callback_data: st
         async def count_issues() -> str:
             """
                 Request to Jira and format msg
-                :return: msg for tg
             """
             issues_releases_progress = JiraConnection().jira_search(config.search_issues_work)
 
             issues_admsys = JiraConnection().jira_search(
-                'project = ADMSYS AND issuetype = "Release (conf)" AND '
+                'project = DEPLOY AND issuetype = "Release (conf)" AND '
                 'status IN (Open, "Waiting release") ORDER BY Rank ASC'
             )
-            msg = f'\n - Releases in the progress: <b>{len(issues_releases_progress)}</b>'
-            msg += f'\n - In AdmSYS queue: <b>{len(issues_admsys)}</b>'
+            msg = f'\n - В процессе выкладки: <b>{len(issues_releases_progress)}</b>'
+            msg += f'\n - В ожидании релиза: <b>{len(issues_admsys)}</b>'
             return msg
 
         information_from_jira = await count_issues()
@@ -688,12 +687,23 @@ async def app_info(message: types.Message):
                 if len(app_info) > 0:
                     msg += f'\n Имя приложения: <strong>{app_info["app_name"]}</strong>'
                     msg += f'\n Периметр: <strong>{app_info["perimeter"]}</strong>'
-                    msg += f'\n Release_mode: <strong>{app_info["release_mode"]}</strong>'
+                    msg += f'\n Режим выкладки: <strong>{app_info["release_mode"]}</strong>'
                     msg += f'\n Администраторы: <strong>{app_info["admins_team"]}</strong>'
                     msg += f'\n Разработчики: <a href="/dev_team {app_info["dev_team"]}">{app_info["dev_team"]}</a>'
-                    msg += f'\n Релизные очереди: <strong>{app_info["queues"]}</strong>'
-                    msg += f'\n Бот включен: <strong>{app_info["bot_enabled"]}</strong>'
-                    msg += f"\n<a href='https://wiki.yooteam.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster-%D0%A0%D0%B5%D0%B6%D0%B8%D0%BC%D1%8B%D0%B2%D1%8B%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B8Modes'> Подробнее о параметрах</a>\n"
+                    msg += f'\n Релизные очереди: <strong>{app_info["queues"].replace(",", ", ")}</strong>'
+                    msg += f"\n <a href='https://wiki.yooteam.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster-%D0%A0%D0%B5%D0%B6%D0%B8%D0%BC%D1%8B%D0%B2%D1%8B%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B8Modes'>Подробнее о параметрах</a>\n"
+                    if app_info["bot_enabled"]:
+                        msg += f'\n :green_circle: Бот <strong>включен</strong> для приложения'
+                    else:
+                        msg += f'\n :red_circle: Бот <strong>выключен</strong> для приложения'
+                    locking_rl = get_lock_reasons(app_name)
+                    if (len(locking_rl) > 0):
+                        msg += f'\n :red_circle: Релиз <strong>заблокирован</strong> следующими компонентами:'
+                        for rl in locking_rl:
+                            msg += f'\n • <strong>{rl["app_name"]}</strong> (очереди: {rl["queues"].replace(",", ", ")})'
+                        msg += f'\n Детали можно найти на <a href="https://jira.yooteam.ru/secure/RapidBoard.jspa?rapidView=1557">релизной доске</a>'
+                    else:
+                        msg += f'\n :green_circle: Релизная очередь приложения свободна'                    
                     dev_team_name = app_info["dev_team"]
                 else:
                     msg = 'Приложение не найдено'
@@ -701,9 +711,9 @@ async def app_info(message: types.Message):
             msg = 'Ошибка: задайте имя приложения'
         if 'dev_team_name' in locals():
             if dev_team_name is not None:
-                await message.answer(text=msg, reply_markup=dev_team_members(dev_team_name), parse_mode=ParseMode.HTML)
+                await message.answer(text=emojize(msg), reply_markup=dev_team_members(dev_team_name), parse_mode=ParseMode.HTML)
                 return True
-        await message.answer(text=msg, parse_mode=ParseMode.HTML)
+        await message.answer(text=emojize(msg), parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('Error in APP INFO %s', e)
 
@@ -985,6 +995,29 @@ async def lock_apps(request):
     return web.json_response(app_statuses)
 
 
+def get_lock_reasons(app_name):
+    """
+    Проверка блокировок релиза. Для app_name вернет список приложений, которые в данные момент в процессе
+    релиза и блокируют хотя бы одну релизную очередь app_name.
+    """
+    try:
+        releases_started = JiraConnection().jira_search(config.search_issues_started)
+        rl_board_list = []
+        locking_rl = []
+        app_info = db().get_application_metainfo(app_name)
+        for rl in releases_started:
+            app_name_version_json = _app_name_regex(rl.fields.summary)
+            if app_name_version_json['name'] != app_name:
+                rl_board_list.append(app_name_version_json['name'])
+        for rl_app in db().get_many_applications_metainfo(rl_board_list):
+            if (any(elem in rl_app['queues'].split(',') for elem in app_info['queues'].split(','))):
+                locking_rl.append(rl_app)
+        logger.info(f'Debug for lock_reasons {app_info} \n {rl_board_list} \n {locking_rl}')
+        return locking_rl
+    except Exception as e:
+        logger.exception('Error in get lock reasons %s', e)
+        return []
+
 async def inform_today_duty(area, msg):
     """
     Функция отправки сообщения сегодняшнему дежурному
@@ -1060,6 +1093,15 @@ async def unknown_message(message: types.Message):
         logger.info('-- UNKNOWN MESSAGE HERE')
         await message.reply(msg, parse_mode=ParseMode.HTML)
 
+def _app_name_regex(issue_summary: str) -> dict:
+    """
+    ('currency-storage+1.3.1')
+    Распарсить имя компоненты и версию из summary джира-тикета
+    Return {'name': 'currency-storage', 'version': '1.3.1'}
+    """
+    app = re.match('^([0-9a-z-]+)[+=]([0-9a-zA-Z-.]+)$', issue_summary.strip())
+    output = {'name': app[1], 'version': app[2]} if app else {'name': issue_summary, 'version': False}
+    return output
 
 async def get_current_user_subscription(account_name) -> str:
     """
