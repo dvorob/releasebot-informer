@@ -683,6 +683,7 @@ async def app_info(message: types.Message):
             msg = '<u><b>Результаты поиска</b></u>:'
             for app_name in app_name_list:
                 app_info = db().get_application_metainfo(app_name)
+                last_release = db().get_last_deploy_task_number(app_name)
                 logger.info('Got application metainfo %s', app_info)
                 if len(app_info) > 0:
                     msg += f'\n Имя приложения: <strong>{app_info["app_name"]}</strong>'
@@ -692,6 +693,10 @@ async def app_info(message: types.Message):
                     msg += f'\n Разработчики: <a href="/dev_team {app_info["dev_team"]}">{app_info["dev_team"]}</a>'
                     msg += f'\n Релизные очереди: <strong>{app_info["queues"].replace(",", ", ")}</strong>'
                     msg += f"\n <a href='https://wiki.yooteam.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster-%D0%A0%D0%B5%D0%B6%D0%B8%D0%BC%D1%8B%D0%B2%D1%8B%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B8Modes'>Подробнее о параметрах</a>\n"
+                    if len(last_release) > 0:
+                        msg+= f"Последний успешный релиз: {config.jira_host}/browse/{last_release}\n\n"
+                    elif:
+                        msg+= f"Последний успешный релиз: не найден\n\n"
                     if app_info["bot_enabled"]:
                         msg += f'\n :green_circle: Бот <strong>включен</strong> для приложения'
                     else:

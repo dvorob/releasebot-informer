@@ -147,6 +147,7 @@ class PostgresPool:
         finally:
             self.db.close()
 
+
     async def get_users(self, field, value) -> list:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
         # например, найти Воробьева можно запросом get_users('account_name', 'ymvorobevda')
@@ -391,11 +392,59 @@ class PostgresPool:
         finally:
             self.db.close()
 
+
+    def get_last_success_app_version(self, app_name, offset):
+        # Вернет версию компоненты, успешно выехавшую на бой, отступив на offset релизов. 
+        # Последня - это offset=0, предпоследняя - offset=1. Для роллбека
+        try:
+            result = ''
+            self.db.connect(reuse_if_open=True)
+            db_result = (Releases_List
+                        .select(Releases_List.app_version)
+                        .where(Releases_List.app_name == app_name, Releases_List.resolution == 'Выполнен')
+                        .order_by(Releases_List.id.desc())
+                        .offset(offset)
+                        .limit(1))
+            for r in db_result:
+                if r.app_version:
+                    result = r.app_version
+                else:
+                    result = ''
+            return result
+        except Exception as e:
+            logger.exception('exception in get last success app version %s', e)
+            return result
+        finally:
+            self.db.close()
+
+
+    def get_last_deploy_task_number(self, app_name):
+        # Вернет номер последней таски из таблицы релизов
+        try:
+            result = ''
+            self.db.connect(reuse_if_open=True)
+            db_result = (Releases_List
+                        .select(Releases_List.jira_task)
+                        .where(Releases_List.app_name == app_name, Releases_List.resolution != 'None')
+                        .order_by(Releases_List.id.desc())
+                        .limit(1))
+            for r in db_result:
+                if r.jira_task:
+                    result = r.jira_task
+                else:
+                    result = ''
+            return result
+        except Exception as e:
+            logger.exception('exception in get last deploy task number %s', e)
+            return result
+        finally:
+            self.db.close()
+
+
     def get_last_success_app_version(self, app_name, offset=0):
         # Вернет версию компоненты, успешно выехавшую на бой, отступив на offset релизов. 
         # Последня - это offset=0, предпоследняя - offset=1. Для роллбека
         try:
-            logger.info('get_last_success_app_version %s ', app_name)
             result = ''
             self.db.connect(reuse_if_open=True)
             db_result = (Releases_List
