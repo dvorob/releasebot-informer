@@ -695,7 +695,7 @@ async def app_info(message: types.Message):
                     msg += f"\n <a href='https://wiki.yooteam.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster-%D0%A0%D0%B5%D0%B6%D0%B8%D0%BC%D1%8B%D0%B2%D1%8B%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B8Modes'>Подробнее о параметрах</a>\n"
                     if len(last_release) > 0:
                         msg+= f"Последний успешный релиз: {config.jira_host}/browse/{last_release}\n\n"
-                    elif:
+                    else:
                         msg+= f"Последний успешный релиз: не найден\n\n"
                     if app_info["bot_enabled"]:
                         msg += f'\n :green_circle: Бот <strong>включен</strong> для приложения'
