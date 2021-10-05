@@ -740,7 +740,7 @@ async def dev_team_info(message: types.Message):
     except Exception as e:
         logger.exception('Error in DEV TEAM INFO %s', e)
 
-@initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['where_app'])
+@initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['where_app', 'where'])
 async def where_app_hosts(message: types.Message):
     """
     Запросить список гипервизоров, где в данный момент находится приложение
@@ -850,12 +850,12 @@ async def send_message_to_users(request):
         for acc in data_json['accounts']:
             user_from_db = await db().get_users('account_name', re.sub('@yamoney.ru|@yoomoney.ru|@', '', acc))
             if len(user_from_db) > 0:
-                if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
-                    set_of_chat_id.append(user_from_db[0]['tg_id'])
+                if user_from_db[0]['tg_login'] != None and user_from_db[0]['working_status'] != 'dismissed':
+                    set_of_chat_id.append(user_from_db[0]['tg_login'])
 
         logger.info('sending message for %s', set_of_chat_id)
         for chat_id in set_of_chat_id:
-            await send_message_to_tg_chat(chat_id, data_json['text'], disable_notification, ParseMode.HTML, escape_html)
+            await send_message_to_tg_chat('@'+chat_id, data_json['text'], disable_notification, ParseMode.HTML, escape_html)
 
     if 'jira_tasks' in data_json:
         for task in data_json['jira_tasks']:
