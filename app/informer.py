@@ -82,12 +82,10 @@ async def write_chat_id(message: types.Message):
     """
     logger.info('write chat id started for : %s %s %s %s', message.from_user.username, message.from_user.id, message.chat.title, message.chat.id)
     try:
-        logger.info('write my chat id found user info %s', user_info)
-        message.from_user.username: message.chat.id
         await db().set_user_tg_id(tg_login=message.chat.title, tg_id=str(message.chat.id))
-        logger.info('wirhte my chat id done for %s %s', str(message.from_user.id), str(message.chat.id))
-    except Exception:
-        logger.exception('write chat id exception')
+    except Exception as e:
+        logger.exception(f'write chat id exception {str(e)}')
+
 
 # /duty command from chatbot
 @initializeBot.dp.message_handler(filters.restricted, commands=['duty'])
