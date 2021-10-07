@@ -958,15 +958,16 @@ async def inform_subscribers(request):
     if 'notification' in data_json:
         subscribers = await db().get_all_users_with_subscription(data_json['notification'])
         logger.info('Inform subscribers going through list %s', subscribers)
-        for users in subscribers:
+        for user in subscribers:
             try:
-                logger.info('Inform subscribers sending message to %s %s %s', users['tg_login'], users['tg_id'], data_json['text'])
-                await bot.send_message(chat_id=users['tg_id'], text=data_json['text'], 
-                                       disable_notification=True, parse_mode=ParseMode.HTML)
+                logger.info(f'Inform subscribers sending message to {user['tg_login']}, {user['tg_id']}, {data_json['text']}')
+                if user['tg_id'] and user['working_status'] != 'dismissed':
+                    await bot.send_message(chat_id=user['tg_id'], text=data_json['text'], 
+                                           disable_notification=True, parse_mode=ParseMode.HTML)
             except BotBlocked:
-                logger.info('Error Inform subscribers bot was blocked by %s', users)
+                logger.info('Error Inform subscribers bot was blocked by %s', user)
             except ChatNotFound:
-                logger.error('Error Inform subscribers Chat not found: %s', users)        
+                logger.error('Error Inform subscribers Chat not found: %s', user)        
             except Exception as e:
                 logger.exception('Error inform subscribers %s', e)
     return web.json_response()
