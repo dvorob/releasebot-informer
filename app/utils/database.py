@@ -357,6 +357,18 @@ class PostgresPool:
         finally:
             self.db.close()
 
+    async def set_user_tg_id(self, tg_login, tg_id):
+        # Выставить tg_id для данного чата (если отправленно из группового чата, выставит id чата, если найдет его)
+        logger.info(f'set user tg_id {account_name} {tg_id}')
+        try:
+            self.db.connect(reuse_if_open=True)
+            db_rec, _ = User_Subscriptions.get_or_create(tg_login=fn.Lower(tg_login), tg_id=tg_id)
+            db_rec.save()
+        except Exception as e:
+            logger.exception('exception in set user tg_id %s', e)
+        finally:
+            self.db.close()
+
     async def get_user_subscriptions(self, account_name) -> list:
         # Вернуть все подписки конкретного пользователя
         logger.debug('get user subscriptions %s ', account_name)

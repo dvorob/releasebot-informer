@@ -80,14 +80,12 @@ async def write_chat_id(message: types.Message):
         {@tg_username: tg_chat_id}
         Using for private notifications
     """
-    logger.info('write chat id started for : %s %s %s', message.from_user.username, message.from_user.id, message.chat.id)
+    logger.info('write chat id started for : %s %s %s %s', message.from_user.username, message.from_user.id, message.chat.title, message.chat.id)
     try:
-        user_info = await db().search_users_by_account(str(message.from_user.username))
-        if len(user_info) > 0:
-            logger.info('write my chat id found user info %s', user_info)
-            message.from_user.username: message.chat.id
-            await db().set_users(user_info[0]['account_name'], full_name=None, tg_login=None, working_status=None, tg_id=str(message.chat.id), email=None)
-            logger.info('wirhte my chat id done for %s %s', str(message.from_user.id), str(message.chat.id))
+        logger.info('write my chat id found user info %s', user_info)
+        message.from_user.username: message.chat.id
+        await db().set_user_tg_id(tg_login=message.chat.title, tg_id=str(message.chat.id))
+        logger.info('wirhte my chat id done for %s %s', str(message.from_user.id), str(message.chat.id))
     except Exception:
         logger.exception('write chat id exception')
 
@@ -99,7 +97,7 @@ async def duty_admin(message: types.Message):
         Берется из xerxes.duty_list (таблица заполняется модулем Assistant, раз в час на основании календаря AdminsOnDuty)
     """
     try:
-        logger.info('def duties admin started: %s %s', returnHelper.return_name(message), message.chat.id)
+        logger.info('def duties admin started: %s %s %s', returnHelper.return_name(message), message.chat.title, message.chat.id)
         message.bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.typing)
         cli_args = message.text.split()
         # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов
