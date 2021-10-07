@@ -362,7 +362,7 @@ class PostgresPool:
         logger.info(f'set user tg_id {tg_login} {tg_id}')
         try:
             self.db.connect(reuse_if_open=True)
-            db_rec, _ = User_Subscriptions.get_or_create(tg_login=fn.Lower(tg_login), tg_id=tg_id)
+            db_rec, _ = Users.get_or_create(tg_login=fn.Lower(tg_login), tg_id=tg_id)
             db_rec.save()
         except Exception as e:
             logger.exception('exception in set user tg_id %s', e)
