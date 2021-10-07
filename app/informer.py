@@ -960,7 +960,7 @@ async def inform_subscribers(request):
         logger.info('Inform subscribers going through list %s', subscribers)
         for user in subscribers:
             try:
-                logger.info(f'Inform subscribers sending message to {user['tg_login']}, {user['tg_id']}, {data_json['text']}')
+                logger.info(f"Inform subscribers sending message to {user['tg_login']}, {user['tg_id']}, {data_json['text']}")
                 if user['tg_id'] and user['working_status'] != 'dismissed':
                     await bot.send_message(chat_id=user['tg_id'], text=data_json['text'], 
                                            disable_notification=True, parse_mode=ParseMode.HTML)
