@@ -82,7 +82,8 @@ async def write_chat_id(message: types.Message):
     """
     logger.info('write chat id started for : %s %s %s %s', message.from_user.username, message.from_user.id, message.chat.title, message.chat.id)
     try:
-        await db().set_user_tg_id(tg_login=message.chat.title, tg_id=str(message.chat.id))
+        tg_login = message.chat.title if message.chat.title else message.from_user.username
+        await db().set_user_tg_id(tg_login=tg_login, tg_id=str(message.chat.id))
     except Exception as e:
         logger.exception(f'write chat id exception {str(e)}')
 
