@@ -1,12 +1,11 @@
-## YMreleaseBot configuration
+---
+## releaseot configuration
 
-ymreleasebot:
+releasebot:
   name: 'releasebot-informer'
   app_type: 'python'
-  app_name: 'ymreleasebot'
+  app_name: 'releasebot'
   kafka_log_topic: 'yamoney_python_ymreleasebot'
-  service_port: 80
-  target_port: 8080
   count_replicas: 1
   image: 'docker-ym.nexus.yamoney.ru/yamoney/releasebot-informer'
   tag: 'latest'
@@ -17,27 +16,11 @@ ymreleasebot:
       value: 3306
     ip: 10.200.51.2
   logging:
-    configmap_name: 'log-config-ymreleasebot-informer'
+    configmap_name: 'log-config-releasebot-informer'
   resources:
     requests:
       memory: 128Mi
-      cpu: 128m
+      cpu: '100m'
     limits:
-      memory: 256Mi
-      cpu: 512m
-  secrets:
-    mysql:
-      name: 'mysql'
-      pass: <value>
-      user: <value>
-    jira:
-      name: 'jira'
-      pass: <value>
-      user: <value>
-    telegram:
-      name: 'telegram'
-      value: <value>
-    postgres:
-      name: 'postgres'
-      pass: <value>
-      user: <value>
+      memory: 512Mi
+      cpu: '200m'

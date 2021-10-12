@@ -1,0 +1,11 @@
+---
+
+- hosts: localhost
+  become: false
+  gather_facts: false
+  connection: local
+
+  roles:
+    - role: get_secret_vault
+      tags:
+        - get_secret_vault

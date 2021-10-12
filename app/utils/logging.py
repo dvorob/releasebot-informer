@@ -9,7 +9,7 @@ def setup():
     """
         Initialization logging system
     """
-    logging.config.fileConfig('/etc/xerxes/logging_informer_new.conf')
+    logging.config.fileConfig('/opt/app/logging.conf')
     logger = logging.getLogger("informer")
     logger.propagate = False
     return logger
