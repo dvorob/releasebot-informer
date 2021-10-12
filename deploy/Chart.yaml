@@ -1,5 +1,7 @@
+---
+
 apiVersion: v1
 appVersion: "1.1"
-description: A Helm chart for YMreleaseBot
-name: YMreleaseBot-informer
-version: 0.1.2
+description: A Helm chart for releasebot
+name: releasebot-informer
+version: 0.1.1
