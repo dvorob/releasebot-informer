@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from os import getenv
+import os
 from playhouse.pool import PostgresqlDatabase, PooledPostgresqlDatabase
 
-bot_token = getenv('secret_telegram_token')
+bot_token = os.environ.get('secret_telegram_token')
 
 #PG configuration
 postgres = PooledPostgresqlDatabase(
     'release_bot',
-    user=getenv('secret_postgres_user').rstrip(),
-    password=getenv('secret_postgres_pass').rstrip(),
+    user=os.environ.get('secret_postgres_user').rstrip(),
+    password=os.environ.get('secret_postgres_pass').rstrip(),
     host='iva-pgtools2.yamoney.ru',
     port=7432,
     max_connections=32,
@@ -31,8 +31,8 @@ api_get_timetable = f'{api}/exchange/get_timetable'
 staff_url = 'https://staff.yooteam.ru'
 
 jira_host = 'https://jira.yooteam.ru'
-jira_user = getenv('secret_jira_user')
-jira_pass = getenv('secret_jira_pass')
+jira_user = os.environ.get('secret_jira_user')
+jira_pass = os.environ.get('secret_jira_pass')
 jira_options = {'server': jira_host, 'verify': False}
 
 tt_api_url = f'{jira_host}/rest/teamtransitions/2.0/member/'
