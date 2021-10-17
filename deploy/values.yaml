@@ -7,14 +7,10 @@ releasebot:
   app_name: 'releasebot'
   kafka_log_topic: 'yamoney_python_ymreleasebot'
   count_replicas: 1
+  service_port: 80
+  target_port: 8080
   image: 'docker-ym.nexus.yamoney.ru/yamoney/releasebot-informer'
   tag: 'latest'
-  mysql:
-    name: mysql
-    port:
-      name: mysql-client
-      value: 3306
-    ip: 10.200.51.2
   logging:
     configmap_name: 'log-config-releasebot-informer'
   resources:
