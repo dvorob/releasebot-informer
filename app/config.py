@@ -20,7 +20,7 @@ couch_db = {
     'host': 'ugr-couchdb1.yamoney.ru',
     'port': '5984',
     'db_name': 'lxc_collector',
-    'user': os.environ.get('couch_db_user').rstrip()
+    'user': os.environ.get('couch_db_user').rstrip(),
     'passwd': os.environ.get('couch_db_pass').rstrip()
 }
 
