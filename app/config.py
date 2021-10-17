@@ -4,7 +4,7 @@
 import os
 from playhouse.pool import PostgresqlDatabase, PooledPostgresqlDatabase
 
-bot_token = os.environ.get('telegram_token')
+bot_token = os.environ.get('telegram_token').rstrip()
 
 #PG configuration
 postgres = PooledPostgresqlDatabase(

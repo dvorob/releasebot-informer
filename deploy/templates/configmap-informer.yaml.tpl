@@ -27,7 +27,7 @@ data:
   postgres_pass: {{ $conf.secrets.postgres.pass | b64enc | quote }}
   postgres_user: {{ $conf.secrets.postgres.user | b64enc | quote }}
   staff_token: {{ $conf.secrets.staff.token | b64enc | quote }}
-  telegram_value: {{ $conf.secrets.telegram.token | b64enc | quote }}
+  telegram_token: {{ $conf.secrets.telegram.token | b64enc | quote }}
   zabbix_pass: {{ $conf.secrets.zabbix.pass | b64enc | quote }}
   zabbix_user: {{ $conf.secrets.zabbix.user | b64enc | quote }}
   
