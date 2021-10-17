@@ -1,5 +1,7 @@
 ---
 
+couch_db_user: "{{ lookup('hashivault', 'infra/service/releasebot/couch_db', 'user', version=2, mount_point='linux') }}"
+couch_db_password: "{{ lookup('hashivault', 'infra/service/releasebot/couch_db', 'password', version=2, mount_point='linux') }}"
 db_user: "{{ lookup('hashivault', 'infra/service/releasebot/db', 'user', version=2, mount_point='linux') }}"
 db_password: "{{ lookup('hashivault', 'infra/service/releasebot/db', 'password', version=2, mount_point='linux') }}"
 exchange_user: "{{ lookup('hashivault', 'infra/service/releasebot/exchange', 'user', version=2, mount_point='linux') }}"
