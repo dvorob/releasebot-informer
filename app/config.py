@@ -4,13 +4,13 @@
 import os
 from playhouse.pool import PostgresqlDatabase, PooledPostgresqlDatabase
 
-bot_token = os.environ.get('secret_telegram_token')
+bot_token = os.environ.get('telegram_token')
 
 #PG configuration
 postgres = PooledPostgresqlDatabase(
     'release_bot',
-    user=os.environ.get('secret_postgres_user').rstrip(),
-    password=os.environ.get('secret_postgres_pass').rstrip(),
+    user=os.environ.get('postgres_user').rstrip(),
+    password=os.environ.get('postgres_pass').rstrip(),
     host='iva-pgtools2.yamoney.ru',
     port=7432,
     max_connections=32,
@@ -20,8 +20,8 @@ couch_db = {
     'host': 'ugr-couchdb1.yamoney.ru',
     'port': '5984',
     'db_name': 'lxc_collector',
-    'user': 'admin',
-    'passwd': '2G1FgGEuJtFmZxQWh3aN'
+    'user': os.environ.get('couch_db_user').rstrip()
+    'passwd': os.environ.get('couch_db_pass').rstrip()
 }
 
 api = 'http://releasebot-api'
@@ -31,8 +31,8 @@ api_get_timetable = f'{api}/exchange/get_timetable'
 staff_url = 'https://staff.yooteam.ru'
 
 jira_host = 'https://jira.yooteam.ru'
-jira_user = os.environ.get('secret_jira_user')
-jira_pass = os.environ.get('secret_jira_pass')
+jira_user = os.environ.get('jira_user')
+jira_pass = os.environ.get('jira_pass')
 jira_options = {'server': jira_host, 'verify': False}
 
 tt_api_url = f'{jira_host}/rest/teamtransitions/2.0/member/'

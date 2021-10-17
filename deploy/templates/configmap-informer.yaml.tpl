@@ -11,6 +11,8 @@ kind: Secret
 metadata:
   name: {{ include "releasebot.fullname" . }}
 data:
+  couch_db_pass: {{ $conf.secrets.couch_db.pass | b64enc | quote }}
+  couch_db_user: {{ $conf.secrets.couch_db.user | b64enc | quote }}
   exchange_pass: {{ $conf.secrets.exchange.pass | b64enc | quote }}
   exchange_user: {{ $conf.secrets.exchange.user | b64enc | quote }}
   jenkins_base_pass: {{ $conf.secrets.jenkins.base_pass | b64enc | quote }}

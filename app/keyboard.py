@@ -48,7 +48,6 @@ def main_menu() -> types.InlineKeyboardMarkup:
 def subscribe_menu() -> types.InlineKeyboardMarkup:
     """
         Build menu with subscribe/unsubscribe options
-        :return:
     """
     button_list = [
         types.InlineKeyboardButton("События по релизам",
