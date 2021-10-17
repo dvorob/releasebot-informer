@@ -17,4 +17,4 @@ spec:
   selector:
     app: {{ $conf.name }}
   type: LoadBalancer
-  loadBalancerIP: 10.200.193.103
+  loadBalancerIP: 10.250.16.100
