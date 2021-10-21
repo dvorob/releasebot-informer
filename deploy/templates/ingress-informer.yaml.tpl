@@ -13,6 +13,7 @@ spec:
     http:
       paths:
       - path: {{ $conf.ingress.path }}
+        pathType: {{ $conf.ingress.pathType }}
         backend:
           service:
             name: {{ include "releasebot.fullname" . }}
