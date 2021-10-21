@@ -11,6 +11,10 @@ releasebot:
   target_port: 8080
   image: 'docker-ym.nexus.yamoney.ru/yamoney/releasebot-informer'
   tag: 'latest'
+  ingress:
+    host: releasebot-informer
+    path: /
+    pathType: ImplementationSpecific
   logging:
     configmap_name: 'log-config-releasebot-informer'
   resources:
