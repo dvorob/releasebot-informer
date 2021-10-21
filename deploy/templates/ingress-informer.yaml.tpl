@@ -9,13 +9,13 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-  - host: {{ $conf.ingress.host }}
+  - host: 'informer.intools.yooteam.ru'
     http:
       paths:
       - path: {{ $conf.ingress.path }}
         pathType: {{ $conf.ingress.pathType }}
         backend:
           service:
-            name: {{ include "releasebot.fullname" . }}
+            name: 'informer'
             port:
               number: {{ $conf.service_port }}
