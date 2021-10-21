@@ -9,10 +9,10 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-  - host: {{ $conf.ingress.host }} # доменное имя
+  - host: {{ $conf.ingress.host }}
     http:
       paths:
-      - path: {{ . }}
+      - path: {{ $conf.ingress.path }}
         pathType: {{ $conf.ingress.pathType }}
         backend:
           service:
