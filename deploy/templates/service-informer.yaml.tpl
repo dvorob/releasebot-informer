@@ -9,10 +9,6 @@ spec:
   ports:
   - name: {{ $conf.name }}
     port: {{ $conf.service_port }}
-    protocol: TCP
-    targetPort: {{ $conf.target_port }}
-  - name: http
-    port: 8080
     targetPort: {{ $conf.target_port }}
   selector:
     app: {{ $conf.name }}
