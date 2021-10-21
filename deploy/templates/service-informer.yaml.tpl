@@ -16,5 +16,4 @@ spec:
     targetPort: {{ $conf.target_port }}
   selector:
     app: {{ $conf.name }}
-  type: LoadBalancer
-  loadBalancerIP: 10.250.16.100
+  type: ClusterIP
