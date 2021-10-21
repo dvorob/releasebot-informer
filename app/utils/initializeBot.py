@@ -7,6 +7,6 @@ from aiogram import Bot, Dispatcher
 from aiogram_aiohttp_session import AiohttpSession
 import config as config
 
-session = AiohttpSession(proxy="http://proxy.yamoney.ru:3128/")
-bot = Bot(token=config.bot_token, session=session)
+PROXY_URL="http://proxy.yamoney.ru:3128/"
+bot = Bot(token=config.bot_token, proxy=PROXY_URL)
 dp = Dispatcher(bot)
