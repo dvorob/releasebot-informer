@@ -18,4 +18,4 @@ spec:
           service: # указываем на какой сервис ingress должен пересылать трафик
             name: {{ $conf.name }}
             port:
-              number: 80
+              number: 8100
