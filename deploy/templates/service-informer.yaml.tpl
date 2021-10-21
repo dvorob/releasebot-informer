@@ -7,7 +7,7 @@ metadata:
   name: {{ $conf.name }}
 spec:
   ports:
-  - name: {{ $conf.name }}
+  - name: 'informer'
     port: {{ $conf.service_port }}
     targetPort: {{ $conf.target_port }}
   selector:
