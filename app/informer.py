@@ -1166,7 +1166,7 @@ def start_webserver():
     app.add_routes([web.get('/get_duty/{area}', get_duty_external)])
     app.add_routes([web.get('/get_duty', get_duty_external)])
     loop.run_until_complete(runner.setup())
-    site = web.TCPSite(runner, port=8080)
+    site = web.TCPSite(runner, port=8100)
     loop.run_until_complete(site.start())
 
 if __name__ == '__main__':
