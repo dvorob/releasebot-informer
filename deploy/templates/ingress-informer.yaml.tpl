@@ -6,14 +6,16 @@ kind: Ingress
 metadata:
   name: {{ $conf.name }}
   annotations:
-    kubernetes.io/ingress.class: nginx # класс контроллера. В нашем случаe nginx
+    kubernetes.io/ingress.class: nginx
 spec:
   rules:
   - host: {{ $conf.ingress.host }} # доменное имя
     http:
       paths:
       - path: {{ . }}
-        pathType: {{ $conf.ingress.pathType }} # https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
+        pathType: {{ $conf.ingress.pathType }}
         backend:
-          serviceName: {{ include "releasebot.fullname" . }}
-          servicePort: {{ $conf.service_port }}
+          service:
+            name: {{ include "releasebot.fullname" . }}
+            port:
+              number: {{ $conf.service_port }}
