@@ -2,7 +2,7 @@
 ## releaseot configuration
 
 releasebot:
-  name: 'informer'
+  name: 'releasebot-informer'
   app_type: 'python'
   app_name: 'informer'
   kafka_log_topic: 'yamoney_python_ymreleasebot'
