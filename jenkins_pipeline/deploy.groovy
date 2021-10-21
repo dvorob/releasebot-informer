@@ -51,14 +51,14 @@ node('docker') {
                     sh '''
                     cd ./deploy &&
                     helm lint . --kubeconfig ../ansible/kubeconfig.yml -f values.yaml -f ../ansible/secret_values.yml -n releasebot
-                    helm install --dry-run releasebot-informer . --kubeconfig ../ansible/kubeconfig.yml -f ../ansible/secret_values.yml -f ../tag-values.yaml -n releasebot
+                    helm install --dry-run informer . --kubeconfig ../ansible/kubeconfig.yml -f ../ansible/secret_values.yml -f ../tag-values.yaml -n releasebot
                     '''
                     notifyBitbucket(buildStatus: 'INPROGRESS')
                 }
                 stage('helm install') {
                     sh '''
                     cd ./deploy &&
-                    helm upgrade --install releasebot-informer . --kubeconfig ../ansible/kubeconfig.yml -f ../ansible/secret_values.yml -f ../tag-values.yaml -n releasebot
+                    helm upgrade --install informer . --kubeconfig ../ansible/kubeconfig.yml -f ../ansible/secret_values.yml -f ../tag-values.yaml -n releasebot
                     '''
                 }
                 notifyBitbucket(buildStatus: 'SUCCESSFUL')

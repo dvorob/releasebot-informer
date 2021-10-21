@@ -1,5 +1,5 @@
 ---
 
 - name: Helm chart checking template
-  shell: "helm install --dry-run releasebot-informer . --kubeconfig ../ansible/kubeconfig.yml -f values.yaml -f ../ansible/secret_values.yml -n releasebot"
+  shell: "helm install --dry-run informer . --kubeconfig ../ansible/kubeconfig.yml -f values.yaml -f ../ansible/secret_values.yml -n releasebot"
   register: check_chart
