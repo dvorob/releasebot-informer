@@ -31,7 +31,7 @@ node('docker') {
                         image_build.push(image_version)
                         image_build.push('latest')
                     }
-                    notifyBitbucket(buildStatus: 'INPROGRESS')
+                    //notifyBitbucket(buildStatus: 'INPROGRESS')
                 }
                 stage('get secret from vault') {
                     // set credential for get secret from Vault
@@ -44,13 +44,14 @@ node('docker') {
                     ansiblePlaybook credentialsId: credentials.jenkins,
                                     playbook: './ansible/site.yml',
                                     colorized: true
-                    notifyBitbucket(buildStatus: 'INPROGRESS')
+                    //notifyBitbucket(buildStatus: 'INPROGRESS')
                 }
                 stage('helm lint') {
                     echo 'Linting helm'
                     sh '''
                     cd ./deploy &&
                     helm lint . --kubeconfig ../ansible/kubeconfig.yml -f values.yaml -f ../ansible/secret_values.yml -n releasebot
+                    helm install --dry-run releasebot-informer . --kubeconfig ../ansible/kubeconfig.yml -f ../ansible/secret_values.yml -f ../tag-values.yaml -n releasebot
                     '''
                     notifyBitbucket(buildStatus: 'INPROGRESS')
                 }
@@ -60,12 +61,12 @@ node('docker') {
                     helm upgrade --install releasebot-informer . --kubeconfig ../ansible/kubeconfig.yml -f ../ansible/secret_values.yml -f ../tag-values.yaml -n releasebot
                     '''
                 }
-                notifyBitbucket(buildStatus: 'SUCCESSFUL')
+                //notifyBitbucket(buildStatus: 'SUCCESSFUL')
                 currentBuild.result = 'SUCCESS'
             }
         } catch(Exception e) {
                 println "Error: ${e.message}"
-                notifyBitbucket(buildStatus: 'FAILED')
+                //notifyBitbucket(buildStatus: 'FAILED')
                 currentBuild.result = 'FAILED'
         } finally {
                 sh '''
