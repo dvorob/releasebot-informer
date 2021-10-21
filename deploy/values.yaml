@@ -12,7 +12,7 @@ releasebot:
   image: 'docker-ym.nexus.yamoney.ru/yamoney/releasebot-informer'
   tag: 'latest'
   ingress:
-    host: releasebot-informer
+    host: 'informer'
     path: /
     pathType: ImplementationSpecific
   logging:
