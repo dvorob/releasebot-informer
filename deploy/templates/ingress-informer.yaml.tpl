@@ -12,10 +12,8 @@ spec:
   - host: {{ $conf.ingress.host }} # доменное имя
     http:
       paths:
-      - path: {{ $conf.ingress.path }}
+      - path: {{ . }}
         pathType: {{ $conf.ingress.pathType }} # https://kubernetes.io/docs/concepts/services-networking/ingress/#path-types
         backend:
-          service: # указываем на какой сервис ingress должен пересылать трафик
-            name: {{ $conf.name }}
-            port:
-              number: 8100
+          serviceName: {{ include "releasebot.fullname" . }}
+          servicePort: {{ $conf.service_port }}
