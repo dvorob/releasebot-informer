@@ -1,5 +1,6 @@
 aiogram
 aiohttp
+aiogram_aiohttp_session 
 apscheduler
 asyncio
 couchdb
