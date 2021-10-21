@@ -4,7 +4,6 @@
 Initialization of bot
 """
 from aiogram import Bot, Dispatcher
-from aiogram_aiohttp_session import AiohttpSession
 import config as config
 
 PROXY_URL="http://proxy.yamoney.ru:3128/"
