@@ -16,6 +16,6 @@ spec:
         pathType: {{ $conf.ingress.pathType }}
         backend:
           service:
-            name: {{ include "releasebot.fullname" . }}
+            name: {{ $conf.app_name }}
             port:
               number: {{ $conf.service_port }}
