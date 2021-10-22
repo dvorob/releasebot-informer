@@ -4,10 +4,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $conf.name }}
+  name: {{ $conf.app_name }}
 spec:
   ports:
-  - name: {{ $conf.name }}
+  - name: {{ $conf.app_name }}
     port: {{ $conf.service_port }}
     targetPort: {{ $conf.target_port }}
   selector:
