@@ -24,8 +24,8 @@ couch_db = {
     'passwd': os.environ.get('couch_db_pass').rstrip()
 }
 
-api = 'http://releasebot-api'
-api_lock_unlock = f'{api}/api-v1/tasks/lock_unlock'
+api = 'http://releasebot-api.intools.yooteam.ru'
+api_lock_unlock = f'{api}/api/tasks/lock_unlock'
 api_get_timetable = f'{api}/exchange/get_timetable'
 
 staff_url = 'https://staff.yooteam.ru'
