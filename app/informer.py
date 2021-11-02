@@ -138,7 +138,7 @@ async def timetable_personal(message: types.Message):
 
         if len(user_from_db) > 0:
 
-            header = {'calendar_email': user_from_db[0]['email'], 'afterdays': str(after_days), 'email': user_from_db[0]['email']}
+            header = {'email': user_from_db[0]['email'], 'afterdays': str(after_days)}
             logger.info('timetable personal: %s %s', message.from_user.username, header)
 
             session = await get_session()
