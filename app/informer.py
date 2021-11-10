@@ -1090,9 +1090,8 @@ async def unknown_message(message: types.Message):
     msg = emojize(f'{bold(message.from_user.full_name)},\n'
                   f'Я не знаю, как ответить на {message.text} :astonished:\n'
                   'Список того, что я умею - /help')
-    if (message.chat.id not in (-1001366072325, -536931391) 
-       or message.chat.title not in ('YM-works-on-prod', 'Димон и бот')):
-        # id чата YM-works-on-prod, чтобы не спамил на реплаи
+    if (message.chat.type == 'private'):
+        # чтобы не спамил на реплаи в группах, а только в личку 
         logger.info('-- UNKNOWN MESSAGE HERE')
         await message.reply(msg, parse_mode=ParseMode.HTML)
 
