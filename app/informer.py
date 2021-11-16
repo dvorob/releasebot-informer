@@ -367,7 +367,7 @@ async def lock_app_release(message: types.Message):
         elif message.get_full_command()[0].find('unlock') == 1:
             locked_app = {"lock": "", "unlock": incoming[1]}
         locked_app['locked_by'] = "@" + str(message.from_user.username)
-        logger.info('lock app release sent %s', locked_app)
+        logger.info(f'lock app release sent {locked_app} {str(message.from_user.username)} {type(message.from_user.username)}')
         await lock_releases(locked_app)
         get_app = db().get_application_metainfo(incoming[1])
         logger.info('lock app release %s ', get_app)
@@ -383,12 +383,11 @@ async def lock_releases(locked_app):
     logger.info(f'-- LOCK RELEASE {locked_app}')
     try:
         session = await get_session()
-        async with session.post(config.api_lock_unlock, headers=locked_app) as resp:
-            await resp.json()
-            logger.info('lock send locked app to api, status is: %s', resp.status)
+        resp = requests.post(config.api_lock_unlock, data=json.dumps(locked_app))
+        logger.info('lock send locked app to api, status is: %s', resp.status)
         return True
     except Exception as exc:
-        logger.exception('lock_unlock_task')
+        logger.exception(f'lock_unlock_task {str(exc)}')
         return str(exc)
 
 ##############################################################################################
@@ -991,7 +990,7 @@ async def lock_apps(request):
     if 'unlock' in data_json:
         locked_app["unlock"] = ','.join(data_json['unlock'])
         processed_apps = processed_apps + data_json['unlock']
-    locked_app['locked_by'] = 'from_api'
+    locked_app["locked_by"] = 'from_api'
     await lock_releases(locked_app)
     app_statuses = []
     for app in processed_apps:
