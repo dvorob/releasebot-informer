@@ -152,7 +152,9 @@ async def timetable_personal(message: types.Message):
 
     except Exception as e:
         logger.exception('error in timetable personal %s', str(e))
-        await message.answer(messages.timetable_error, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+        user_from_db = await db().get_users('tg_id', message.from_user.id)
+        if len(user_from_db) > 0:
+            await message.answer(messages.timetable_error, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
 
 
 async def create_duty_message(duty_date) -> str:
@@ -364,7 +366,7 @@ async def lock_app_release(message: types.Message):
             locked_app = {"lock": incoming[1], "unlock": ""}
         elif message.get_full_command()[0].find('unlock') == 1:
             locked_app = {"lock": "", "unlock": incoming[1]}
-
+        locked_app['locked_by'] = message.from_user.username
         logger.info('lock app release sent %s', locked_app)
         await lock_releases(locked_app)
         get_app = db().get_application_metainfo(incoming[1])
@@ -989,6 +991,7 @@ async def lock_apps(request):
     if 'unlock' in data_json:
         locked_app["unlock"] = ','.join(data_json['unlock'])
         processed_apps = processed_apps + data_json['unlock']
+    locked_app['locked_by'] = 'from_api'
     await lock_releases(locked_app)
     app_statuses = []
     for app in processed_apps:
