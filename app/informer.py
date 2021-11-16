@@ -699,7 +699,7 @@ async def app_info(message: types.Message):
                     if app_info["bot_enabled"]:
                         msg += f'\n :green_circle: Бот <strong>включен</strong> для приложения'
                     else:
-                        msg += f'\n :red_circle: Бот <strong>выключен</strong> для приложения, заблокировал <strong>{app_info["locked_by"]}</strong>'
+                    msg += f'\n :red_circle: Бот <strong>выключен</strong> для приложения, заблокировал <strong>{app_info["locked_by"]}</strong>'
                     locking_rl = get_lock_reasons(app_name)
                     if (len(locking_rl) > 0):
                         msg += f'\n :red_circle: Релиз <strong>заблокирован</strong> следующими компонентами:'
