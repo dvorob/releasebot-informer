@@ -58,8 +58,8 @@ spam = f'Привет! :raised_hand:\n' \
     f'--------------------------\n' \
     f'Хорошего дня!\n'
 
-timetable_error = 'Что-то пошло не так. Вероятно, вы не выдали доступ до своего календаря. ' \
-    'Подробнее читайте здесь -- https://wiki.yooteam.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster'
+timetable_error = 'Доброго дня. Спешу сообщить вам, что что-то пошло не так.\nВероятно, вы не выдали доступ до своего календаря. ' \
+    'Подробнее читайте <a href="https://wiki.yooteam.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster">здесь</a>'
 
 rl_board_empty = 'Я не смог найти тасок на релизной доске'
 
