@@ -154,7 +154,7 @@ async def timetable_personal(message: types.Message):
         logger.exception('error in timetable personal %s', str(e))
         user_from_db = await db().get_users('tg_id', message.from_user.id)
         if len(user_from_db) > 0:
-            await message.answer(messages.timetable_error, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+            await message.answer(messages.timetable_error.format(user_from_db[0][username]), reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
 
 
 async def create_duty_message(duty_date) -> str:
@@ -699,7 +699,7 @@ async def app_info(message: types.Message):
                     if app_info["bot_enabled"]:
                         msg += f'\n :green_circle: Бот <strong>включен</strong> для приложения'
                     else:
-                    msg += f'\n :red_circle: Бот <strong>выключен</strong> для приложения, заблокировал <strong>{app_info["locked_by"]}</strong>'
+                        msg += f'\n :red_circle: Бот <strong>выключен</strong> для приложения, заблокировал <strong>{app_info["locked_by"]}</strong>'
                     locking_rl = get_lock_reasons(app_name)
                     if (len(locking_rl) > 0):
                         msg += f'\n :red_circle: Релиз <strong>заблокирован</strong> следующими компонентами:'
