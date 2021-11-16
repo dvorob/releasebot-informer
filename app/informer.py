@@ -143,7 +143,7 @@ async def timetable_personal(message: types.Message):
 
             session = await get_session()
             async with session.get(config.api_get_timetable, headers=header) as resp:
-                data = await resp.json()
+                data = await resp.json(content_type=None)
             msg = data['message']
             logger.debug('get timetable personal from api: %s %s', resp.status, resp.json())
         else:
@@ -154,7 +154,8 @@ async def timetable_personal(message: types.Message):
         logger.exception('error in timetable personal %s', str(e))
         user_from_db = await db().get_users('tg_id', message.from_user.id)
         if len(user_from_db) > 0:
-            await message.answer(messages.timetable_error.format(user_from_db[0][username]), reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+            await message.answer(messages.timetable_error.format(user_from_db[0][first_name], user_from_db[0][middle_name]),
+                                 reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
 
 
 async def create_duty_message(duty_date) -> str:
