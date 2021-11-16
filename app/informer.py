@@ -366,7 +366,7 @@ async def lock_app_release(message: types.Message):
             locked_app = {"lock": incoming[1], "unlock": ""}
         elif message.get_full_command()[0].find('unlock') == 1:
             locked_app = {"lock": "", "unlock": incoming[1]}
-        locked_app['locked_by'] = message.from_user.username
+        locked_app['locked_by'] = "@" + str(message.from_user.username)
         logger.info('lock app release sent %s', locked_app)
         await lock_releases(locked_app)
         get_app = db().get_application_metainfo(incoming[1])
@@ -380,7 +380,7 @@ async def lock_app_release(message: types.Message):
 
 
 async def lock_releases(locked_app):
-    logger.info('-- LOCK RELEASE %s', locked_app)
+    logger.info(f'-- LOCK RELEASE {locked_app}')
     try:
         session = await get_session()
         async with session.post(config.api_lock_unlock, headers=locked_app) as resp:
@@ -699,7 +699,7 @@ async def app_info(message: types.Message):
                     if app_info["bot_enabled"]:
                         msg += f'\n :green_circle: Бот <strong>включен</strong> для приложения'
                     else:
-                        msg += f'\n :red_circle: Бот <strong>выключен</strong> для приложения'
+                        msg += f'\n :red_circle: Бот <strong>выключен</strong> для приложения, заблокировал <strong>{app_info["locked_by"]}</strong>'
                     locking_rl = get_lock_reasons(app_name)
                     if (len(locking_rl) > 0):
                         msg += f'\n :red_circle: Релиз <strong>заблокирован</strong> следующими компонентами:'

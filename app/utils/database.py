@@ -30,6 +30,7 @@ class App_List(BaseModel):
     bot_enabled = BooleanField(default=None)
     dev_team = CharField(default=None)
     jira_com = CharField(default=None)
+    locked_by = CharField(default=None)
 
 class Option(BaseModel):
     name = CharField(unique=True)
