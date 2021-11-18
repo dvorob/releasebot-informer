@@ -145,6 +145,9 @@ async def timetable_personal(message: types.Message):
             async with session.get(config.api_get_timetable, headers=header) as resp:
                 data = await resp.json(content_type=None)
             msg = data['message']
+            if data['status'] == 'error':
+                if len(user_from_db) > 0:
+                    result['message'] = f"Уважаемый {user_from_db[0]['first_name']} {user_from_db[0]['middle_name']}!\n" + result['message']
             logger.debug('get timetable personal from api: %s %s', resp.status, resp.json())
         else:
             msg = f"Не нашел данных о {message.from_user.username} в своей БД"
