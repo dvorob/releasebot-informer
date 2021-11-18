@@ -1088,15 +1088,22 @@ async def unknown_message(message: types.Message):
     """
     """
     logger.info('-- UNKNOWN MESSAGE start %s %s', message, message.chat)
-    # is_restricted = await filters.restricted(message)
-    # if is_restricted:
-    msg = emojize(f'{bold(message.from_user.full_name)},\n'
-                  f'Я не знаю, как ответить на {message.text} :astonished:\n'
-                  'Список того, что я умею - /help')
-    if (message.chat.type == 'private'):
-        # чтобы не спамил на реплаи в группах, а только в личку 
-        logger.info('-- UNKNOWN MESSAGE HERE')
-        await message.reply(msg, parse_mode=ParseMode.HTML)
+    try:
+        user_from_db = await db().get_users('tg_login', message.from_user.username)
+        if len(user_from_db) > 0:
+            respectful_name = user_from_db[0]['first_name'] + " " + user_from_db[0]['middle_name']
+        else:
+            respectful_name = message.from_user.full_name
+        msg = emojize(f'{respectful_name},\n'
+                      f'Я не знаю, как ответить на {message.text} :astonished:\n'
+                      'Список того, что я умею - /help')
+        if (message.chat.type == 'private'):
+            # чтобы не спамил на реплаи в группах, а только в личку 
+            logger.info('-- UNKNOWN MESSAGE HERE')
+            await message.reply(msg, parse_mode=ParseMode.HTML)
+    except Exception as e:
+        logger.exception(f'Error in unknown_message {str(e)}')
+
 
 def _app_name_regex(issue_summary: str) -> dict:
     """

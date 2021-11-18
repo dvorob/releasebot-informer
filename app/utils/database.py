@@ -48,6 +48,8 @@ class Users(BaseModel):
     admin = IntegerField(default=0)
     date_update = DateField()
     staff_login = CharField()
+    first_name = CharField()
+    middle_name = CharField()
 
 class User_Subscriptions(BaseModel):
     id = IntegerField(primary_key=True)
