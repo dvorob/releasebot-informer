@@ -383,6 +383,27 @@ async def lock_app_release(message: types.Message):
         await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
 
+@initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['show_locks'])
+async def show_locked_apps(message: types.Message):
+    """
+
+    """
+    logger.info('show locked apps started by %s %s', returnHelper.return_name(message), message.get_full_command())
+    locked_apps = db().get_applications('bot_enabled', False, 'equal')
+    logger.info(locked_apps)
+    if len(locked_apps) > 0:
+        msg = f'Следующие приложения <b>заблокированы</b> для выкладки ботом:'
+        for app in locked_apps:
+            msg += f"\n<b> {app['app_name']} </b> , заблокировал {app['locked_by']}"
+    else:
+        user_from_db = await db().get_users('tg_id', message.from_user.id)
+        if len(user_from_db) > 0:
+            msg = f"Уважаемый {user_from_db[0]['first_name']} {user_from_db[0]['middle_name']}, заблокированных приложений нет."
+        else:
+            msg = f'Нет заблокированных приложений.'
+    await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+
+
 async def lock_releases(locked_app):
     logger.info(f'-- LOCK RELEASE {locked_app}')
     try:
