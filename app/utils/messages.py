@@ -38,7 +38,7 @@ help_admin = f'\n:raised_hand: <u>Админские команы</u>:' \
     f'Если инфы нет - бот ничего не покатит.' \
     f'\n<u>/lock </u><b>app_name</b> -- /lock shiro залочит выкладки приложений. ' \
     f'Меняет значение bot_enabled = false (оно же есть в metaconfig.yaml, но истина - в БД).' \
-    f'\n<u>/unlock </u><b>app_name</b> -- /unlock shiro, соответственно, запустит.'
+    f'\n<u>/unlock </u><b>app_name</b> -- /unlock shiro, соответственно, запустит.' \
     f'\n<u>/show_locks</u> -- вернёт список заблокированных для выкладки приложений.'
 
 main_menu = f'Отправьте /help, чтобы узнать, что я умею.\n' \
