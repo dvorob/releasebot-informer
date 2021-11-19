@@ -124,6 +124,31 @@ class PostgresPool:
             self.db.close()
 
 
+    def get_applications(self, field, value, operation) -> list:
+        # сходить в таблицу AppList и найти записи по заданному полю с заданным значением. Вернет массив словарей.
+        logger.info(f'get_applications {field} {value} {operation}')
+        result = []
+        try:
+            self.db.connect(reuse_if_open=True)
+            if operation == 'equal':
+                db_apps = App_List.select().where(getattr(App_List, field) == value)
+            elif operation == 'like':
+                db_apps = App_List.select().where(getattr(App_List, field) % value)
+            else:
+                db_apps = []
+            logger.info(db_apps)
+            for v in db_apps:
+                result.append((vars(v))['__data__'])
+            return result
+        except Exception:
+            logger.exception(f'exception in get apps {str(e)}')
+            return result
+        finally:
+            self.db.close()
+
+    # ---------------------------------
+    # ----- Users   -------------------
+
     async def set_users(self, account_name, full_name, tg_login, working_status, tg_id, notification, email):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
