@@ -927,7 +927,7 @@ async def get_dev_team_members(dev_team) -> str:
         # Поищем tg-логин пользователя
         user_from_db = await db().get_users('account_name', d['user']['login'])
         if len(user_from_db) > 0:
-            if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
+            if user_from_db[0]['tg_login'] != None and user_from_db[0]['working_status'] != 'dismissed':
                 msg += f"\n Telegram: <strong>@{user_from_db[0]['tg_login']}</strong>"
         msg += f"\n"
     return msg
