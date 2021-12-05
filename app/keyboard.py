@@ -4,6 +4,7 @@ Build different menus
 """
 from aiogram import types
 from aiogram.utils.callback_data import CallbackData
+from datetime import date, timedelta
 from utils.jiratools import JiraConnection
 from utils import logging, filters
 from utils.database import PostgresPool as db
@@ -114,7 +115,8 @@ def admin_menu() -> types.InlineKeyboardMarkup:
         types.InlineKeyboardButton('Don\'t touch new release',
                                    callback_data=posts_cb.new(action='dont_touch', issue='1')),
         types.InlineKeyboardButton('Release', callback_data=posts_cb.new(action='release_app_list', issue='1')),
-        types.InlineKeyboardButton('Rollback', callback_data=posts_cb.new(action='rollback_app_list', issue='1'))
+        types.InlineKeyboardButton('Rollback', callback_data=posts_cb.new(action='rollback_app_list', issue='1')),
+        types.InlineKeyboardButton('Взять дежурство', callback_data=posts_cb.new(action='take_duty_date_list', issue='1'))
     ]
     to_main = types.InlineKeyboardButton('Main menu', callback_data=posts_cb.new(action='main',
                                                                                  issue='1'))
@@ -139,6 +141,7 @@ def release_app_list() -> types.InlineKeyboardMarkup:
     except Exception as e:
         logger.exception('Error in KEYBOARD RELEASE APP LIST %s', e)
 
+
 def release_app_confirm(issue) -> types.InlineKeyboardMarkup:
     """
     """
@@ -149,6 +152,7 @@ def release_app_confirm(issue) -> types.InlineKeyboardMarkup:
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_confirm, n_cols=1, footer_buttons=release_app_list))
     except Exception as e:
         logger.exception('Error in KEYBOARD RELEASE APP CONFIRM %s', e)
+
 
 def rollback_app_list() -> types.InlineKeyboardMarkup:
     """
@@ -168,6 +172,7 @@ def rollback_app_list() -> types.InlineKeyboardMarkup:
     except Exception as e:
         logger.exception('Error in KEYBOARD ROLLBACK APP LIST %s', e)
 
+
 def rollback_app_confirm(issue) -> types.InlineKeyboardMarkup:
     """
     """
@@ -178,6 +183,34 @@ def rollback_app_confirm(issue) -> types.InlineKeyboardMarkup:
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_confirm, n_cols=1, footer_buttons=rollback_app_list))
     except Exception as e:
         logger.exception('Error in KEYBOARD ROLLBACK APP CONFIRM %s', e)
+
+
+def take_duty_date_list(issue) -> types.InlineKeyboardMarkup:
+    """
+    """
+    try:
+        dates_list = _get_list_of_dates(date.today(), 7)
+        button_release_list = []
+        logger.info('-- KEYBOARD TAKE DUTY LIST build menu for %s', duty_list)    
+        for dd in dates_list:
+            button_release_list.append(types.InlineKeyboardButton(f"{dd.strftime('%Y-%m-%d')}",
+                                       callback_data=posts_cb.new(action='take_duty', issue=dd.strftime('%Y-%m-%d'))))
+        to_admin = types.InlineKeyboardButton('Admin menu', callback_data=posts_cb.new(action='admin_menu', issue='1'))
+        return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=1, footer_buttons=to_admin))
+    except Exception as e:
+        logger.exception(f'Error in TAKE DUTY LIST{str(e)}')
+
+
+def take_duty_confirm(ddate, area) -> types.InlineKeyboardMarkup:
+    """
+    """
+    try:
+        logger.info(f'-- KEYBOARD TAKE DUTY CONFIRM build menu for issue {ddate} {area}')
+        button_confirm = [types.InlineKeyboardButton('Да', callback_data=posts_cb.new(action='take_duty', issue=issue))]
+        rollback_app_list = types.InlineKeyboardButton('Нет, спасибо', callback_data=posts_cb.new(action='take_duty_date_list', issue='1'))
+        return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_confirm, n_cols=1, footer_buttons=take_duty_date_list))
+    except Exception as e:
+        logger.exception(f'Error in TAKE DUTY CONFIRM {str(e)}')
 
 
 # def dev_team_members(dev_team) -> types.InlineKeyboardMarkup:
@@ -197,6 +230,16 @@ def rollback_app_confirm(issue) -> types.InlineKeyboardMarkup:
 #         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(kb, n_cols=1, footer_buttons=rollback_app_list))
 #     except Exception as e:
 #         logger.exception('Error in KEYBOARD DEV TEAM MEMBERS %s', e)
+
+
+def _get_list_of_dates(start_date: datetime.date, delta: int) -> list:
+    date_modified=start_date
+    date_list=[start_date]
+    while date_modified<start_date + timedelta(days=delta):
+        date_modified+=timedelta(days=1) 
+        date_list.append(date_modified)
+    return date_list
+
 
 def current_mode() -> str:
     """

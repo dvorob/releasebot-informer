@@ -508,7 +508,6 @@ async def rollback_app(query: types.CallbackQuery, callback_data: str):
     """
         Скормить релиз боту
     """
-    #issue_key = callback_data['issue_key']
     logger.info('-- ROLLBACK APP started by %s %s', returnHelper.return_name(query), callback_data)
     msg = f"Точно откатываем {callback_data['issue']} ?"
     await query.message.reply(text=msg, reply_markup=keyboard.rollback_app_confirm(callback_data['issue']), parse_mode=ParseMode.HTML)
@@ -519,7 +518,6 @@ async def rollback_app_confirm(query: types.CallbackQuery, callback_data: str):
     """
         Скормить релиз боту
     """
-    #issue_key = callback_data['issue_key']
     logger.info('-- ROLLBACK APP CONFIRM started by %s %s', returnHelper.return_name(query), callback_data)
     try:
         JiraConnection().transition_issue_with_resolution(callback_data['issue'], JiraTransitions.FULL_RESOLVED.value, {'id': '10300'})
@@ -527,6 +525,49 @@ async def rollback_app_confirm(query: types.CallbackQuery, callback_data: str):
     except Exception as e:
         logger.error('Error in ROLLBACK APP CONFIRM %s', e)
     await query.answer(f"Откатываю релиз {callback_data['issue']}. Потому что я красавчик.")
+
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='take_duty_date_list'), filters.restricted, filters.admin)
+async def take_duty_date_list(query: types.CallbackQuery, callback_data: str):
+    """
+        Список дат для взятия дежурства на себя
+    """
+    logger.info('-- TAKE DUTY DATE LIST menu opened by %s %s', returnHelper.return_name(query), callback_data)
+    msg = f'Выберите дату для дежурства:'
+    await query.message.reply(text=msg, reply_markup=keyboard.take_duty_date_list(), parse_mode=ParseMode.HTML)
+
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='take_duty_area_list'), filters.restricted, filters.admin)
+async def take_duty_area_list(query: types.CallbackQuery, callback_data: str):
+    """
+        Взять дежурство
+    """
+    logger.info('-- TAKE DUTY AREA LIST started by %s %s', returnHelper.return_name(query), callback_data)
+    msg = f"Выберите зону ответственности:"
+    await query.message.reply(text=msg, reply_markup=keyboard.take_duty_area_list(), parse_mode=ParseMode.HTML)
+
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='take_duty_confirm'), filters.restricted, filters.admin)
+async def take_duty_confirm(query: types.CallbackQuery, callback_data: str):
+    """
+        Подтвердить взятие дежурства
+    """
+    logger.info('-- TAKE DUTY CONFIRM started by %s %s', returnHelper.return_name(query), callback_data)
+    msg = f"Забираете дежурство {callback_data} ?"
+    await query.message.reply(text=msg, reply_markup=keyboard.take_duty(callback_data), parse_mode=ParseMode.HTML)
+
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='take_duty'), filters.restricted, filters.admin)
+async def take_duty(query: types.CallbackQuery, callback_data: str):
+    """
+       Взять дежурство (вызов в API)
+    """
+    logger.info('-- TAKE DUTY started by %s %s', returnHelper.return_name(query), callback_data)
+    try:
+        ВЫЗОВ API
+    except Exception as e:
+        logger.error(f'Error in TAKE DUTY {str(e)}')
+    await query.answer(f"Назначил на вас дежурство. Спасибо.")
 
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='dev_team_members'), filters.restricted)
