@@ -3,6 +3,7 @@
 
 import os
 from playhouse.pool import PostgresqlDatabase, PooledPostgresqlDatabase
+from enum import Enum
 
 bot_token = os.environ.get('telegram_token').rstrip()
 
@@ -27,6 +28,7 @@ couch_db = {
 bot_api_url = 'http://releasebot-api.intools.yooteam.ru'
 api_lock_unlock = f'{bot_api_url}/api/tasks/lock_unlock'
 api_get_timetable = f'{bot_api_url}/exchange/get_timetable'
+api_take_duty = f'{bot_api_url}/api/take_duty'
 
 staff_url = 'https://staff.yooteam.ru'
 
@@ -65,3 +67,12 @@ issues_waiting_confirm = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (
 
 issues_not_closed_resolved = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" ' \
                            'AND status NOT IN (Closed, Resolved) ORDER BY Rank ASC'
+
+class DaysOfWeek(Enum):
+    Monday = 'Понедельник'
+    Tuesday = 'Вторник'
+    Wednesday = 'Среда'
+    Thursday = 'Четверг'
+    Friday = 'Пятница'
+    Saturday = 'Суббота'
+    Sunday = 'Воскресенье'

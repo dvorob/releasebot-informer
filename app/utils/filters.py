@@ -29,11 +29,16 @@ def callback_filter() -> CallbackData:
     return CallbackData("prefix", "issue", "action")
 
 
+def duty_callback() -> CallbackData:
+    """
+        Create callback filter
+    """
+    return CallbackData("prefix", "ddate", "area", "action")
+
+
 async def admin(message: types.message) -> bool:
     """
         Filter for admin functions
-        :param message:
-        :return: True or false
     """
     try:
         user_info = await db().search_users_by_account(str(message.from_user.username))
