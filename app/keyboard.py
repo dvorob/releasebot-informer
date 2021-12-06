@@ -4,6 +4,7 @@ Build different menus
 """
 from aiogram import types
 from aiogram.utils.callback_data import CallbackData
+from datetime import date, datetime, timedelta
 from utils.jiratools import JiraConnection
 from utils import logging, filters
 from utils.database import PostgresPool as db
@@ -11,6 +12,7 @@ import config
 
 logger = logging.setup()
 posts_cb = filters.callback_filter()
+duty_cb = filters.duty_callback()
 
 def main_menu() -> types.InlineKeyboardMarkup:
     """
@@ -114,7 +116,8 @@ def admin_menu() -> types.InlineKeyboardMarkup:
         types.InlineKeyboardButton('Don\'t touch new release',
                                    callback_data=posts_cb.new(action='dont_touch', issue='1')),
         types.InlineKeyboardButton('Release', callback_data=posts_cb.new(action='release_app_list', issue='1')),
-        types.InlineKeyboardButton('Rollback', callback_data=posts_cb.new(action='rollback_app_list', issue='1'))
+        types.InlineKeyboardButton('Rollback', callback_data=posts_cb.new(action='rollback_app_list', issue='1')),
+        types.InlineKeyboardButton('Взять дежурство', callback_data=duty_cb.new(action='take_duty_date_list', ddate='1', area='1'))
     ]
     to_main = types.InlineKeyboardButton('Main menu', callback_data=posts_cb.new(action='main',
                                                                                  issue='1'))
@@ -139,6 +142,7 @@ def release_app_list() -> types.InlineKeyboardMarkup:
     except Exception as e:
         logger.exception('Error in KEYBOARD RELEASE APP LIST %s', e)
 
+
 def release_app_confirm(issue) -> types.InlineKeyboardMarkup:
     """
     """
@@ -149,6 +153,7 @@ def release_app_confirm(issue) -> types.InlineKeyboardMarkup:
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_confirm, n_cols=1, footer_buttons=release_app_list))
     except Exception as e:
         logger.exception('Error in KEYBOARD RELEASE APP CONFIRM %s', e)
+
 
 def rollback_app_list() -> types.InlineKeyboardMarkup:
     """
@@ -168,6 +173,7 @@ def rollback_app_list() -> types.InlineKeyboardMarkup:
     except Exception as e:
         logger.exception('Error in KEYBOARD ROLLBACK APP LIST %s', e)
 
+
 def rollback_app_confirm(issue) -> types.InlineKeyboardMarkup:
     """
     """
@@ -178,6 +184,52 @@ def rollback_app_confirm(issue) -> types.InlineKeyboardMarkup:
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_confirm, n_cols=1, footer_buttons=rollback_app_list))
     except Exception as e:
         logger.exception('Error in KEYBOARD ROLLBACK APP CONFIRM %s', e)
+
+
+def take_duty_date_list() -> types.InlineKeyboardMarkup:
+    """
+    """
+    try:
+        dates_list = _get_list_of_dates(date.today(), 7)
+        button_release_list = []
+        logger.info(f'-- KEYBOARD TAKE DUTY DATE LIST build menu for {dates_list}')
+        for dd in dates_list:
+            dd_str = dd.strftime('%Y-%m-%d')
+            dd_of_week = config.DaysOfWeek[dd.strftime('%A')].value
+            button_release_list.append(types.InlineKeyboardButton(f"{dd_str} {dd_of_week}",
+                                       callback_data=duty_cb.new(action='take_duty_area_list', ddate=dd_str, area='1')))
+        to_admin = types.InlineKeyboardButton('Admin menu', callback_data=posts_cb.new(action='admin_menu', issue='1'))
+        return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=1, footer_buttons=to_admin))
+    except Exception as e:
+        logger.exception(f'Error in TAKE DUTY DATE LIST {str(e)}')
+
+
+def take_duty_area_list(ddate) -> types.InlineKeyboardMarkup:
+    """
+    """
+    try:
+        area_list = ['ADMSYS(биллинг)', 'ADMSYS(инфра)', 'ADMSYS(портал)', 'ADMSYS(tststnd)', 'DEVOPS']
+        button_release_list = []
+        logger.info(f'-- KEYBOARD TAKE DUTY AREA LIST build menu for {area_list} {ddate}')
+        for area in area_list:
+            button_release_list.append(types.InlineKeyboardButton(f"{area}",
+                                       callback_data=duty_cb.new(action='take_duty_confirm', ddate=ddate, area=area)))
+        to_admin = types.InlineKeyboardButton('Admin menu', callback_data=posts_cb.new(action='admin_menu', issue='1'))
+        return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=1, footer_buttons=to_admin))
+    except Exception as e:
+        logger.exception(f'Error in TAKE DUTY AREA LIST {str(e)}')
+
+
+def take_duty_confirm(ddate, area) -> types.InlineKeyboardMarkup:
+    """
+    """
+    try:
+        logger.info(f'-- KEYBOARD TAKE DUTY CONFIRM build menu for issue {ddate} {area}')
+        button_confirm = [types.InlineKeyboardButton('Да', callback_data=duty_cb.new(action='take_duty', ddate=ddate, area=area))]
+        take_duty_date_list_button = types.InlineKeyboardButton('Изменить выбор', callback_data=duty_cb.new(action='take_duty_date_list', ddate='1', area='1'))
+        return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_confirm, n_cols=1, footer_buttons=take_duty_date_list_button))
+    except Exception as e:
+        logger.exception(f'Error in TAKE DUTY CONFIRM {str(e)}')
 
 
 # def dev_team_members(dev_team) -> types.InlineKeyboardMarkup:
@@ -198,6 +250,16 @@ def rollback_app_confirm(issue) -> types.InlineKeyboardMarkup:
 #     except Exception as e:
 #         logger.exception('Error in KEYBOARD DEV TEAM MEMBERS %s', e)
 
+
+def _get_list_of_dates(start_date: datetime.date, delta: int) -> list:
+    date_modified=start_date
+    date_list=[start_date]
+    while date_modified<start_date + timedelta(days=delta):
+        date_modified+=timedelta(days=1) 
+        date_list.append(date_modified)
+    return date_list
+
+
 def current_mode() -> str:
     """
         Get current mode of Bot
@@ -211,5 +273,4 @@ def current_mode() -> str:
         mode = 'Stopped'
     else:
         mode = 'Don\'t touching new releases'
-
     return mode
