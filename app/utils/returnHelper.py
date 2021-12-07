@@ -3,6 +3,7 @@
 """
 Return helper
 """
+import messages
 
 def return_name(message) -> str:
     """
@@ -19,3 +20,10 @@ def return_one_second(query):
         :param query:
     """
     return query.answer('One second, please')
+
+
+def return_quotations() -> str:
+    """
+        Вернуть рандомную цитату из списка
+    """
+    return messages.quotes[random.randint(0,len(messages.quotes)-1)]
