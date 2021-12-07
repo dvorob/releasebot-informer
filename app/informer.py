@@ -150,7 +150,7 @@ async def timetable_personal(message: types.Message):
                     msg = f"Уважаемый {user_from_db[0]['first_name']} {user_from_db[0]['middle_name']}!\n" + msg
             logger.debug('get timetable personal from api: %s %s', resp.status, resp.json())
         else:
-            msg = f"Не нашел данных о {message.from_user.username} в своей БД"
+            msg = f"Не нашел данных о {message.from_user.username} в своей БД.\n" + returnHelper.return_quotations()
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
 
     except Exception as e:
@@ -170,7 +170,7 @@ async def create_duty_message(duty_date) -> str:
             msg += f"\n· {d['full_text']} <b>{d['tg_login']}</b>"
         logger.debug('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
     else:
-        msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
+        msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty.\n" + returnHelper.return_quotations()
     return msg
 
 
@@ -183,7 +183,7 @@ async def create_duty_message_personal(duty_date, tg_login) -> str:
             msg += f"\n· {d['area']} - <b>{d['duty_date']}</b>"
         logger.info('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
     else:
-        msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n"
+        msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty \n" + returnHelper.return_quotations()
     return msg
 
 
@@ -379,7 +379,7 @@ async def lock_app_release(message: types.Message):
             msg = f"Релизы {get_app['app_name']} <b>разблокированы</b>" if get_app['bot_enabled'] else f"Релизы {get_app['app_name']} <b>заблокированы</b>"
             msg += f"\n\n<u>Информация о {get_app['app_name']} в БД бота</u>: \n{get_app}"
         else:
-            msg = f"Не нашлось сведений о приложении в моей БД. Звоните Чесновскому."
+            msg = f"Не нашлось сведений о приложении в моей БД. Звоните Чесновскому.\n" + returnHelper.return_quotations()
         await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
 
@@ -786,7 +786,7 @@ async def app_info(message: types.Message):
                 else:
                     msg = 'Приложение не найдено'
         else:
-            msg = 'Ошибка: задайте имя приложения'
+            msg = 'Ошибка: задайте имя приложения. \n' + returnHelper.return_quotations()
         if 'dev_team_name' in locals():
             if dev_team_name is not None:
                 await message.answer(text=emojize(msg), reply_markup=dev_team_members(dev_team_name), parse_mode=ParseMode.HTML)
