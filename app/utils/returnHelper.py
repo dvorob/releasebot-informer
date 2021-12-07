@@ -3,7 +3,8 @@
 """
 Return helper
 """
-import messages
+import utils.messages as messages
+import random
 
 def return_name(message) -> str:
     """
