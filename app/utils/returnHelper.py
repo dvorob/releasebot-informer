@@ -27,4 +27,5 @@ def return_quotations() -> str:
     """
         Вернуть рандомную цитату из списка
     """
-    return messages.quotes[random.randint(0,len(messages.quotes)-1)]
+    msg = '---\n<i>' + messages.quotes[random.randint(0,len(messages.quotes)-1)] + '</i>'
+    return msg

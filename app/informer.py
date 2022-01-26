@@ -754,6 +754,7 @@ async def app_info(message: types.Message):
         if len(incoming) >= 2:
             app_name_list = incoming[1:]
             msg = '<u><b>Результаты поиска</b></u>:'
+            msg_additional = ''
             for app_name in app_name_list:
                 app_info = db().get_application_metainfo(app_name)
                 last_release = db().get_last_deploy_task_number(app_name)
@@ -778,7 +779,11 @@ async def app_info(message: types.Message):
                     if (len(locking_rl) > 0):
                         msg += f'\n :red_circle: Релиз <strong>заблокирован</strong> следующими компонентами:'
                         for rl in locking_rl:
-                            msg += f'\n • <strong>{rl["app_name"]}</strong> (очереди: {rl["queues"].replace(",", ", ")})'
+                            if rl["app_name"] != app_name:
+                                msg += f'\n • <strong>{rl["app_name"]}</strong> (очереди: {rl["queues"].replace(",", ", ")})'
+                            else:
+                                msg_additional = f'\n :yellow_circle: <a href=\"https://jira.yooteam.ru/browse/{rl["jira_task"]}\">{rl["fullname"]}</a> Компонент в процессе выкладки на доске'
+                        msg += msg_additional
                         msg += f'\n Детали можно найти на <a href="https://jira.yooteam.ru/secure/RapidBoard.jspa?rapidView=1557">релизной доске</a>'
                     else:
                         msg += f'\n :green_circle: Релизная очередь приложения свободна'                    
@@ -1082,17 +1087,17 @@ def get_lock_reasons(app_name):
     """
     try:
         releases_started = JiraConnection().jira_search(config.search_issues_started)
-        rl_board_list = []
+        rl_board_dict = {}
         locking_rl = []
         app_info = db().get_application_metainfo(app_name)
         for rl in releases_started:
             app_name_version_json = _app_name_regex(rl.fields.summary)
-            if app_name_version_json['name'] != app_name:
-                rl_board_list.append(app_name_version_json['name'])
-        for rl_app in db().get_many_applications_metainfo(rl_board_list):
+            rl_board_dict[app_name_version_json['name']] = {"fullname": rl.fields.summary, "jira_task": rl.key}
+        for rl_app in db().get_many_applications_metainfo(list(rl_board_dict.keys())):
             if (any(elem in rl_app['queues'].split(',') for elem in app_info['queues'].split(','))):
+                rl_app.update(rl_board_dict[rl_app['app_name']])
                 locking_rl.append(rl_app)
-        logger.info(f'Debug for lock_reasons {app_info} \n {rl_board_list} \n {locking_rl}')
+        logger.info(f'Debug for lock_reasons {app_info} \n {rl_board_dict} \n {locking_rl}')
         return locking_rl
     except Exception as e:
         logger.exception('Error in get lock reasons %s', e)
