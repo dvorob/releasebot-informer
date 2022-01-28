@@ -1123,7 +1123,7 @@ async def inform_today_duty(area, msg):
             except Exception as e:
                 logger.exception('Error in INFORM TODAY DUTY %s', e)  
 
-async def get_app(request):
+async def get_app_external(request):
     """
     Запросить инфу о приложении из БД бота
     """
@@ -1132,12 +1132,24 @@ async def get_app(request):
         app_name = request.match_info.get('app_name', None)
         if not app_name:
             return web.HTTPBadRequest(body='app_name shoud be defined')
-        app_info = db().get_application_metainfo(app_name)
-        if len(app_info) > 0:
-            app_info['version'] = db().get_last_success_app_version(app_name)
+        app_info = get_app_info(app_name)
         return web.json_response(app_info)
     except Exception as e:
         logger.exception('Error in get app %s', str(e))
+
+
+async def apps(request):
+    """
+    Запросить инфу о приложениях из БД бота
+    """
+    logger.info(f"-- APPS {request}")
+    app_name = request.match_info.get('app_name', None)
+    # Если параметр зоны ответственности не задан, вернем все дежурных
+    if not app:
+        app_info = db().get_applications('jira_com', 'equal', 'COM')
+    else:
+        app_info = get_app_info(app_name)
+    return web.json_response(app_info)
 
 
 async def get_duty_external(request):
@@ -1182,6 +1194,16 @@ async def unknown_message(message: types.Message):
             await message.reply(msg, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception(f'Error in unknown_message {str(e)}')
+
+
+def get_app_info(app_name: str) -> dict:
+    try:
+        app_info = db().get_application_metainfo(app_name)
+        if len(app_info) > 0:
+            app_info['version'] = db().get_last_success_app_version(app_name)
+        return app_info
+    except Exception as e:
+        logger.exception(f'Erorr in get app info {str(e)}')
 
 
 def _app_name_regex(issue_summary: str) -> dict:
@@ -1250,7 +1272,8 @@ def start_webserver():
     app.add_routes([web.post('/inform_duty', inform_duty)])
     app.add_routes([web.post('/inform_subscribers', inform_subscribers)])
     app.add_routes([web.post('/lock_apps', lock_apps)])
-    app.add_routes([web.get('/get_app/{app_name}', get_app)])
+    app.add_routes([web.get('/get_app/{app_name}', get_app_external)])
+    app.add_routes([web.get('/apps', apps)])
     app.add_routes([web.get('/get_duty/{area}', get_duty_external)])
     app.add_routes([web.get('/get_duty', get_duty_external)])
     loop.run_until_complete(runner.setup())
