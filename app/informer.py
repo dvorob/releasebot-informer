@@ -1127,7 +1127,6 @@ async def get_app_external(request):
     """
     Запросить инфу о приложении из БД бота
     """
-    logger.info(f"-- GET APP {request}")
     try:
         app_name = request.match_info.get('app_name', None)
         if not app_name:
@@ -1143,13 +1142,18 @@ async def apps(request):
     Запросить инфу о приложениях из БД бота
     """
     logger.info(f"-- APPS {request}")
-    app_name = request.match_info.get('app_name', None)
-    # Если параметр зоны ответственности не задан, вернем все дежурных
-    if not app:
-        app_info = db().get_applications('jira_com', 'equal', 'COM')
-    else:
-        app_info = get_app_info(app_name)
-    return web.json_response(app_info)
+    try:
+        app_name = request.rel_url.query.get('app_name', None)
+        # Если параметр зоны ответственности не задан, вернем все дежурных
+        logger.info(f"-- GET APP {app_name}")
+        if app_name:
+            app_info = get_app_info(app_name)
+        else:
+            # Отберём все приложения, по которым есть COM. Это должны быть 100% боевых приложений, за исключением мусора
+            app_info = db().get_all_applications()
+        return web.json_response(app_info)
+    except Exception as e:
+        logger.exception(f'Error in apps {str(e)}')
 
 
 async def get_duty_external(request):
