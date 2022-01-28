@@ -146,6 +146,23 @@ class PostgresPool:
         finally:
             self.db.close()
 
+    def get_all_applications(self) -> list:
+        # сходить в таблицу AppList и найти все записи  
+        logger.info(f'get all applications')
+        result = []
+        try:
+            self.db.connect(reuse_if_open=True)
+            db_apps = App_List.select()
+            logger.info(db_apps)
+            for v in db_apps:
+                result.append((vars(v))['__data__'])
+            return result
+        except Exception:
+            logger.exception(f'exception in get all applications {str(e)}')
+            return result
+        finally:
+            self.db.close()
+
     # ---------------------------------
     # ----- Users   -------------------
 
