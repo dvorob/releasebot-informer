@@ -866,9 +866,9 @@ async def get_user_info(message: types.Message):
                     msg += f'\n Телеграм: <strong>@{user["tg_login"]}</strong>'
                     msg += f'\n Телеграм ID: <strong>{user["tg_id"]}</strong>'
                     msg += f'\n Рабочий статус: <strong>{user["working_status"]}</strong>'
-                    if 'team_name' in user:
+                    if user['team_name'] != None:
                         msg += f'\n Отдел: <strong>{user["team_name"]}</strong>'
-                    if 'department' in user:
+                    if user['department'] != None:
                         msg += f'\n Департамент: <strong>{user["department"]}</strong>'
                     user_teams = await get_user_membership(user["account_name"])
                     if len(user_teams) > 0:
@@ -1026,7 +1026,8 @@ async def inform_duty(request):
     if 'areas' in data_json:
         try:
             for area in data_json['areas']:
-                await inform_today_duty(area, data_json['message'])
+                escape_html = data_json.get(escape_html, False)
+                await inform_today_duty(area=area, message=data_json['message'], escape_html=escape_html)
         except Exception as e:
             logger.exception('Error inform duty %s', e)
     return web.json_response()
@@ -1107,19 +1108,21 @@ def get_lock_reasons(app_name):
         logger.exception('Error in get lock reasons %s', e)
         return []
 
-async def inform_today_duty(area, msg):
+async def inform_today_duty(area: str, message: str, escape_html: bool = False):
     """
     Функция отправки сообщения сегодняшнему дежурному
     """
     dutymen_array = await db().get_duty_in_area(get_duty_date(datetime.today()), area)
-    logger.info('-- INFORM TODAY DUTY %s %s', dutymen_array, msg)
+    logger.info('-- INFORM TODAY DUTY %s %s', dutymen_array, message)
     if len(dutymen_array) > 0:
         for d in dutymen_array:
             try:
                 dutymen = await db().get_users('account_name', d['account_name'])
-                logger.info('informing duty %s %s %s', dutymen[0]['tg_id'], dutymen[0]['tg_login'], msg)
-                # await bot.send_message(chat_id=279933948, text=msg, parse_mode=ParseMode.HTML)
-                await bot.send_message(chat_id=dutymen[0]['tg_id'], text=msg, parse_mode=ParseMode.HTML)
+                logger.info('informing duty %s %s %s', dutymen[0]['tg_id'], dutymen[0]['tg_login'], message)
+                if escape_html:
+                    await bot.send_message(chat_id=dutymen[0]['tg_id'], text=quote_html(message), parse_mode=ParseMode.HTML)
+                else:
+                    await bot.send_message(chat_id=dutymen[0]['tg_id'], text=message, parse_mode=ParseMode.HTML)
             except BotBlocked:
                 logger.info('YM release bot was blocked by %s', d['tg_login'])
             except ChatNotFound:
