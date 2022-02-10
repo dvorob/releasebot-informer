@@ -866,6 +866,10 @@ async def get_user_info(message: types.Message):
                     msg += f'\n Телеграм: <strong>@{user["tg_login"]}</strong>'
                     msg += f'\n Телеграм ID: <strong>{user["tg_id"]}</strong>'
                     msg += f'\n Рабочий статус: <strong>{user["working_status"]}</strong>'
+                    if 'team_name' in user:
+                        msg += f'\n Отдел: <strong>{user["team_name"]}</strong>'
+                    if 'department' in user:
+                        msg += f'\n Департамент: <strong>{user["department"]}</strong>'
                     user_teams = await get_user_membership(user["account_name"])
                     if len(user_teams) > 0:
                         for t in user_teams:
@@ -905,7 +909,7 @@ async def send_message_to_users(request):
     """
     # Внешняя ручка рассылки
     {'accounts': [list of account_names], 'jira_tasks': [list of tasks_id], 'text': str, 
-      'inform_approvers': True, 'inform_watchers': True, 'text_jira': str}
+      'inform_approvers': True, 'inform_watchers': True, 'text_jira': str, 'escape_html': bool}
     'inform_approvers': True - отправит уведомление согласующим таски. Номер таски обязателене
     'inform_watchers': True - отправит уведомление наблюдающим за таской. Номер таски обязателене
     """

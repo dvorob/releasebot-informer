@@ -50,6 +50,10 @@ class Users(BaseModel):
     staff_login = CharField()
     first_name = CharField()
     middle_name = CharField()
+    ops = IntegerField(default=0)
+    team_key = CharField(default=None)
+    team_name = CharField(default=None)
+    department = CharField(default=None)
 
 class User_Subscriptions(BaseModel):
     id = IntegerField(primary_key=True)
@@ -140,7 +144,7 @@ class PostgresPool:
             for v in db_apps:
                 result.append((vars(v))['__data__'])
             return result
-        except Exception:
+        except Exception as e:
             logger.exception(f'exception in get apps {str(e)}')
             return result
         finally:
@@ -282,6 +286,7 @@ class PostgresPool:
         except Exception as e:
             logger.exception('Exception in search users by account %s', str(e))
             return users_array
+
 
     async def db_set_duty(self, duty_date, message, duty_chat_list):
         # Записать дежурных на сегодня
