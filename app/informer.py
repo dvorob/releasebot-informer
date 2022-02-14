@@ -1026,7 +1026,7 @@ async def inform_duty(request):
     if 'areas' in data_json:
         try:
             for area in data_json['areas']:
-                escape_html = data_json.get(escape_html, False)
+                escape_html = data_json.get('escape_html', False)
                 await inform_today_duty(area=area, message=data_json['message'], escape_html=escape_html)
         except Exception as e:
             logger.exception('Error inform duty %s', e)
