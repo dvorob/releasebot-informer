@@ -1027,7 +1027,8 @@ async def inform_duty(request):
         try:
             for area in data_json['areas']:
                 escape_html = data_json.get('escape_html', False)
-                await inform_today_duty(area=area, message=data_json['message'], escape_html=escape_html)
+                silence = data_json.get('silence', False)
+                await inform_today_duty(area=area, message=data_json['message'], escape_html=escape_html, silence=silence)
         except Exception as e:
             logger.exception('Error inform duty %s', e)
     return web.json_response()
@@ -1108,7 +1109,7 @@ def get_lock_reasons(app_name):
         logger.exception('Error in get lock reasons %s', e)
         return []
 
-async def inform_today_duty(area: str, message: str, escape_html: bool = False):
+async def inform_today_duty(area: str, message: str, escape_html: bool = False, silence: bool = False):
     """
     Функция отправки сообщения сегодняшнему дежурному
     """
@@ -1120,9 +1121,8 @@ async def inform_today_duty(area: str, message: str, escape_html: bool = False):
                 dutymen = await db().get_users('account_name', d['account_name'])
                 logger.info('informing duty %s %s %s', dutymen[0]['tg_id'], dutymen[0]['tg_login'], message)
                 if escape_html:
-                    await bot.send_message(chat_id=dutymen[0]['tg_id'], text=quote_html(message), parse_mode=ParseMode.HTML)
-                else:
-                    await bot.send_message(chat_id=dutymen[0]['tg_id'], text=message, parse_mode=ParseMode.HTML)
+                    message=quote_html(message)
+                await bot.send_message(chat_id=dutymen[0]['tg_id'], text=message, parse_mode=ParseMode.HTML, silence=silence)
             except BotBlocked:
                 logger.info('YM release bot was blocked by %s', d['tg_login'])
             except ChatNotFound:
