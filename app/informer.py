@@ -894,7 +894,13 @@ async def send_message_to_tg_chat(chat_id: str, message: str, silence=True, pars
         if escape_html:
             message=quote_html(message)
         if len(message) > 4096:
-            message = message[0:4000] + '\n ...\nСООБЩЕНИЕ БЫЛО ОБРЕЗАНО - ПРЕВЫШЕНА ДЛИНА'
+            message = message[0:4000]
+            # лимит сообщения в ТГ - 4096 символов. Т.к. мы можем обрезать html тег (что приведет к ошибке отправки)
+            # следует обрезать строчку целиком. Например так
+            offset = re.search(r'\n',message[::-1])
+            if offset != None:
+                message = message[:-offset.end()]
+            message = message + '\n ...\nСООБЩЕНИЕ БЫЛО ОБРЕЗАНО - ПРЕВЫШЕНА ДЛИНА'
         await bot.send_message(chat_id=chat_id, text=message, 
                     disable_notification=silence, parse_mode=parse_mode)
     except BotBlocked:
