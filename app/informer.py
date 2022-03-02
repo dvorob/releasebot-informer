@@ -884,19 +884,25 @@ async def get_user_info(message: types.Message):
     await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
 
-async def send_message_to_tg_chat(chat_id: str, text: str, disable_notification=True, parse_mode=ParseMode.HTML, 
-                                  escape_html=False):
+async def send_message_to_tg_chat(chat_id: str, message: str, silence=True, parse_mode=ParseMode.HTML, 
+                                  escape_html: bool = False):
     """
     Обёртка поверх bot.send_message
     """
     try:
-        logger.info(f"Sending for chat_id {chat_id} {parse_mode} {escape_html} {text}")
+        logger.info(f"Sending for chat_id {chat_id} {parse_mode} {escape_html} {message} {silence}")
         if escape_html:
-            await bot.send_message(chat_id=chat_id, text=quote_html(text), 
-                                   disable_notification=disable_notification, parse_mode=parse_mode)
-        else:
-            await bot.send_message(chat_id=chat_id, text=text, 
-                       disable_notification=disable_notification, parse_mode=parse_mode)
+            message=quote_html(message)
+        if len(message) > 4096:
+            message = message[0:4000]
+            # лимит сообщения в ТГ - 4096 символов. Т.к. мы можем обрезать html тег (что приведет к ошибке отправки)
+            # следует обрезать строчку целиком. Например так
+            offset = re.search(r'\n',message[::-1])
+            if offset != None:
+                message = message[:-offset.end()]
+            message = message + '\n ...\nСООБЩЕНИЕ БЫЛО ОБРЕЗАНО - ПРЕВЫШЕНА ДЛИНА'
+        await bot.send_message(chat_id=chat_id, text=message, 
+                    disable_notification=silence, parse_mode=parse_mode)
     except BotBlocked:
         logger.info('YM release bot was blocked by %s', chat_id)
     except ChatNotFound:
@@ -937,7 +943,8 @@ async def send_message_to_users(request):
 
         logger.info('sending message for %s', set_of_chat_id)
         for chat_id in set_of_chat_id:
-            await send_message_to_tg_chat(chat_id, data_json['text'], disable_notification, ParseMode.HTML, escape_html)
+            await send_message_to_tg_chat(chat_id=chat_id, message=data_json['text'], silence=disable_notification, 
+                                          parse_mode=ParseMode.HTML, escape_html=escape_html)
 
     if 'jira_tasks' in data_json:
         for task in data_json['jira_tasks']:
@@ -951,8 +958,8 @@ async def send_message_to_users(request):
                         user_from_db = await db().get_users('account_name', email)
                         if len(user_from_db) > 0:
                             if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
-                                await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], 
-                                                              disable_notification, ParseMode.HTML, escape_html)
+                                await send_message_to_tg_chat(chat_id=user_from_db[0]['tg_id'], message=data_json['text'], 
+                                                              silence=disable_notification, parse_mode=ParseMode.HTML, escape_html=escape_html)
             if 'inform_watchers' in data_json and 'text' in data_json:
                 if data_json['inform_watchers'] == True and len(data_json['text']) > 0:
                     email_watchers = jira_get_watchers_list(task)
@@ -960,8 +967,8 @@ async def send_message_to_users(request):
                         user_from_db = await db().get_users('account_name', email)
                         if len(user_from_db) > 0:
                             if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
-                                await send_message_to_tg_chat(user_from_db[0]['tg_id'], data_json['text'], 
-                                                              disable_notification, ParseMode.HTML, escape_html)
+                                await send_message_to_tg_chat(chat_id=user_from_db[0]['tg_id'], message=data_json['text'], 
+                                                              silence=disable_notification, parse_mode=ParseMode.HTML, escape_html=escape_html)
             if 'text_jira' in data_json:
                 try:
                     logger.info('Leave comment to %s %s', JiraConnection().issue(task), data_json['text_jira'] )
@@ -1049,8 +1056,8 @@ async def inform_subscribers(request):
             try:
                 logger.info(f"Inform subscribers sending message to {user['tg_login']}, {user['tg_id']}, {data_json['text']}")
                 if user['tg_id'] and user['working_status'] != 'dismissed':
-                    await bot.send_message(chat_id=user['tg_id'], text=data_json['text'], 
-                                           disable_notification=True, parse_mode=ParseMode.HTML)
+                    await send_message_to_tg_chat(chat_id=user['tg_id'], message=data_json['text'], 
+                                                  silence=True, parse_mode=ParseMode.HTML)
             except BotBlocked:
                 logger.info('Error Inform subscribers bot was blocked by %s', user)
             except ChatNotFound:
@@ -1120,9 +1127,8 @@ async def inform_today_duty(area: str, message: str, escape_html: bool = False, 
             try:
                 dutymen = await db().get_users('account_name', d['account_name'])
                 logger.info('informing duty %s %s %s', dutymen[0]['tg_id'], dutymen[0]['tg_login'], message)
-                if escape_html:
-                    message=quote_html(message)
-                await bot.send_message(chat_id=dutymen[0]['tg_id'], text=message, parse_mode=ParseMode.HTML, silence=silence)
+                await send_message_to_tg_chat(chat_id=dutymen[0]['tg_id'], message=message, parse_mode=ParseMode.HTML, 
+                                              silence=silence, escape_html=escape_html)
             except BotBlocked:
                 logger.info('YM release bot was blocked by %s', d['tg_login'])
             except ChatNotFound:
