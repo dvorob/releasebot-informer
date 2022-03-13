@@ -3,6 +3,7 @@
 """
 Telegram bot for employee of Yandex.Money
 """
+from ast import excepthandler
 import aiohttp
 import config
 import keyboard as keyboard
@@ -295,6 +296,7 @@ async def duty_button(query: types.CallbackQuery, callback_data: str):
     except Exception:
         logger.exception('duty_button')
 
+
 def to_main_menu() -> types.InlineKeyboardMarkup:
     """
         Return to main menu button
@@ -302,6 +304,7 @@ def to_main_menu() -> types.InlineKeyboardMarkup:
     keyboard_main_menu = [[types.InlineKeyboardButton('Main menu',
                                                       callback_data=keyboard.posts_cb.new(action='main', issue='1'))]]
     return types.InlineKeyboardMarkup(inline_keyboard=keyboard_main_menu)
+
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='main'), filters.restricted)
 async def main_menu(query: types.CallbackQuery, callback_data: str):
@@ -884,6 +887,13 @@ async def get_user_info(message: types.Message):
     await message.answer(text=msg, parse_mode=ParseMode.HTML)
 
 
+@initializeBot.dp.message_handler(filters.restricted, commands=['start'])
+async def show_main_menu_button(message: types.Message):
+    """
+    """
+    await message.reply("Hi!", reply_markup=keyboard.reply_main_menu)
+
+
 async def send_message_to_tg_chat(chat_id: str, message: str, silence=True, parse_mode=ParseMode.HTML, 
                                   escape_html: bool = False):
     """
@@ -1191,6 +1201,16 @@ async def get_duty_external(request):
         logger.exception('Error in get app external %s', str(e))
 
 
+@initializeBot.dp.message_handler(filters.restricted, commands=['menu'])
+async def call_main_menu(message: types.Message):
+    try:
+        await message.answer(text=emojize(messages.main_menu),
+                                    reply_markup=keyboard.main_menu(),
+                                    parse_mode=ParseMode.HTML)
+    except Exception as e:
+        logger.exception(f'Error in call main menu {str(e)}')
+
+
 @initializeBot.dp.message_handler(filters.restricted)
 async def unknown_message(message: types.Message):
     """
@@ -1202,13 +1222,19 @@ async def unknown_message(message: types.Message):
             respectful_name = user_from_db[0]['first_name'] + " " + user_from_db[0]['middle_name']
         else:
             respectful_name = message.from_user.full_name
-        msg = emojize(f'{respectful_name},\n'
-                      f'Я не знаю, как ответить на {message.text} :astonished:\n'
-                      'Список того, что я умею - /help')
+
         if (message.chat.type == 'private'):
-            # чтобы не спамил на реплаи в группах, а только в личку 
-            logger.info('-- UNKNOWN MESSAGE HERE')
-            await message.reply(msg, parse_mode=ParseMode.HTML)
+            if message.text == 'Главное меню':
+                await message.reply(text=emojize(messages.main_menu),
+                                            reply_markup=keyboard.main_menu(),
+                                            parse_mode=ParseMode.HTML)
+            else:
+                msg = emojize(f'{respectful_name},\n'
+                            f'Я не знаю, как ответить на {message.text} :astonished:\n'
+                            'Список того, что я умею - /help')
+                # чтобы не спамил на реплаи в группах, а только в личку 
+                logger.info('-- UNKNOWN MESSAGE HERE')
+                await message.reply(msg, reply_markup=keyboard.reply_main_menu, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception(f'Error in unknown_message {str(e)}')
 

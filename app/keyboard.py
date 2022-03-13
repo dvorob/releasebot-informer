@@ -14,6 +14,9 @@ logger = logging.setup()
 posts_cb = filters.callback_filter()
 duty_cb = filters.duty_callback()
 
+button_main_menu = types.KeyboardButton('Главное меню', callback_data=posts_cb.new(action='main', issue='1'))
+reply_main_menu = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False).add(button_main_menu)
+
 def main_menu() -> types.InlineKeyboardMarkup:
     """
         Main menu Keyboard
@@ -119,8 +122,7 @@ def admin_menu() -> types.InlineKeyboardMarkup:
         types.InlineKeyboardButton('Rollback', callback_data=posts_cb.new(action='rollback_app_list', issue='1')),
         types.InlineKeyboardButton('Взять дежурство', callback_data=duty_cb.new(action='take_duty_date_list', ddate='1', area='1'))
     ]
-    to_main = types.InlineKeyboardButton('Main menu', callback_data=posts_cb.new(action='main',
-                                                                                 issue='1'))
+    to_main = types.InlineKeyboardButton('Main menu', callback_data=posts_cb.new(action='main', issue='1'))
     return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_admin_list,
                                                                  n_cols=2, footer_buttons=to_main))
 
