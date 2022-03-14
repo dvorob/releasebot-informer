@@ -195,55 +195,6 @@ def get_duty_date(date):
         return date - timedelta(1)
     else:
         return date
-   
-
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='get_ext_inf_board'), filters.restricted)
-async def get_ext_inf_board_button(query: types.CallbackQuery, callback_data: str) -> str:
-    """
-        Get full information from Admsys release board
-        :param query:
-        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
-    """
-    del callback_data
-    try:
-        logger.info('get_ext_inf_board_button started from: %s',
-                    returnHelper.return_name(query))
-        final_msg = ''
-        await returnHelper.return_one_second(query)
-
-        async def find_issue_and_add(jira_filter, header_tg_user) -> str:
-            """
-                Create msg with Jira task based on incoming filter
-                :return: string with issues or empty str
-            """
-            issues = JiraConnection().jira_search(jira_filter)
-            if len(issues) > 0:
-                list_of_issues = []
-                for issue in issues:
-                    list_of_issues.append('%s: [%s](%s/browse/%s)' %
-                                          (issue.key, issue.fields.summary,
-                                           config.jira_host, issue.key))
-                header_tg_user += '\n'.join(list_of_issues)
-            else:
-                header_tg_user = ''
-            return header_tg_user
-
-        test_dict = {config.search_issues_wait: '*Релизы в ожидании:*\n',
-                     config.search_issues_work: '\n*Релизы в работе:*\n',
-                     config.search_issues_work: '\n*Релизы в работе:*\n'
-                     }
-        for config_request, title in test_dict.items():
-            if str_of_issues := await find_issue_and_add(config_request, title):
-                final_msg += str_of_issues
-
-        if len(final_msg) > 0:
-            text = final_msg
-        else:
-            logger.error('get_ext_inf_board_button, can\'t find issues in Jira')
-        await query.message.answer(text=messages.rl_board_empty, reply_markup=to_main_menu(),
-                                   parse_mode=ParseMode.HTML)
-    except Exception:
-        logger.exception('get_ext_inf_board')
 
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='get_min_inf_board'), filters.restricted)
