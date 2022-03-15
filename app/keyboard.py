@@ -24,26 +24,21 @@ def main_menu() -> types.InlineKeyboardMarkup:
     """
     try:
         url_jira_board = f'{config.jira_host}/secure/RapidBoard.jspa?rapidView=715'
-        url_kibana = 'https://kibana.yamoney.ru/goto/2319c2bcfb9ae9fda8e9669ef73830b4'
         url_wiki = 'https://wiki.yooteam.ru/display/admins/ReleaseBot.Informer'
         button_list = [
             types.InlineKeyboardButton(text="Дежурные",
                                        callback_data=posts_cb.new(action='duty_button', issue='1')),
             types.InlineKeyboardButton("Релизная доска", url=url_jira_board),
             types.InlineKeyboardButton("Документация", url=url_wiki),
-            types.InlineKeyboardButton("Логи бота", url=url_kibana),
-            types.InlineKeyboardButton(text="Админское меню",
-                                       callback_data=posts_cb.new(action='admin_menu', issue='1')),
             types.InlineKeyboardButton("Вернуть релиз в очередь",
                                        callback_data=posts_cb.new(action='return_queue', issue='1')),
             types.InlineKeyboardButton("Подписки и уведомления",
                                        callback_data=posts_cb.new(action='subscribe', issue='1')),
             types.InlineKeyboardButton("Краткая инфа с релизной доски",
-                                       callback_data=posts_cb.new(action='get_min_inf_board', issue='1')),
+                                       callback_data=posts_cb.new(action='get_min_inf_board', issue='1'))
         ]
-        footer = types.InlineKeyboardButton("Расширенная инфа с релизной доски",
-                                            callback_data=posts_cb.new(action='get_ext_inf_board',
-                                                                       issue='1'))
+        footer = types.InlineKeyboardButton("Админское меню",
+                                            callback_data=posts_cb.new(action='admin_menu', issue='1'))
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_list, n_cols=2,
                                                                      footer_buttons=footer))
     except Exception:

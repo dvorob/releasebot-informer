@@ -195,55 +195,6 @@ def get_duty_date(date):
         return date - timedelta(1)
     else:
         return date
-   
-
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='get_ext_inf_board'), filters.restricted)
-async def get_ext_inf_board_button(query: types.CallbackQuery, callback_data: str) -> str:
-    """
-        Get full information from Admsys release board
-        :param query:
-        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
-    """
-    del callback_data
-    try:
-        logger.info('get_ext_inf_board_button started from: %s',
-                    returnHelper.return_name(query))
-        final_msg = ''
-        await returnHelper.return_one_second(query)
-
-        async def find_issue_and_add(jira_filter, header_tg_user) -> str:
-            """
-                Create msg with Jira task based on incoming filter
-                :return: string with issues or empty str
-            """
-            issues = JiraConnection().jira_search(jira_filter)
-            if len(issues) > 0:
-                list_of_issues = []
-                for issue in issues:
-                    list_of_issues.append('%s: [%s](%s/browse/%s)' %
-                                          (issue.key, issue.fields.summary,
-                                           config.jira_host, issue.key))
-                header_tg_user += '\n'.join(list_of_issues)
-            else:
-                header_tg_user = ''
-            return header_tg_user
-
-        test_dict = {config.search_issues_wait: '*Релизы в ожидании:*\n',
-                     config.search_issues_work: '\n*Релизы в работе:*\n',
-                     config.search_issues_work: '\n*Релизы в работе:*\n'
-                     }
-        for config_request, title in test_dict.items():
-            if str_of_issues := await find_issue_and_add(config_request, title):
-                final_msg += str_of_issues
-
-        if len(final_msg) > 0:
-            text = final_msg
-        else:
-            logger.error('get_ext_inf_board_button, can\'t find issues in Jira')
-        await query.message.answer(text=messages.rl_board_empty, reply_markup=to_main_menu(),
-                                   parse_mode=ParseMode.HTML)
-    except Exception:
-        logger.exception('get_ext_inf_board')
 
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='get_min_inf_board'), filters.restricted)
@@ -895,14 +846,16 @@ async def show_main_menu_button(message: types.Message):
 
 
 async def send_message_to_tg_chat(chat_id: str, message: str, silence=True, parse_mode=ParseMode.HTML, 
-                                  escape_html: bool = False):
+                                  escape_html: bool = False, emoji: bool = False):
     """
     Обёртка поверх bot.send_message
     """
     try:
-        logger.info(f"Sending for chat_id {chat_id} {parse_mode} {escape_html} {message} {silence}")
+        logger.info(f"Sending for chat_id {chat_id} {parse_mode} {escape_html} {message} {silence} {emoji}")
         if escape_html:
-            message=quote_html(message)
+            message = quote_html(message)
+        if emoji:
+            message = emojize(message)
         if len(message) > 4096:
             message = message[0:4000]
             # лимит сообщения в ТГ - 4096 символов. Т.к. мы можем обрезать html тег (что приведет к ошибке отправки)
@@ -941,6 +894,11 @@ async def send_message_to_users(request):
     else:
         escape_html = False
 
+    if 'emoji' in data_json:
+        emoji = data_json['emoji']
+    else:
+        emoji = False
+
     if 'accounts' in data_json:
         if type(data_json['accounts']) == str:
             data_json['accounts'] = [data_json['accounts']]
@@ -954,7 +912,7 @@ async def send_message_to_users(request):
         logger.info('sending message for %s', set_of_chat_id)
         for chat_id in set_of_chat_id:
             await send_message_to_tg_chat(chat_id=chat_id, message=data_json['text'], silence=disable_notification, 
-                                          parse_mode=ParseMode.HTML, escape_html=escape_html)
+                                          parse_mode=ParseMode.HTML, escape_html=escape_html, emoji=emoji)
 
     if 'jira_tasks' in data_json:
         for task in data_json['jira_tasks']:
@@ -969,7 +927,7 @@ async def send_message_to_users(request):
                         if len(user_from_db) > 0:
                             if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                                 await send_message_to_tg_chat(chat_id=user_from_db[0]['tg_id'], message=data_json['text'], 
-                                                              silence=disable_notification, parse_mode=ParseMode.HTML, escape_html=escape_html)
+                                                              silence=disable_notification, parse_mode=ParseMode.HTML, escape_html=escape_html, emoji=emoji)
             if 'inform_watchers' in data_json and 'text' in data_json:
                 if data_json['inform_watchers'] == True and len(data_json['text']) > 0:
                     email_watchers = jira_get_watchers_list(task)
@@ -978,7 +936,7 @@ async def send_message_to_users(request):
                         if len(user_from_db) > 0:
                             if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                                 await send_message_to_tg_chat(chat_id=user_from_db[0]['tg_id'], message=data_json['text'], 
-                                                              silence=disable_notification, parse_mode=ParseMode.HTML, escape_html=escape_html)
+                                                              silence=disable_notification, parse_mode=ParseMode.HTML, escape_html=escape_html, emoji=emoji)
             if 'text_jira' in data_json:
                 try:
                     logger.info('Leave comment to %s %s', JiraConnection().issue(task), data_json['text_jira'] )
