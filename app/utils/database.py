@@ -87,6 +87,8 @@ class Releases_List(BaseModel):
     is_rollbacked = BooleanField(default=None)
     is_static_released = BooleanField(default=None)
     notifications_sent = TextField(default=None)
+    update_secret = BooleanField(default=None)
+    retries = IntegerField(default=0)
 
 class PostgresPool:
 
@@ -526,6 +528,21 @@ class PostgresPool:
             return result
         except Exception as e:
             logger.exception('exception in get last success app version %s', e)
+            return result
+        finally:
+            self.db.close()
+
+
+    def set_release_retries_count(self, jira_task, retries):
+        # Обновит всю инфу в ячейке retries
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = (Releases_List
+                     .update(retries = retries)
+                     .where(Releases_List.jira_task == jira_task))
+            result.execute()
+        except Exception as e:
+            logger.exception('exception in set release retries count %s', e)
             return result
         finally:
             self.db.close()

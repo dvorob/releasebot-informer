@@ -105,19 +105,20 @@ def admin_menu() -> types.InlineKeyboardMarkup:
     """
     # issue = '1' - hack for correct work posts_cb filter
     button_admin_list = [
-        types.InlineKeyboardButton('Restart Informer', callback_data=posts_cb.new(action='restart',
+        types.InlineKeyboardButton('Рестарт Информера', callback_data=posts_cb.new(action='restart',
                                                                              issue='1')),
-        types.InlineKeyboardButton('Turn on bot', callback_data=posts_cb.new(action='turn_on',
+        types.InlineKeyboardButton('Включить релизы', callback_data=posts_cb.new(action='turn_on',
                                                                              issue='1')),
-        types.InlineKeyboardButton('Turn off bot', callback_data=posts_cb.new(action='turn_off',
+        types.InlineKeyboardButton('Остановить релизы', callback_data=posts_cb.new(action='turn_off',
                                                                               issue='1')),
-        types.InlineKeyboardButton('Don\'t touch new release',
+        types.InlineKeyboardButton('Не брать новые релизы',
                                    callback_data=posts_cb.new(action='dont_touch', issue='1')),
-        types.InlineKeyboardButton('Release', callback_data=posts_cb.new(action='release_app_list', issue='1')),
-        types.InlineKeyboardButton('Rollback', callback_data=posts_cb.new(action='rollback_app_list', issue='1')),
-        types.InlineKeyboardButton('Взять дежурство', callback_data=duty_cb.new(action='take_duty_date_list', ddate='1', area='1'))
+        types.InlineKeyboardButton('Выкатить релиз', callback_data=posts_cb.new(action='release_app_list', issue='1')),
+        types.InlineKeyboardButton('Откатить релиз', callback_data=posts_cb.new(action='rollback_app_list', issue='1')),
+        types.InlineKeyboardButton('Взять дежурство', callback_data=duty_cb.new(action='take_duty_date_list', ddate='1', area='1')),
+        types.InlineKeyboardButton('Перезапустить релизы', callback_data=posts_cb.new(action='retry_inprogress_releases_confirm', issue='1'))
     ]
-    to_main = types.InlineKeyboardButton('Main menu', callback_data=posts_cb.new(action='main', issue='1'))
+    to_main = types.InlineKeyboardButton('Главное меню', callback_data=posts_cb.new(action='main', issue='1'))
     return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_admin_list,
                                                                  n_cols=2, footer_buttons=to_main))
 
@@ -181,6 +182,18 @@ def rollback_app_confirm(issue) -> types.InlineKeyboardMarkup:
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_confirm, n_cols=1, footer_buttons=rollback_app_list))
     except Exception as e:
         logger.exception('Error in KEYBOARD ROLLBACK APP CONFIRM %s', e)
+
+
+def retry_inprogress_releases() -> types.InlineKeyboardMarkup:
+    """
+    """
+    try:
+        logger.info(f'-- RETRY INPROGRESS RELEASES CONFIRM build menu for issue')
+        button_retry_inprogress_releases = [types.InlineKeyboardButton('Да, Перезапускай', callback_data=posts_cb.new(action='retry_inprogress_releases', issue='1'))]
+        button_back = types.InlineKeyboardButton('Назад', callback_data=posts_cb.new(action='admin_menu', issue='1'))
+        return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_retry_inprogress_releases, n_cols=1, footer_buttons=button_back))
+    except Exception as e:
+        logger.exception(f'Error in RETRY INPROGRESS RELEASES CONFIRM {str(e)}')
 
 
 def take_duty_date_list() -> types.InlineKeyboardMarkup:
