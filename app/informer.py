@@ -399,6 +399,7 @@ async def dont_touch_releases(query: types.CallbackQuery, callback_data: str):
     db().set_parameters('run_mode', 'last')
     await query.answer('Ok, I won\'t touch new releases by myself.')
 
+
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='admin_menu'), filters.restricted, filters.admin)
 async def admin_menu(query: types.CallbackQuery, callback_data: str):
     """
@@ -415,6 +416,7 @@ async def admin_menu(query: types.CallbackQuery, callback_data: str):
     except Exception:
         logger.exception('admin_menu')
 
+
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='release_app_list'), filters.restricted, filters.admin)
 async def release_app_list(query: types.CallbackQuery, callback_data: str):
     """
@@ -424,6 +426,7 @@ async def release_app_list(query: types.CallbackQuery, callback_data: str):
     logger.info('-- RELEASE APP LIST menu opened by %s %s', returnHelper.return_name(query), callback_data)
     msg = f'Релизы, которые я могу выкатить (находятся в статусе Waiting на доске):'
     await query.message.reply(text=msg, reply_markup=keyboard.release_app_list(), parse_mode=ParseMode.HTML)
+
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='release_app'), filters.restricted, filters.admin)
 async def release_app(query: types.CallbackQuery, callback_data: str):
@@ -448,6 +451,7 @@ async def release_app_confirm(query: types.CallbackQuery, callback_data: str):
         logger.exception('Error in RELEASE APP CONFIRM %s', e)
     await query.answer(f"Съел релиз {callback_data['issue']}, перевариваю.")
 
+
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='rollback_app_list'), filters.restricted, filters.admin)
 async def rollback_app_list(query: types.CallbackQuery, callback_data: str):
     """
@@ -456,6 +460,7 @@ async def rollback_app_list(query: types.CallbackQuery, callback_data: str):
     logger.info('-- ROLLBACK APP LIST menu opened by %s %s', returnHelper.return_name(query), callback_data)
     msg = f'Релизы, которые я могу откатить (выехали хотя бы на один хост на доске):'
     await query.message.reply(text=msg, reply_markup=keyboard.rollback_app_list(), parse_mode=ParseMode.HTML)
+
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='rollback_app'), filters.restricted, filters.admin)
 async def rollback_app(query: types.CallbackQuery, callback_data: str):
@@ -479,6 +484,36 @@ async def rollback_app_confirm(query: types.CallbackQuery, callback_data: str):
     except Exception as e:
         logger.error('Error in ROLLBACK APP CONFIRM %s', e)
     await query.answer(f"Откатываю релиз {callback_data['issue']}. Потому что я красавчик.")
+
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='retry_inprogress_releases_confirm'), filters.restricted, filters.admin)
+async def retry_inprogress_releases_confirm(query: types.CallbackQuery, callback_data: str):
+    """
+        Сбросить признак retry для всех релизов в рабочих статусах. 
+        Если было массовое падение релизов, после починки поможет боту взять их все ещё раз в работу.
+    """
+    try:
+        logger.info(f'-- RETRY INPROGRESS RELEASES CONFIRM started by {returnHelper.return_name(query)}, {callback_data}')
+        msg = "Включить авто-ретрай всех релизов в процессе выкладки? Бот запустит их только в том случае, если последняя джоба в статусе FAILED."
+        await query.message.reply(text=msg, reply_markup=keyboard.retry_inprogress_releases(), parse_mode=ParseMode.HTML)
+    except Exception as e:
+        logger.error('Error in ROLLBACK APP CONFIRM %s', e)
+
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='retry_inprogress_releases'), filters.restricted, filters.admin)
+async def retry_inprogress_releases(query: types.CallbackQuery, callback_data: str):
+    """
+        Сбросить признак retry для всех релизов в рабочих статусах. 
+        Если было массовое падение релизов, после починки поможет боту взять их все ещё раз в работу.
+    """
+    logger.info(f'-- RETRY INPROGRESS RELEASES started by {returnHelper.return_name(query)}, {callback_data}')
+    try:
+        releases_inprogress = JiraConnection().jira_search(config.search_issues_work)
+        for rl in releases_inprogress:
+            db().set_release_retries_count(jira_task=rl.key, retries=0)
+    except Exception as e:
+        logger.error(f'Error in RETRY INPROGRESS RELEASES {str(e)}')
+    await query.message.reply(f"Все упавшие релизы будут перезапущены.")
 
 
 @initializeBot.dp.callback_query_handler(keyboard.duty_cb.filter(action='take_duty_date_list'), filters.restricted, filters.admin)
@@ -1022,7 +1057,7 @@ async def inform_subscribers(request):
         logger.info('Inform subscribers going through list %s', subscribers)
         for user in subscribers:
             try:
-                logger.info(f"Inform subscribers sending message to {user['tg_login']}, {user['tg_id']}, {data_json['text']}")
+                logger.debug(f"Inform subscribers sending message to {user['tg_login']}, {user['tg_id']}, {data_json['text']}")
                 if user['tg_id'] and user['working_status'] != 'dismissed':
                     await send_message_to_tg_chat(chat_id=user['tg_id'], message=data_json['text'], 
                                                   silence=True, parse_mode=ParseMode.HTML)
