@@ -280,8 +280,8 @@ async def admin_menu(query: types.CallbackQuery, callback_data: str):
     del callback_data
     try:
         logger.info('admin menu opened by %s', returnHelper.return_name(query))
-        msg = f'Привет! \nМой текущий рабочий режим: <b>{keyboard.current_mode()}</b>'
-        await query.message.reply(text=msg, reply_markup=keyboard.admin_menu(),
+        msg = f'<b>Статус: </b>{keyboard.current_mode()}'
+        await query.message.reply(text=emojize(msg), reply_markup=keyboard.admin_menu(),
                                   parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception('admin_menu')
@@ -301,6 +301,7 @@ async def restart(query: types.CallbackQuery, callback_data: str):
     except Exception:
         logger.exception('restart')
 
+
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='turn_off'), filters.restricted, filters.admin)
 async def stop_bot(query: types.CallbackQuery, callback_data: str):
     """
@@ -309,7 +310,7 @@ async def stop_bot(query: types.CallbackQuery, callback_data: str):
     del callback_data
     logger.warning('%s stopped bot', returnHelper.return_name(query))
     db().set_parameters('run_mode', 'off')
-    await query.answer('Bot was stopped, Bye!')
+    await query.message.reply('Релизный бот остановлен. Сам не запустится.')
 
 
 @initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['lock', 'unlock'])
@@ -383,7 +384,7 @@ async def start_bot(query: types.CallbackQuery, callback_data: str):
     del callback_data
     logger.warning('%s started bot', returnHelper.return_name(query))
     db().set_parameters('run_mode', 'on')
-    await query.answer('Bot was started, Go!')
+    await query.message.reply('Релизный бот запущен!')
 
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='dont_touch'), filters.restricted, filters.admin)
@@ -397,24 +398,7 @@ async def dont_touch_releases(query: types.CallbackQuery, callback_data: str):
     logger.warning('%s pressed button Don\'t touch new release',
                    returnHelper.return_name(query))
     db().set_parameters('run_mode', 'last')
-    await query.answer('Ok, I won\'t touch new releases by myself.')
-
-
-@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='admin_menu'), filters.restricted, filters.admin)
-async def admin_menu(query: types.CallbackQuery, callback_data: str):
-    """
-        Open admin menu
-        :param query:
-        :param callback_data
-    """
-    del callback_data
-    try:
-        logger.info('admin menu opened by %s', returnHelper.return_name(query))
-        msg = f'Привет! \nМой текущий рабочий режим: <b>{keyboard.current_mode()}</b>'
-        await query.message.reply(text=msg, reply_markup=keyboard.admin_menu(),
-                                  parse_mode=ParseMode.HTML)
-    except Exception:
-        logger.exception('admin_menu')
+    await query.message.reply('Новые релизы брать не буду. Всё, что уже на мне в Jira - докачу.')
 
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='release_app_list'), filters.restricted, filters.admin)

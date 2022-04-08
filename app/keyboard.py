@@ -278,9 +278,9 @@ def current_mode() -> str:
     run_mode = db().get_parameters('run_mode')[0]['value']
 
     if run_mode == 'on':
-        mode = 'Working'
+        mode = ':green_circle:  Качу релизы'
     elif run_mode == 'off':
-        mode = 'Stopped'
+        mode = ':red_circle:  Остановлен'
     else:
-        mode = 'Don\'t touching new releases'
+        mode = ':yellow_circle:  Выкачу то, что уже на мне, и иду в МСМ'
     return mode
