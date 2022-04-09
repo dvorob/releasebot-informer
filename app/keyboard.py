@@ -282,5 +282,5 @@ def current_mode() -> str:
     elif run_mode == 'off':
         mode = ':red_circle:  Остановлен'
     else:
-        mode = ':yellow_circle:  Выкачу то, что уже на мне, и иду в МСМ'
+        mode = ':yellow_circle:  Выкачу то, что уже на мне, и пойду в МСМ'
     return mode
