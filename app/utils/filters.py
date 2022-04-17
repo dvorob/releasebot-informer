@@ -33,7 +33,7 @@ def duty_callback() -> CallbackData:
     """
         Create callback filter
     """
-    return CallbackData("prefix", "ddate", "area", "action")
+    return CallbackData("prefix", "ddate", "area", "action", "dutyman")
 
 
 async def admin(message: types.message) -> bool:
@@ -41,21 +41,40 @@ async def admin(message: types.message) -> bool:
         Filter for admin functions
     """
     try:
-        user_info = await db().search_users_by_account(str(message.from_user.username))
-        if len(user_info) > 0:
-            if user_info[0]['admin'] == 1 and user_info[0]['working_status'] != 'dismissed':
-                return True
-            elif user_info[0]['working_status'] == 'dismissed':
-                await message.answer(text='Извините, но вы уволились. Вернётесь обратно и сможете насладиться нашим сервисом.')
-                logger.warning('Attempt to enter the admin menu from dismissed %s',
-                               returnHelper.return_name(message))
-                return False
-            else:
-                await message.answer(text='Извините, вы не в списке админов.')
-                logger.warning('Attempt to enter the admin menu from %s',
-                               returnHelper.return_name(message))
-                return False
+        user_rights = db().get_user_rights('tg_login', str(message.from_user.username))
+        if user_rights['is_admin'] == 1 and user_rights['working_status'] != 'dismissed':
+            return True
+        elif user_rights['working_status'] == 'dismissed':
+            await message.answer(text='Извините, но вы уволились. Вернётесь обратно и сможете насладиться нашим сервисом.')
+            logger.warning('Attempt to enter the admin menu from dismissed %s',
+                            returnHelper.return_name(message))
+            return False
         else:
+            await message.answer(text='Извините, вы не в списке админов.')
+            logger.warning('Attempt to enter the admin menu from %s',
+                            returnHelper.return_name(message))
+            return False
+    except Exception as e:
+        logger.exception('-- Error in admin filter', str(e))
+
+
+async def is_ops(message: types.message) -> bool:
+    """
+        Filter for ops
+    """
+    try:
+        user_rights = db().get_user_rights('tg_login', str(message.from_user.username))
+        if user_rights['is_ops'] == 1 and user_rights['working_status'] != 'dismissed':
+            return True
+        elif user_rights['working_status'] == 'dismissed':
+            await message.answer(text='Извините, но вы уволились. Вернётесь обратно и сможете насладиться нашим сервисом.')
+            logger.warning('Attempt to enter the admin menu from dismissed %s',
+                            returnHelper.return_name(message))
+            return False
+        else:
+            await message.answer(text='Извините, вы не в списке админов.')
+            logger.warning('Attempt to enter the admin menu from %s',
+                            returnHelper.return_name(message))
             return False
     except Exception as e:
         logger.exception('-- Error in admin filter', str(e))
@@ -67,9 +86,8 @@ async def restricted(message: types.message) -> bool:
     """
     try:
         users_db = await db().search_users_by_account(str(message.from_user.username))
-        logger.info(f"restriction check for : {message.from_user.username} ,\n from {sys._getframe().f_back.f_code.co_name} ,\n found in users table {users_db}")
+        logger.info(f"restriction check for : {message.from_user.username} , from {sys._getframe().f_back.f_code.co_name} , found in users table {users_db}")
         warning_message = f'Unauthorized access denied: {returnHelper.return_name(message)}'
-
             # Две проверки: 1 - что у нас в принципе есть ответ, если нет, напишем пользователю, что мы его не наши. 
             #               2 - что у найденного пользователя есть account_name в AD
         if len(users_db) > 0:

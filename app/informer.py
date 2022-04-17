@@ -67,7 +67,7 @@ async def help_description(message: types.Message):
 
         user_info = await db().search_users_by_account(message.from_user.username)
         if len(user_info)>0:
-            if user_info[0]['admin'] == 1:
+            if user_info[0]['is_admin'] == 1:
                 msg += messages.help_admin
         logger.info(msg)
         await message.answer(text=emojize(msg), reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
@@ -135,7 +135,7 @@ async def timetable_personal(message: types.Message):
         cli_args = message.text.split()
         after_days = int(cli_args[1]) if (len(cli_args) == 2 and int(cli_args[1]) > 0) else 0
 
-        user_from_db = await db().get_users('tg_id', message.from_user.id)
+        user_from_db = db().get_users('tg_id', message.from_user.id)
 
         if len(user_from_db) > 0:
 
@@ -156,7 +156,7 @@ async def timetable_personal(message: types.Message):
 
     except Exception as e:
         logger.exception('error in timetable personal %s', str(e))
-        user_from_db = await db().get_users('tg_id', message.from_user.id)
+        user_from_db = db().get_users('tg_id', message.from_user.id)
         if len(user_from_db) > 0:
             await message.answer(messages.timetable_error.format(user_from_db[0][first_name], user_from_db[0][middle_name]),
                                  reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
@@ -266,7 +266,7 @@ async def main_menu(query: types.CallbackQuery, callback_data: str):
     try:
         logger.info('main_menu started')
         await query.message.answer(text=emojize(messages.main_menu),
-                                   reply_markup=keyboard.main_menu(),
+                                   reply_markup=keyboard.main_menu(tg_login=query.from_user.username),
                                    parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('Main menu %s', str(e))
@@ -358,7 +358,7 @@ async def show_locked_apps(message: types.Message):
         for app in locked_apps:
             msg += f"\n<b> {app['app_name']} </b> , заблокировал {app['locked_by']}"
     else:
-        user_from_db = await db().get_users('tg_id', message.from_user.id)
+        user_from_db = db().get_users('tg_id', message.from_user.id)
         if len(user_from_db) > 0:
             msg = f"Уважаемый {user_from_db[0]['first_name']} {user_from_db[0]['middle_name']}, заблокированных приложений нет."
         else:
@@ -510,7 +510,7 @@ async def retry_inprogress_releases(query: types.CallbackQuery, callback_data: s
     await query.message.reply(f"Все упавшие релизы будут перезапущены.")
 
 
-@initializeBot.dp.callback_query_handler(keyboard.duty_cb.filter(action='take_duty_date_list'), filters.restricted, filters.admin)
+@initializeBot.dp.callback_query_handler(keyboard.duty_cb.filter(action='take_duty_date_list'), filters.restricted, filters.is_ops)
 async def take_duty_date_list(query: types.CallbackQuery, callback_data: dict):
     """
         Список дат для взятия дежурства на себя
@@ -520,17 +520,19 @@ async def take_duty_date_list(query: types.CallbackQuery, callback_data: dict):
     await query.message.reply(text=msg, reply_markup=keyboard.take_duty_date_list(), parse_mode=ParseMode.HTML)
 
 
-@initializeBot.dp.callback_query_handler(keyboard.duty_cb.filter(action='take_duty_area_list'), filters.restricted, filters.admin)
+@initializeBot.dp.callback_query_handler(keyboard.duty_cb.filter(action='take_duty_area_list'), filters.restricted, filters.is_ops)
 async def take_duty_area_list(query: types.CallbackQuery, callback_data: dict):
     """
         Взять дежурство
     """
     logger.info('-- TAKE DUTY AREA LIST started by %s %s', returnHelper.return_name(query), callback_data)
     msg = f"Выберите зону ответственности:"
-    await query.message.reply(text=msg, reply_markup=keyboard.take_duty_area_list(callback_data['ddate']), parse_mode=ParseMode.HTML)
+    await query.message.reply(text=msg, 
+                              reply_markup=keyboard.take_duty_area_list(ddate=callback_data['ddate'], dutyman=query.from_user.username), 
+                              parse_mode=ParseMode.HTML)
 
 
-@initializeBot.dp.callback_query_handler(keyboard.duty_cb.filter(action='take_duty_confirm'), filters.restricted, filters.admin)
+@initializeBot.dp.callback_query_handler(keyboard.duty_cb.filter(action='take_duty_confirm'), filters.restricted, filters.is_ops)
 async def take_duty_confirm(query: types.CallbackQuery, callback_data: dict):
     """
         Подтвердить взятие дежурства
@@ -541,7 +543,7 @@ async def take_duty_confirm(query: types.CallbackQuery, callback_data: dict):
     await query.message.reply(text=msg, reply_markup=keyboard.take_duty_confirm(callback_data['ddate'], callback_data['area']), parse_mode=ParseMode.HTML)
 
 
-@initializeBot.dp.callback_query_handler(keyboard.duty_cb.filter(action='take_duty'), filters.restricted, filters.admin)
+@initializeBot.dp.callback_query_handler(keyboard.duty_cb.filter(action='take_duty'), filters.restricted, filters.is_ops)
 async def take_duty(query: types.CallbackQuery, callback_data: str):
     """
        Взять дежурство (вызов в API)
@@ -549,12 +551,11 @@ async def take_duty(query: types.CallbackQuery, callback_data: str):
     logger.info('-- TAKE DUTY started by %s %s', returnHelper.return_name(query), callback_data)
     try:
         take_duty_msg = {}
-        user_from_db = await db().get_users('tg_id', query.message.chat.id)
+        user_from_db = db().get_users('tg_id', query.message.chat.id)
         take_duty_msg['person'] = user_from_db[0]['full_name']
         take_duty_msg['duty_date'] = callback_data['ddate']
         take_duty_msg['area'] = callback_data['area']
         logger.info(f'Sending msg to take_duty api {take_duty_msg}')
-        session = await get_session()
         resp = requests.post(config.api_take_duty, data=json.dumps(take_duty_msg))
         logger.info(f'TAKE DUTY response from API {resp}')
     except Exception as e:
@@ -644,7 +645,7 @@ async def subscribe_events(query: types.CallbackQuery, callback_data: str):
         logger.info('subscribe_events opened by %s', returnHelper.return_name(query))
         msg = 'Вы можете подписаться на уведомления обо всех релизах. ' \
               'Уведомления о ваших релизах будут работать в любом случае, от них отписаться нельзя.'
-        user_from_db = await db().get_users('tg_id', query.message.chat.id)
+        user_from_db = db().get_users('tg_id', query.message.chat.id)
         user_subscriptions = await get_current_user_subscription(user_from_db[0]['account_name'])
         msg += '\n\n<b>Ваши текущие подписки</b>:\n' + user_subscriptions
         await query.message.reply(text=msg, reply_markup=keyboard.subscribe_menu(),
@@ -660,7 +661,7 @@ async def release_events(query: types.CallbackQuery, callback_data: str):
     try:
         del callback_data
         logger.info('-- RELEASE EVENTS a %s chat %s ', query.message.chat.type, query.message.chat)
-        user_from_db = await db().get_users('tg_id', query.message.chat.id)
+        user_from_db = db().get_users('tg_id', query.message.chat.id)
         user_subscriptions = await db().get_user_subscriptions(user_from_db[0]['account_name'])
         if 'release_events' in user_subscriptions:
             await db().delete_user_subscription(user_from_db[0]['account_name'], 'release_events')
@@ -684,7 +685,7 @@ async def timetable_reminder(query: types.CallbackQuery, callback_data: str):
         del callback_data
         logger.info('-- TIMETABLE REMINDER %s chat %s ', query.message.chat.type, query.message.chat)
         if (query.message.chat.type == 'private'):
-            user_from_db = await db().get_users('tg_id', query.message.chat.id)
+            user_from_db = db().get_users('tg_id', query.message.chat.id)
             user_subscriptions = await db().get_user_subscriptions(user_from_db[0]['account_name'])
             if 'timetable' in user_subscriptions:
                 await db().delete_user_subscription(user_from_db[0]['account_name'], 'timetable')
@@ -710,7 +711,7 @@ async def statistics_reminder(query: types.CallbackQuery, callback_data: str):
     try:
         del callback_data
         logger.info('-- STATISTICS REMINDER %s chat %s ', query.message.chat.type, query.message.chat)
-        user_from_db = await db().get_users('tg_id', query.message.chat.id)
+        user_from_db = db().get_users('tg_id', query.message.chat.id)
         user_subscriptions = await db().get_user_subscriptions(user_from_db[0]['account_name'])
         if 'statistics' in user_subscriptions:
             await db().delete_user_subscription(user_from_db[0]['account_name'], 'statistics')
@@ -751,7 +752,7 @@ async def app_info(message: types.Message):
                     msg += f'\n Релизные очереди: <strong>{app_info["queues"].replace(",", ", ")}</strong>'
                     msg += f"\n <a href='https://wiki.yooteam.ru/display/admins/ReleaseBot.ReleaseMaster#ReleaseBot.ReleaseMaster-%D0%A0%D0%B5%D0%B6%D0%B8%D0%BC%D1%8B%D0%B2%D1%8B%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B8Modes'>Подробнее о параметрах</a>\n"
                     if len(last_release) > 0:
-                        msg+= f"Последний успешный релиз: {config.jira_host}/browse/{last_release}\n\n"
+                        msg+= f"Последний успешный релиз: <a href='{config.jira_host}/browse/{last_release}'>{last_release}</a>\n\n"
                     else:
                         msg+= f"Последний успешный релиз: не найден\n\n"
                     if app_info["bot_enabled"]:
@@ -933,7 +934,7 @@ async def send_message_to_users(request):
             data_json['accounts'] = [data_json['accounts']]
         set_of_chat_id = []
         for acc in data_json['accounts']:
-            user_from_db = await db().get_users('account_name', re.sub('@yamoney.ru|@yoomoney.ru|@', '', acc))
+            user_from_db = db().get_users('account_name', re.sub('@yamoney.ru|@yoomoney.ru|@', '', acc))
             if len(user_from_db) > 0:
                 if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                     set_of_chat_id.append(user_from_db[0]['tg_id'])
@@ -948,7 +949,7 @@ async def send_message_to_users(request):
     return web.json_response()
 
 
-async def inform_users_from_jira_ticket(data_json: dict, disable_notification: str = True, escape_html: str = True, emoji: str = True):
+async def inform_users_from_jira_ticket(data_json: dict, disable_notification: str = True, escape_html: str = False, emoji: str = True):
     """
     """
     for task in data_json['jira_tasks']:
@@ -957,7 +958,7 @@ async def inform_users_from_jira_ticket(data_json: dict, disable_notification: s
             if data_json['inform_approvers'] == True and len(data_json['text']) > 0:
                 email_approvers = jira_get_approvers_list(task)
                 for email in email_approvers:
-                    user_from_db = await db().get_users('account_name', email)
+                    user_from_db = db().get_users('account_name', email)
                     if len(user_from_db) > 0:
                         if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                             await send_message_to_tg_chat(chat_id=user_from_db[0]['tg_id'], message=data_json['text'], 
@@ -966,7 +967,7 @@ async def inform_users_from_jira_ticket(data_json: dict, disable_notification: s
             if data_json['inform_watchers'] == True and len(data_json['text']) > 0:
                 email_watchers = jira_get_watchers_list(task)
                 for email in email_watchers:
-                    user_from_db = await db().get_users('account_name', email)
+                    user_from_db = db().get_users('account_name', email)
                     if len(user_from_db) > 0:
                         if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
                             await send_message_to_tg_chat(chat_id=user_from_db[0]['tg_id'], message=data_json['text'], 
@@ -992,7 +993,7 @@ async def get_dev_team_members(dev_team) -> str:
         msg += f"\n Позиция: <strong>{d['position']['name']}</strong>"
         msg += f"\n Департамент: <strong>{d['department']['name']}</strong>"
         # Поищем tg-логин пользователя
-        user_from_db = await db().get_users('account_name', d['user']['login'])
+        user_from_db = db().get_users('account_name', d['user']['login'])
         if len(user_from_db) > 0:
             if user_from_db[0]['tg_login'] != None and user_from_db[0]['working_status'] != 'dismissed':
                 msg += f"\n Telegram: <strong>@{user_from_db[0]['tg_login']}</strong>"
@@ -1126,7 +1127,7 @@ async def inform_today_duty(area: str, message: str, escape_html: bool = False, 
     if len(dutymen_array) > 0:
         for d in dutymen_array:
             try:
-                dutymen = await db().get_users('account_name', d['account_name'])
+                dutymen = db().get_users('account_name', d['account_name'])
                 logger.info('informing duty %s %s %s', dutymen[0]['tg_id'], dutymen[0]['tg_login'], message)
                 await send_message_to_tg_chat(chat_id=dutymen[0]['tg_id'], message=message, parse_mode=ParseMode.HTML, 
                                               silence=silence, escape_html=escape_html)
@@ -1196,7 +1197,7 @@ async def get_duty_external(request):
 async def call_main_menu(message: types.Message):
     try:
         await message.answer(text=emojize(messages.main_menu),
-                                    reply_markup=keyboard.main_menu(),
+                                    reply_markup=keyboard.main_menu(tg_login=message.from_user.username),
                                     parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception(f'Error in call main menu {str(e)}')
@@ -1208,7 +1209,7 @@ async def unknown_message(message: types.Message):
     """
     logger.info('-- UNKNOWN MESSAGE start %s %s', message, message.chat)
     try:
-        user_from_db = await db().get_users('tg_login', message.from_user.username)
+        user_from_db = db().get_users('tg_login', message.from_user.username)
         if len(user_from_db) > 0:
             respectful_name = user_from_db[0]['first_name'] + " " + user_from_db[0]['middle_name']
         else:
@@ -1217,7 +1218,7 @@ async def unknown_message(message: types.Message):
         if (message.chat.type == 'private'):
             if message.text == 'Главное меню':
                 await message.reply(text=emojize(messages.main_menu),
-                                            reply_markup=keyboard.main_menu(),
+                                            reply_markup=keyboard.main_menu(tg_login=message.from_user.username),
                                             parse_mode=ParseMode.HTML)
             else:
                 msg = emojize(f'{respectful_name},\n'
