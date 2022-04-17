@@ -307,16 +307,23 @@ async def stop_bot(query: types.CallbackQuery, callback_data: str):
     """
         Turn off bot
     """
-    del callback_data
-    logger.warning('%s stopped bot', returnHelper.return_name(query))
-    db().set_parameters('run_mode', 'off')
-    await query.message.reply('Релизный бот остановлен. Сам не запустится.')
+    try:
+        del callback_data
+        logger.info('-- STOP BOT %s' , returnHelper.return_name(query))
+        db().set_parameters('run_mode', 'off')
+        msg = messages.bot_was_stopped_manually % returnHelper.return_name(query)
+        releases_in_progress = JiraConnection().jira_search(config.search_issues_started)
+        rl_list = [rl.key for rl in releases_in_progress]
+        data = {'jira_tasks': rl_list, 'text': msg, 'inform_approvers': True, 'disable_notification': False}
+        await inform_users_from_jira_ticket(data)
+        await query.message.reply('Релизный бот остановлен. Сам не запустится.')
+    except Exception as e:
+        logger.exception(f'Error in stop bot {str(e)}')
 
 
 @initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['lock', 'unlock'])
 async def lock_app_release(message: types.Message):
     """
-
     """
     logger.info('lock app release started by %s %s', returnHelper.return_name(message), message.get_full_command())
     incoming = message.text.split()
@@ -377,14 +384,17 @@ async def lock_releases(locked_app):
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='turn_on'), filters.restricted, filters.admin)
 async def start_bot(query: types.CallbackQuery, callback_data: str):
     """
-        Turn on bot
-        :param query:
-        :param callback_data: {"action": value, "issue": value} (based on keyboard.posts_cb.filter)
+        Сменить режим бота на выкладку релизов
     """
     del callback_data
     logger.warning('%s started bot', returnHelper.return_name(query))
     db().set_parameters('run_mode', 'on')
-    await query.message.reply('Релизный бот запущен!')
+    msg = messages.bot_was_started_manually % returnHelper.return_name(query)
+    releases_in_progress = JiraConnection().jira_search(config.search_issues_started)
+    rl_list = [rl.key for rl in releases_in_progress]
+    data = {'jira_tasks': rl_list, 'text': msg, 'inform_approvers': True, 'disable_notification': False}
+    await inform_users_from_jira_ticket(data)
+    await query.message.reply('Релизный бот запущен.')
 
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='dont_touch'), filters.restricted, filters.admin)
@@ -934,36 +944,40 @@ async def send_message_to_users(request):
                                           parse_mode=ParseMode.HTML, escape_html=escape_html, emoji=emoji)
 
     if 'jira_tasks' in data_json:
-        for task in data_json['jira_tasks']:
-
-            if 'inform_approvers' in data_json and 'text' in data_json:
-                logger.info('Go inform_approvers %s', data_json['inform_approvers'])
-                if data_json['inform_approvers'] == True and len(data_json['text']) > 0:
-                    logger.info('It\'s true')
-                    email_approvers = jira_get_approvers_list(task)
-                    for email in email_approvers:
-                        user_from_db = await db().get_users('account_name', email)
-                        if len(user_from_db) > 0:
-                            if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
-                                await send_message_to_tg_chat(chat_id=user_from_db[0]['tg_id'], message=data_json['text'], 
-                                                              silence=disable_notification, parse_mode=ParseMode.HTML, escape_html=escape_html, emoji=emoji)
-            if 'inform_watchers' in data_json and 'text' in data_json:
-                if data_json['inform_watchers'] == True and len(data_json['text']) > 0:
-                    email_watchers = jira_get_watchers_list(task)
-                    for email in email_watchers:
-                        user_from_db = await db().get_users('account_name', email)
-                        if len(user_from_db) > 0:
-                            if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
-                                await send_message_to_tg_chat(chat_id=user_from_db[0]['tg_id'], message=data_json['text'], 
-                                                              silence=disable_notification, parse_mode=ParseMode.HTML, escape_html=escape_html, emoji=emoji)
-            if 'text_jira' in data_json:
-                try:
-                    logger.info('Leave comment to %s %s', JiraConnection().issue(task), data_json['text_jira'] )
-                    JiraConnection().add_comment(JiraConnection().issue(task), data_json['text_jira'])
-                except Exception as e:
-                    logger.exception('Error send message to users when commenting jira task %s', str(e))
-
+        await inform_users_from_jira_ticket(data_json)
     return web.json_response()
+
+
+async def inform_users_from_jira_ticket(data_json: dict, disable_notification: str = True, escape_html: str = True, emoji: str = True):
+    """
+    """
+    for task in data_json['jira_tasks']:
+        if 'inform_approvers' in data_json and 'text' in data_json:
+            logger.info('Go inform_approvers %s', data_json['inform_approvers'])
+            if data_json['inform_approvers'] == True and len(data_json['text']) > 0:
+                email_approvers = jira_get_approvers_list(task)
+                for email in email_approvers:
+                    user_from_db = await db().get_users('account_name', email)
+                    if len(user_from_db) > 0:
+                        if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
+                            await send_message_to_tg_chat(chat_id=user_from_db[0]['tg_id'], message=data_json['text'], 
+                                                            silence=disable_notification, parse_mode=ParseMode.HTML, escape_html=escape_html, emoji=emoji)
+        if 'inform_watchers' in data_json and 'text' in data_json:
+            if data_json['inform_watchers'] == True and len(data_json['text']) > 0:
+                email_watchers = jira_get_watchers_list(task)
+                for email in email_watchers:
+                    user_from_db = await db().get_users('account_name', email)
+                    if len(user_from_db) > 0:
+                        if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
+                            await send_message_to_tg_chat(chat_id=user_from_db[0]['tg_id'], message=data_json['text'], 
+                                                            silence=disable_notification, parse_mode=ParseMode.HTML, escape_html=escape_html, emoji=emoji)
+        if 'text_jira' in data_json:
+            try:
+                logger.info('Leave comment to %s %s', JiraConnection().issue(task), data_json['text_jira'] )
+                JiraConnection().add_comment(JiraConnection().issue(task), data_json['text_jira'])
+            except Exception as e:
+                logger.exception('Error send message to users when commenting jira task %s', str(e))
+
 
 async def get_dev_team_members(dev_team) -> str:
     logger.info('GET DEV TEAM MEMBERS for %s', dev_team)
