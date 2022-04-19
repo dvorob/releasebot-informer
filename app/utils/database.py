@@ -45,12 +45,12 @@ class Users(BaseModel):
     working_status = CharField()
     email = CharField()
     notification = CharField(default='none')
-    admin = IntegerField(default=0)
+    is_admin = IntegerField(default=0)
     date_update = DateField()
     staff_login = CharField()
     first_name = CharField()
     middle_name = CharField()
-    ops = IntegerField(default=0)
+    is_ops = IntegerField(default=0)
     team_key = CharField(default=None)
     team_name = CharField(default=None)
     department = CharField(default=None)
@@ -199,11 +199,11 @@ class PostgresPool:
             self.db.close()
 
 
-    async def get_users(self, field, value) -> list:
+    def get_users(self, field, value) -> list:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
         # например, найти Воробьева можно запросом get_users('account_name', 'ymvorobevda')
-        # всех админов - запросом get_users('admin', 1)
-        logger.info(f'get_users {field} = {value}')
+        # всех админов - запросом get_users('is_admin', 1)
+        logger.info(f'-- GET USERS {field} {value}')
         result = []
         try:
             self.db.connect(reuse_if_open=True)
@@ -217,10 +217,39 @@ class PostgresPool:
             return result
 
         except Exception:
-            logger.exception('exception in db get users')
+            logger.exception(f'exception in db get users {str(e)}')
             return result
         finally:
             self.db.close()
+
+
+    def get_user_rights(self, field, value) -> list:
+        # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
+        # например, найти Воробьева можно запросом get_users('account_name', 'ymvorobevda')
+        # всех админов - запросом get_users('is_admin', 1)
+        logger.info(f'-- GET USER RIGHTS {field} {value}')
+        user_from_db = []
+        user_rights = {'is_ops': 0, 'is_admin': 0, 'working_status': 'dismissed'}
+        try:
+            self.db.connect(reuse_if_open=True)
+            if field in ('tg_login', 'account_name'):
+                db_users = Users.select().where(fn.Lower(getattr(Users, field)) == fn.Lower(value))
+            else:
+                db_users = Users.select().where(getattr(Users, field) == value)
+
+            for v in db_users:
+                user_from_db.append((vars(v))['__data__'])
+            if len(user_from_db) > 0:
+                user_rights['is_ops'] = user_from_db[0]['is_ops']
+                user_rights['is_admin'] = user_from_db[0]['is_admin']
+                user_rights['working_status'] = user_from_db[0]['working_status']
+            return user_rights
+        except Exception:
+            logger.exception(f'exception in db get user rights {str(e)}')
+            return user_rights
+        finally:
+            self.db.close()
+
 
     async def get_all_tg_id(self) -> list:
         # Отобрать всех пользователей, у которых заполнен tg_id - для массовых уведомлений
@@ -242,7 +271,7 @@ class PostgresPool:
     async def search_users_by_fullname(self, full_name):
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
         # например, найти Воробьева можно запросом get_users('account_name', 'ymvorobevda')
-        # всех админов - запросом get_users('admin', 1)
+        # всех админов - запросом get_users('is_admin', 1)
         users_array = []
         try:
             logger.info('Search users by fullname for %s', full_name)
@@ -275,10 +304,10 @@ class PostgresPool:
         users_array = []
         try:
             logger.info('Search users by account for %s', account_name)
-            db_users = await self.get_users('account_name', account_name)
+            db_users = self.get_users('account_name', account_name)
             users_array.append(db_users) if len(db_users) > 0 else logger.info('Nothing found in Users for %s as account_name', account_name)
 
-            db_users = await self.get_users('tg_login', account_name)
+            db_users = self.get_users('tg_login', account_name)
             users_array.append(db_users) if len(db_users) > 0 else logger.info('Nothing found in Users for %s as tg_login', account_name)
             if len(users_array) > 0:
                 users_array = users_array[0]
@@ -354,6 +383,26 @@ class PostgresPool:
             logger.exception('exception in db get duty personal tg_login %s', str(e))
         finally:
             self.db.close()
+
+
+    def get_duties_for_users_set(self, duty_date: str, tg_login_set: set):
+        """
+        """
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            logger.info(f'get duties for users {duty_date}, {tg_login_set}')
+            db_query = (Duty_List
+                        .select()
+                        .where(Duty_List.tg_login.in_(tg_login_set), Duty_List.duty_date >= duty_date))
+            for v in db_query:
+                result.append((vars(v))['__data__'])
+            return result
+        except Exception as e:
+            logger.exception(f'Error in get duties for users {str(e)}')
+        finally:
+            self.db.close()
+
 
     def get_parameters(self, name) -> list:
         # Сходить в parameters
