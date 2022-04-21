@@ -60,7 +60,9 @@ def subscribe_menu() -> types.InlineKeyboardMarkup:
         types.InlineKeyboardButton("Расписание встреч",
                                    callback_data=posts_cb.new(action='timetable_reminder', issue='1')),
         types.InlineKeyboardButton("Статистика по релизам",
-                                   callback_data=posts_cb.new(action='statistics_reminder', issue='1'))
+                                   callback_data=posts_cb.new(action='statistics_reminder', issue='1')),
+        types.InlineKeyboardButton("Уведомления о дежурствах",
+                                   callback_data=posts_cb.new(action='duties_reminder', issue='1'))   
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_list, n_cols=1))
 
@@ -212,7 +214,7 @@ def take_duty_date_list() -> types.InlineKeyboardMarkup:
             dd_of_week = config.DaysOfWeek[dd.strftime('%A')].value
             button_release_list.append(types.InlineKeyboardButton(f"{dd_str} {dd_of_week}",
                                        callback_data=duty_cb.new(action='take_duty_area_list', ddate=dd_str, area='1', dutyman='1')))
-        to_admin = types.InlineKeyboardButton('Главное меню', callback_data=posts_cb.new(action='main_menu', issue='1'))
+        to_admin = types.InlineKeyboardButton('Главное меню', callback_data=posts_cb.new(action='main', issue='1'))
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=1, footer_buttons=to_admin))
     except Exception as e:
         logger.exception(f'Error in TAKE DUTY DATE LIST {str(e)}')
@@ -230,7 +232,7 @@ def take_duty_area_list(ddate: str, dutyman: str) -> types.InlineKeyboardMarkup:
         for area in area_list:
             button_release_list.append(types.InlineKeyboardButton(f"{area}",
                                        callback_data=duty_cb.new(action='take_duty_confirm', ddate=ddate, area=area, dutyman='1')))
-        to_admin = types.InlineKeyboardButton('Главное меню', callback_data=posts_cb.new(action='main_menu', issue='1'))
+        to_admin = types.InlineKeyboardButton('Главное меню', callback_data=posts_cb.new(action='main', issue='1'))
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=1, footer_buttons=to_admin))
     except Exception as e:
         logger.exception(f'Error in TAKE DUTY AREA LIST {str(e)}')
