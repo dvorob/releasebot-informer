@@ -41,7 +41,9 @@ def main_menu(tg_login: str = '') -> types.InlineKeyboardMarkup:
         ]
         if user_rights['is_ops'] == 1:
             button_list.append(types.InlineKeyboardButton('Взять дежурство', 
-                                        callback_data=duty_cb.new(action='take_duty_date_list', ddate='1', area='1', dutyman='1')))
+                                    callback_data=duty_cb.new(action='take_duty_date_list', ddate='1', area='1', dutyman='1')))
+            button_list.append(types.InlineKeyboardButton('Мои дежурства', 
+                                    callback_data=posts_cb.new(action='myduty_button', issue='1')))
         if user_rights['is_admin'] == 1:
             button_list.append(types.InlineKeyboardButton("Админское меню",
                                callback_data=posts_cb.new(action='admin_menu', issue='1')))
