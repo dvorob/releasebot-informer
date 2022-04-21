@@ -248,6 +248,20 @@ async def duty_button(query: types.CallbackQuery, callback_data: str):
         logger.exception('duty_button')
 
 
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='myduty_button'), filters.restricted)
+async def myduty_button(query: types.CallbackQuery, callback_data: str):
+    """
+        Информация о дежурствах пользователя
+    """
+    try:
+        logger.info('def myduty admin started: %s', message.from_user.username)
+        duty_date = get_duty_date(datetime.today())
+        msg = await create_duty_message_personal(duty_date, re.sub('@', '', message.from_user.username))
+        await query.message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+    except Exception as e:
+        logger.exception('error in duty admin %s', str(e))
+
+
 def to_main_menu() -> types.InlineKeyboardMarkup:
     """
         Return to main menu button
@@ -1287,7 +1301,7 @@ async def get_current_user_subscription(account_name) -> str:
         elif subs == 'timetable':
             msg += ' - Напоминание о встречах утром\n'
         elif subs == 'duties':
-            msg += ' - Напоминание о своих <a href="https://wiki.yooteam.ru/display/admins/ReleaseBot.Assistant#ReleaseBot.Assistant-%D0%94%D0%B5%D0%B6%D1%83%D1%80%D1%81%D1%82%D0%B2%D0%B0">дежурствах</a>\n'
+            msg += ' - Напоминание о своих <a href="https://wiki.yooteam.ru/display/admins/ReleaseBot.Assistant#ReleaseBot.Assistant-%D0%94%D0%B5%D0%B6%D1%83%D1%80%D1%81%D1%82%D0%B2%D0%B0">дежурствах</a> (только ДЭ и СБ)\n'
         elif subs == 'none':
             msg += ''
         else:
