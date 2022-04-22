@@ -32,6 +32,7 @@ from requests_ntlm import HttpNtlmAuth
 
 loop = asyncio.get_event_loop()
 
+
 @initializeBot.dp.errors_handler()
 async def errors_handler(update: Update, exception: Exception):
     """
@@ -41,6 +42,7 @@ async def errors_handler(update: Update, exception: Exception):
     except Exception as e:
         logger.exception("Cause exception {e} in update {update}", e=e, update=update)
     return True
+
 
 @initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['promo'])
 async def marketing_send(message: types.Message):
@@ -55,6 +57,7 @@ async def marketing_send(message: types.Message):
             await initializeBot.bot.send_message(chat_id=chat_id["tg_id"], text=emojize(messages.spam), parse_mode=ParseMode.HTML)
         except Exception as exc:
             logger.exception('Marketing sending error %s %s ', chat_id, str(exc))
+
 
 @initializeBot.dp.message_handler(filters.restricted, commands=['help'])
 async def help_description(message: types.Message):
@@ -108,6 +111,7 @@ async def duty_admin(message: types.Message):
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
 
+
 # /myduty command from chatbot
 @initializeBot.dp.message_handler(filters.restricted, commands=['myduty'])
 async def duty_admin_personal(message: types.Message):
@@ -125,6 +129,7 @@ async def duty_admin_personal(message: types.Message):
         message.bot.send_chat_action(chat_id=message.chat.id, action=ChatActions.typing)
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
+
 
 # /timetable command from chatbot
 @initializeBot.dp.message_handler(filters.restricted, commands=['timetable', 'meet', 'meetings'])
@@ -227,6 +232,7 @@ async def get_min_inf_board_button(query: types.CallbackQuery, callback_data: st
     except Exception:
         logger.exception('get_min_inf_board_button')
 
+
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='duty_button'), filters.restricted)
 async def duty_button(query: types.CallbackQuery, callback_data: str):
     """
@@ -255,9 +261,9 @@ async def myduty_button(query: types.CallbackQuery, callback_data: str):
         Информация о дежурствах пользователя
     """
     try:
-        logger.info('def myduty admin started: %s', message.from_user.username)
+        logger.info('def myduty admin started: %s', query.from_user.username)
         duty_date = get_duty_date(datetime.today())
-        msg = await create_duty_message_personal(duty_date, re.sub('@', '', message.from_user.username))
+        msg = await create_duty_message_personal(duty_date, re.sub('@', '', query.from_user.username))
         await query.message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
@@ -392,6 +398,7 @@ async def lock_releases(locked_app):
         logger.exception(f'lock_unlock_task {str(exc)}')
         return str(exc)
 
+
 ##############################################################################################
 #              Кнопки админского меню
 ##############################################################################################
@@ -445,6 +452,7 @@ async def release_app(query: types.CallbackQuery, callback_data: str):
     logger.info('-- RELEASE APP started by %s %s', returnHelper.return_name(query), callback_data)
     msg = f"Точно выкатываем {callback_data['issue']} ?"
     await query.message.reply(text=msg, reply_markup=keyboard.release_app_confirm(callback_data['issue']), parse_mode=ParseMode.HTML)
+
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='release_app_confirm'), filters.restricted, filters.admin)
 async def release_app_confirm(query: types.CallbackQuery, callback_data: str):
@@ -597,6 +605,7 @@ def dev_team_members(dev_team) -> types.InlineKeyboardMarkup:
     keyboard_main_menu = [[types.InlineKeyboardButton('Состав команды',
                                                       callback_data=keyboard.posts_cb.new(action='dev_team_members', issue=dev_team))]]
     return types.InlineKeyboardMarkup(inline_keyboard=keyboard_main_menu)
+
 
 ##############################################################################################
 
