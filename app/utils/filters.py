@@ -60,7 +60,7 @@ async def admin(message: types.message) -> bool:
 
 async def is_ops(message: types.message) -> bool:
     """
-        Filter for ops
+       Проверка, что это ДЭ или СБ
     """
     try:
         user_rights = db().get_user_rights('tg_login', str(message.from_user.username))
