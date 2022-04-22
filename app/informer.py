@@ -248,6 +248,7 @@ async def duty_button(query: types.CallbackQuery, callback_data: str):
         logger.exception('duty_button')
 
 
+
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='myduty_button'), filters.restricted, filters.is_ops)
 async def myduty_button(query: types.CallbackQuery, callback_data: str):
     """
