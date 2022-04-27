@@ -18,6 +18,10 @@ duty_cb = filters.duty_callback()
 button_main_menu = types.KeyboardButton('Главное меню', callback_data=posts_cb.new(action='main', issue='1'))
 reply_main_menu = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False).add(button_main_menu)
 
+button_admsys_send = types.KeyboardButton('Написать Linux-админам', 
+                                          callback_data=posts_cb.new(action='send_message_to_admsys', issue='1'))
+admsys_send_menu = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False).add(button_admsys_send)
+
 def main_menu(tg_login: str = '') -> types.InlineKeyboardMarkup:
     """
         Main menu Keyboard
@@ -37,7 +41,9 @@ def main_menu(tg_login: str = '') -> types.InlineKeyboardMarkup:
             types.InlineKeyboardButton("Подписки и уведомления",
                                        callback_data=posts_cb.new(action='subscribe', issue='1')),
             types.InlineKeyboardButton("Краткая инфа с релизной доски",
-                                       callback_data=posts_cb.new(action='get_min_inf_board', issue='1'))
+                                       callback_data=posts_cb.new(action='get_min_inf_board', issue='1')),
+            types.InlineKeyboardButton("Написать Linux-админам",
+                                       callback_data=posts_cb.new(action='send_message_to_admsys_menu', issue='1'))
         ]
         if user_rights['is_ops'] == 1:
             button_list.append(types.InlineKeyboardButton('Взять дежурство', 
