@@ -169,15 +169,20 @@ async def timetable_personal(message: types.Message):
 
 async def create_duty_message(duty_date) -> str:
     dutymen_array = await db().get_duty(duty_date)
+    msg = ''
+
     if len(dutymen_array) > 0:
-        msg = f"<b>Дежурят на {duty_date.strftime('%Y-%m-%d')}:</b>\n"
+        if int(datetime.today().strftime("%H")) < 10:
+            msg += f":warning: После 10:00 дежурные сменятся.\n\n"
+        msg += f"<b>Дежурят на {duty_date.strftime('%Y-%m-%d')}:</b>\n"
         for d in dutymen_array:
             d['tg_login'] = '@' + d['tg_login'] if len(d['tg_login']) > 0 else ''
             msg += f"\n· {d['full_text']} <b>{d['tg_login']}</b>"
+
         logger.debug('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
     else:
         msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty.\n" + returnHelper.return_quotations()
-    return msg
+    return emojize(msg)
 
 
 async def create_duty_message_personal(duty_date, tg_login) -> str:
@@ -200,6 +205,29 @@ def get_duty_date(date):
         return date - timedelta(1)
     else:
         return date
+
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='send_message_to_admsys_menu'), filters.restricted)
+async def send_message_to_admsys_menu(query: types.CallbackQuery, callback_data: str) -> str:
+    """
+        Create msg with releases in the progress and in the Admsys queue
+    """
+    try:
+        msg = 'Ваше сообщение будет отправлено в рабочий чат ADMSYS, после чего с вами свяжутся (но это неточно).'
+        await query.message.reply(msg, reply_markup=keyboard.admsys_send_menu, parse_mode=ParseMode.HTML)
+    except Exception as e:
+        logger.exception(f'Error in send message to admsys {str(e)}')
+
+
+async def send_message_to_admsys():
+    """
+        Create msg with releases in the progress and in the Admsys queue
+    """
+    try:
+        logger.info(f'-- SEND MESSAGE TO ADMSYS {query.message} {query.message.from_user}')
+        await bot.send_message(chat_id='279933948', text='HEY!', disable_notification=True)
+    except Exception as e:
+        logger.exception(f'Error in send message to admsys {str(e)}')
 
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='get_min_inf_board'), filters.restricted)
@@ -252,7 +280,6 @@ async def duty_button(query: types.CallbackQuery, callback_data: str):
         await query.message.answer(text=msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception:
         logger.exception('duty_button')
-
 
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='myduty_button'), filters.restricted, filters.is_ops)
@@ -1267,6 +1294,8 @@ async def unknown_message(message: types.Message):
                 await message.reply(text=emojize(messages.main_menu),
                                             reply_markup=keyboard.main_menu(tg_login=message.from_user.username),
                                             parse_mode=ParseMode.HTML)
+            elif message.text == 'Написать Linux-админам':
+                await send_message_to_admsys()
             else:
                 msg = emojize(f'{respectful_name},\n'
                             f'Я не знаю, как ответить на {message.text} :astonished:\n'
