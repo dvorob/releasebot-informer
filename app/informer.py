@@ -1126,6 +1126,12 @@ async def inform_subscribers(request):
     """
     data_json = await request.json()
     logger.info(f"-- INFORM SUBSCRIBERS {data_json}")
+
+    if 'emoji' in data_json:
+        emoji = data_json['emoji']
+    else:
+        emoji = False
+
     if 'notification' in data_json:
         subscribers = await db().get_all_users_with_subscription(data_json['notification'])
         logger.info('Inform subscribers going through list %s', subscribers)
@@ -1134,7 +1140,7 @@ async def inform_subscribers(request):
                 logger.debug(f"Inform subscribers sending message to {user['tg_login']}, {user['tg_id']}, {data_json['text']}")
                 if user['tg_id'] and user['working_status'] != 'dismissed':
                     await send_message_to_tg_chat(chat_id=user['tg_id'], message=data_json['text'], 
-                                                  silence=True, parse_mode=ParseMode.HTML)
+                                                  silence=True, parse_mode=ParseMode.HTML, emoji=emoji)
             except BotBlocked:
                 logger.info('Error Inform subscribers bot was blocked by %s', user)
             except ChatNotFound:
