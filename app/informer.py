@@ -9,6 +9,7 @@ import config
 import keyboard as keyboard
 import asyncio
 import json
+import random
 import re
 import requests
 import sys
@@ -1004,20 +1005,22 @@ async def send_message_to_users(request):
     else:
         emoji = False
 
+    if 'polite' in data_json:
+        polite = data_json['polite']
+    else:
+        polite = False
+
     if 'accounts' in data_json:
         if type(data_json['accounts']) == str:
             data_json['accounts'] = [data_json['accounts']]
-        set_of_chat_id = []
+
         for acc in data_json['accounts']:
             user_from_db = db().get_users('account_name', re.sub('@yamoney.ru|@yoomoney.ru|@', '', acc))
             if len(user_from_db) > 0:
                 if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
-                    set_of_chat_id.append(user_from_db[0]['tg_id'])
-
-        logger.info('sending message for %s', set_of_chat_id)
-        for chat_id in set_of_chat_id:
-            await send_message_to_tg_chat(chat_id=chat_id, message=data_json['text'], silence=disable_notification, 
-                                          parse_mode=ParseMode.HTML, escape_html=escape_html, emoji=emoji)
+                    msg = _make_message_polite(data_json['text'], user_from_db[0]) if polite else data_json['text']
+                    await send_message_to_tg_chat(chat_id=user_from_db[0]['tg_id'], message=msg, silence=disable_notification, 
+                                                parse_mode=ParseMode.HTML, escape_html=escape_html, emoji=emoji)
 
     if 'jira_tasks' in data_json:
         await inform_users_from_jira_ticket(data_json)
@@ -1291,25 +1294,21 @@ async def unknown_message(message: types.Message):
     logger.info('-- UNKNOWN MESSAGE start %s %s', message, message.chat)
     try:
         user_from_db = db().get_users('tg_login', message.from_user.username)
-        if len(user_from_db) > 0:
-            respectful_name = user_from_db[0]['first_name'] + " " + user_from_db[0]['middle_name']
-        else:
-            respectful_name = message.from_user.full_name
 
         if (message.chat.type == 'private'):
             if message.text == 'Главное меню':
                 await message.reply(text=emojize(messages.main_menu),
-                                            reply_markup=keyboard.main_menu(tg_login=message.from_user.username),
-                                            parse_mode=ParseMode.HTML)
+                                    reply_markup=keyboard.main_menu(tg_login=message.from_user.username),
+                                    parse_mode=ParseMode.HTML)
             elif message.text == 'Написать Linux-админам':
                 await send_message_to_admsys()
             else:
-                msg = emojize(f'{respectful_name},\n'
-                            f'Я не знаю, как ответить на {message.text} :astonished:\n'
-                            'Список того, что я умею - /help')
+                msg = f'Я не знаю, как ответить на {message.text} :astonished:\n Список того, что я умею - /help'
+                if len(user_from_db) > 0:
+                    msg = _make_message_polite(message=msg, user=user_from_db[0])
                 # чтобы не спамил на реплаи в группах, а только в личку 
                 logger.info('-- UNKNOWN MESSAGE HERE')
-                await message.reply(msg, reply_markup=keyboard.reply_main_menu, parse_mode=ParseMode.HTML)
+                await message.reply(emojize(msg), reply_markup=keyboard.reply_main_menu, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception(f'Error in unknown_message {str(e)}')
 
@@ -1333,6 +1332,23 @@ def _app_name_regex(issue_summary: str) -> dict:
     app = re.match('^([0-9a-z-]+)[+=]([0-9a-zA-Z-.]+)$', issue_summary.strip())
     output = {'name': app[1], 'version': app[2]} if app else {'name': issue_summary, 'version': False}
     return output
+
+
+def _make_message_polite(message: str, user: dict) -> str:
+    """
+    Добавить к сообщению вежливое обращение к пользователю
+    """
+    male_appeals = ['Уважаемый', 'Досточтимый', 'Дорогой']
+    female_appeals = ['Уважаемая', 'Досточтимая', 'Дорогая']
+    undefined_appeals = ['']
+    if user['gender'] == 'Мужской':
+        prefix = random.choice(male_appeals)
+    elif user['gender'] == 'Женский':
+        prefix = random.choice(female_appeals)
+    else:
+        prefix = random.choice(undefined_appeals)
+    return prefix + f" {user['first_name']} {user['middle_name']}, \n" + message
+
 
 async def get_current_user_subscription(account_name) -> str:
     """
