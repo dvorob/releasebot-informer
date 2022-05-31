@@ -605,6 +605,7 @@ async def take_duty(query: types.CallbackQuery, callback_data: str):
         take_duty_msg['person'] = user_from_db[0]['full_name']
         take_duty_msg['duty_date'] = callback_data['ddate']
         take_duty_msg['area'] = callback_data['area']
+        take_duty_msg['tg_login'] = user_from_db[0]['tg_login']
         logger.info(f'Sending msg to take_duty api {take_duty_msg}')
         resp = requests.post(config.api_take_duty, data=json.dumps(take_duty_msg))
         logger.info(f'TAKE DUTY response from API {resp}')
@@ -1003,20 +1004,22 @@ async def send_message_to_users(request):
     else:
         emoji = False
 
+    if 'polite' in data_json:
+        polite = data_json['polite']
+    else:
+        polite = False
+
     if 'accounts' in data_json:
         if type(data_json['accounts']) == str:
             data_json['accounts'] = [data_json['accounts']]
-        set_of_chat_id = []
+
         for acc in data_json['accounts']:
             user_from_db = db().get_users('account_name', re.sub('@yamoney.ru|@yoomoney.ru|@', '', acc))
             if len(user_from_db) > 0:
                 if user_from_db[0]['tg_id'] != None and user_from_db[0]['working_status'] != 'dismissed':
-                    set_of_chat_id.append(user_from_db[0]['tg_id'])
-
-        logger.info('sending message for %s', set_of_chat_id)
-        for chat_id in set_of_chat_id:
-            await send_message_to_tg_chat(chat_id=chat_id, message=data_json['text'], silence=disable_notification, 
-                                          parse_mode=ParseMode.HTML, escape_html=escape_html, emoji=emoji)
+                    msg = _make_message_polite(data_json['text'], user_from_db[0]) if polite else data_json['text']
+                    await send_message_to_tg_chat(chat_id=user_from_db[0]['tg_id'], message=msg, silence=disable_notification, 
+                                                parse_mode=ParseMode.HTML, escape_html=escape_html, emoji=emoji)
 
     if 'jira_tasks' in data_json:
         await inform_users_from_jira_ticket(data_json)
@@ -1125,6 +1128,12 @@ async def inform_subscribers(request):
     """
     data_json = await request.json()
     logger.info(f"-- INFORM SUBSCRIBERS {data_json}")
+
+    if 'emoji' in data_json:
+        emoji = data_json['emoji']
+    else:
+        emoji = False
+
     if 'notification' in data_json:
         subscribers = await db().get_all_users_with_subscription(data_json['notification'])
         logger.info('Inform subscribers going through list %s', subscribers)
@@ -1133,7 +1142,7 @@ async def inform_subscribers(request):
                 logger.debug(f"Inform subscribers sending message to {user['tg_login']}, {user['tg_id']}, {data_json['text']}")
                 if user['tg_id'] and user['working_status'] != 'dismissed':
                     await send_message_to_tg_chat(chat_id=user['tg_id'], message=data_json['text'], 
-                                                  silence=True, parse_mode=ParseMode.HTML)
+                                                  silence=True, parse_mode=ParseMode.HTML, emoji=emoji)
             except BotBlocked:
                 logger.info('Error Inform subscribers bot was blocked by %s', user)
             except ChatNotFound:
@@ -1284,25 +1293,21 @@ async def unknown_message(message: types.Message):
     logger.info('-- UNKNOWN MESSAGE start %s %s', message, message.chat)
     try:
         user_from_db = db().get_users('tg_login', message.from_user.username)
-        if len(user_from_db) > 0:
-            respectful_name = user_from_db[0]['first_name'] + " " + user_from_db[0]['middle_name']
-        else:
-            respectful_name = message.from_user.full_name
 
         if (message.chat.type == 'private'):
             if message.text == 'Главное меню':
                 await message.reply(text=emojize(messages.main_menu),
-                                            reply_markup=keyboard.main_menu(tg_login=message.from_user.username),
-                                            parse_mode=ParseMode.HTML)
+                                    reply_markup=keyboard.main_menu(tg_login=message.from_user.username),
+                                    parse_mode=ParseMode.HTML)
             elif message.text == 'Написать Linux-админам':
                 await send_message_to_admsys()
             else:
-                msg = emojize(f'{respectful_name},\n'
-                            f'Я не знаю, как ответить на {message.text} :astonished:\n'
-                            'Список того, что я умею - /help')
+                msg = f'Я не знаю, как ответить на {message.text} :astonished:\n Список того, что я умею - /help'
+                if len(user_from_db) > 0:
+                    msg = _make_message_polite(message=msg, user=user_from_db[0])
                 # чтобы не спамил на реплаи в группах, а только в личку 
                 logger.info('-- UNKNOWN MESSAGE HERE')
-                await message.reply(msg, reply_markup=keyboard.reply_main_menu, parse_mode=ParseMode.HTML)
+                await message.reply(emojize(msg), reply_markup=keyboard.reply_main_menu, parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception(f'Error in unknown_message {str(e)}')
 
@@ -1326,6 +1331,14 @@ def _app_name_regex(issue_summary: str) -> dict:
     app = re.match('^([0-9a-z-]+)[+=]([0-9a-zA-Z-.]+)$', issue_summary.strip())
     output = {'name': app[1], 'version': app[2]} if app else {'name': issue_summary, 'version': False}
     return output
+
+
+def _make_message_polite(message: str, user: dict) -> str:
+    """
+    Добавить к сообщению вежливое обращение к пользователю
+    """
+    return f"Уважаемый {user['first_name']} {user['middle_name']}, \n" + message
+
 
 async def get_current_user_subscription(account_name) -> str:
     """

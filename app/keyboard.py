@@ -41,9 +41,9 @@ def main_menu(tg_login: str = '') -> types.InlineKeyboardMarkup:
             types.InlineKeyboardButton("Подписки и уведомления",
                                        callback_data=posts_cb.new(action='subscribe', issue='1')),
             types.InlineKeyboardButton("Краткая инфа с релизной доски",
-                                       callback_data=posts_cb.new(action='get_min_inf_board', issue='1')),
-            types.InlineKeyboardButton("Написать Linux-админам",
-                                       callback_data=posts_cb.new(action='send_message_to_admsys_menu', issue='1'))
+                                       callback_data=posts_cb.new(action='get_min_inf_board', issue='1'))
+            # types.InlineKeyboardButton("Написать Linux-админам",
+            #                            callback_data=posts_cb.new(action='send_message_to_admsys_menu', issue='1'))
         ]
         if user_rights['is_ops'] == 1:
             button_list.append(types.InlineKeyboardButton('Взять дежурство', 
