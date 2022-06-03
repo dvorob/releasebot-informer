@@ -54,6 +54,7 @@ class Users(BaseModel):
     team_key = CharField(default=None)
     team_name = CharField(default=None)
     department = CharField(default=None)
+    gender = CharField(default=None)
 
 class User_Subscriptions(BaseModel):
     id = IntegerField(primary_key=True)
