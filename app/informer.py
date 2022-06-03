@@ -9,6 +9,7 @@ import config
 import keyboard as keyboard
 import asyncio
 import json
+import random
 import re
 import requests
 import sys
@@ -1337,7 +1338,16 @@ def _make_message_polite(message: str, user: dict) -> str:
     """
     Добавить к сообщению вежливое обращение к пользователю
     """
-    return f"Уважаемый {user['first_name']} {user['middle_name']}, \n" + message
+    male_appeals = ['Уважаемый', 'Досточтимый', 'Дорогой']
+    female_appeals = ['Уважаемая', 'Досточтимая', 'Дорогая']
+    undefined_appeals = ['']
+    if user['gender'] == 'Мужской':
+        prefix = random.choice(male_appeals)
+    elif user['gender'] == 'Женский':
+        prefix = random.choice(female_appeals)
+    else:
+        prefix = random.choice(undefined_appeals)
+    return prefix + f" {user['first_name']} {user['middle_name']}, \n" + message
 
 
 async def get_current_user_subscription(account_name) -> str:
