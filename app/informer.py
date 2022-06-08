@@ -1338,7 +1338,7 @@ def _make_message_polite(message: str, user: dict) -> str:
     """
     Добавить к сообщению вежливое обращение к пользователю
     """
-    male_appeals = ['Уважаемый', 'Досточтимый', 'Дорогой']
+    male_appeals = ['Уважаемый', 'Досточтимый', 'Дорогой', 'Господин', 'Сэр']
     female_appeals = ['Уважаемая', 'Досточтимая', 'Дорогая']
     undefined_appeals = ['']
     if user['gender'] == 'Мужской':
