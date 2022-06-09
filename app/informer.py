@@ -606,6 +606,7 @@ async def take_duty(query: types.CallbackQuery, callback_data: str):
         take_duty_msg['person'] = user_from_db[0]['full_name']
         take_duty_msg['duty_date'] = callback_data['ddate']
         take_duty_msg['area'] = callback_data['area']
+        take_duty_msg['account_name'] = user_from_db[0]['account_name']
         take_duty_msg['tg_login'] = user_from_db[0]['tg_login']
         logger.info(f'Sending msg to take_duty api {take_duty_msg}')
         resp = requests.post(config.api_take_duty, data=json.dumps(take_duty_msg))
