@@ -262,6 +262,37 @@ async def get_min_inf_board_button(query: types.CallbackQuery, callback_data: st
         logger.exception('get_min_inf_board_button')
 
 
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='meetings_today'), filters.restricted)
+async def meetings_today(query: types.CallbackQuery, callback_data: str):
+    """
+    Кнопка, выдающая встречи на сегодня. Аналог команды /meet
+    """
+    del callback_data
+    try:
+        user_from_db = db().get_users('tg_id', query.message.chat.id)
+        if len(user_from_db) > 0:
+            header = {'email': user_from_db[0]['email'], 'afterdays': '0'}
+            logger.info('timetable personal: %s %s', query.message.chat.username, header)
+            session = await get_session()
+            async with session.get(config.api_get_timetable, headers=header) as resp:
+                data = await resp.json(content_type=None)
+            msg = data['message']
+            if data['status'] == 'error':
+                if len(user_from_db) > 0:
+                    msg = f"Уважаемый {user_from_db[0]['first_name']} {user_from_db[0]['middle_name']}!\n" + msg
+            logger.debug('get timetable personal from api: %s %s', resp.status, resp.json())
+        else:
+            msg = f"Не нашел данных о {query.message.from_user.username} в своей БД.\n" + returnHelper.return_quotations()
+        await query.message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+
+    except Exception as e:
+        logger.exception('error in timetable personal %s', str(e))
+        user_from_db = db().get_users('tg_id', query.message.chat.id)
+        if len(user_from_db) > 0:
+            await query.message.answer(messages.timetable_error.format(user_from_db[0][first_name], user_from_db[0][middle_name]),
+                                 reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+
+
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='duty_button'), filters.restricted)
 async def duty_button(query: types.CallbackQuery, callback_data: str):
     """
