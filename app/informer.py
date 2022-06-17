@@ -158,7 +158,7 @@ async def timetable_personal(message: types.Message):
             logger.debug('get timetable personal from api: %s %s', resp.status, resp.json())
         else:
             msg = f"Не нашел данных о {message.from_user.username} в своей БД.\n" + returnHelper.return_quotations()
-        await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+        await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML, disable_web_page_preview=True)
 
     except Exception as e:
         logger.exception('error in timetable personal %s', str(e))
@@ -283,7 +283,7 @@ async def meetings_today(query: types.CallbackQuery, callback_data: str):
             logger.debug('get timetable personal from api: %s %s', resp.status, resp.json())
         else:
             msg = f"Не нашел данных о {query.message.from_user.username} в своей БД.\n" + returnHelper.return_quotations()
-        await query.message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
+        await query.message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML, disable_web_page_preview=True)
 
     except Exception as e:
         logger.exception('error in timetable personal %s', str(e))
