@@ -11,6 +11,7 @@ releasebot:
   target_port: 8100
   image: 'docker-ym.nexus.yooteam.ru/yamoney/releasebot-informer'
   tag: 'latest'
+  log_enabled: true
   ingress:
     host: 'informer.intools.yooteam.ru'
     path: /
