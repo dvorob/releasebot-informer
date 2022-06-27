@@ -910,6 +910,7 @@ async def dev_team_info(message: types.Message):
     except Exception as e:
         logger.exception('Error in DEV TEAM INFO %s', e)
 
+
 @initializeBot.dp.message_handler(filters.restricted, filters.admin, commands=['where_app', 'where'])
 async def where_app_hosts(message: types.Message):
     """
@@ -1093,9 +1094,10 @@ async def inform_users_from_jira_ticket(data_json: dict, disable_notification: s
 async def get_dev_team_members(dev_team) -> str:
     logger.info('GET DEV TEAM MEMBERS for %s', dev_team)
     msg = '<u><b>Результаты поиска</b></u>:'
+    tt_api_uri = config.tt_api_url + f"?team={dev_team.upper()}&onlyActualTeamsData"
     tt_api_response = requests.get(
-        config.tt_api_url + dev_team.upper(),
-        auth=(config.jira_user, config.jira_pass),
+        tt_api_uri,
+        auth=HttpNtlmAuth(config.jira_user, config.jira_pass),
         verify=False)
     for d in tt_api_response.json():
         msg += f"\n <u>Логин</u>: <a href='{config.staff_url}/#/{d['user']['login']}'><strong>{d['user']['login']}</strong></a>"
@@ -1115,9 +1117,11 @@ async def get_user_membership(login) -> str:
     logger.info('GET USER MEMBERSHIP for %s', login)
     teams = []
     try:
-        tt_api_response = requests.get(config.tt_api_url + 'login/' + login,
-                                        auth=(config.jira_user, config.jira_pass),
-                                        verify=False)
+        tt_api_uri = config.tt_api_url + f"?teammate={login}&onlyActualTeamsData"
+        tt_api_response = requests.get(
+            tt_api_uri,
+            auth=HttpNtlmAuth(config.jira_user, config.jira_pass),
+            verify=False)
         for d in tt_api_response.json():
             if d['user']['login'] == login:
                 teams.append({'dev_team': d['team']['key'], 'team_name': d['team']['name']})
