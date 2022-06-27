@@ -37,7 +37,8 @@ jira_user = os.environ.get('jira_user')
 jira_pass = os.environ.get('jira_pass')
 jira_options = {'server': jira_host, 'verify': False}
 
-tt_api_url = f'{jira_host}/rest/teamtransitions/2.0/member/'
+lk_host = 'https://lk.yooteam.ru'
+tt_api_url = f'{lk_host}/1c82_lk/hs/teamtransition/v1/members'
 
 waiting_assignee_releases = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" AND ' \
                      'status = "TO DO" ORDER BY Rank ASC'
