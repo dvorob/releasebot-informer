@@ -1023,25 +1023,17 @@ async def send_message_to_users(request):
     """
     data_json = await request.json()
     logger.info(f"-- SEND MESSAGE TO USERS {data_json}")
-    if 'disable_notification' in data_json:
-        disable_notification = data_json['disable_notification']
-    else:
-        disable_notification = False
 
-    if 'escape_html' in data_json:
-        escape_html = data_json['escape_html']
-    else:
-        escape_html = False
+    disable_notification = data_json.get('disable_notification', False)
+    escape_html = data_json.get('escape_html', False)
+    emoji = data_json.get('emoji', False)
+    polite = data_json.get('polite', False)
+    msg = data_json.get('text', data_json.get('message', False))
 
-    if 'emoji' in data_json:
-        emoji = data_json['emoji']
-    else:
-        emoji = False
-
-    if 'polite' in data_json:
-        polite = data_json['polite']
-    else:
-        polite = False
+    if not msg:
+        return web.json_response(
+            data={"message": "message parameter is required and has to be setted"}, status=400
+        )
 
     if 'accounts' in data_json:
         if type(data_json['accounts']) == str:
@@ -1084,11 +1076,7 @@ async def inform_users_from_jira_ticket(data_json: dict, disable_notification: s
                             await send_message_to_tg_chat(chat_id=user_from_db[0]['tg_id'], message=data_json['text'], 
                                                             silence=disable_notification, parse_mode=ParseMode.HTML, escape_html=escape_html, emoji=emoji)
         if 'text_jira' in data_json:
-            try:
-                logger.info('Leave comment to %s %s', JiraConnection().issue(task), data_json['text_jira'] )
-                JiraConnection().add_comment(JiraConnection().issue(task), data_json['text_jira'])
-            except Exception as e:
-                logger.exception('Error send message to users when commenting jira task %s', str(e))
+            JiraConnection().add_comment(JiraConnection().issue(task), data_json['text_jira'])
 
 
 async def get_dev_team_members(dev_team) -> str:
@@ -1157,6 +1145,10 @@ async def inform_duty(request):
                 await inform_today_duty(area=area, message=data_json['message'], escape_html=escape_html, silence=silence)
         except Exception as e:
             logger.exception('Error inform duty %s', e)
+    else:
+        return web.json_response(
+            data={"message": "areas parameter is required and has to be setted"}, status=400
+        )
     return web.json_response()
 
 
@@ -1169,10 +1161,7 @@ async def inform_subscribers(request):
     data_json = await request.json()
     logger.info(f"-- INFORM SUBSCRIBERS {data_json}")
 
-    if 'emoji' in data_json:
-        emoji = data_json['emoji']
-    else:
-        emoji = False
+    emoji = data_json.get('emoji', False)
 
     if 'notification' in data_json:
         subscribers = await db().get_all_users_with_subscription(data_json['notification'])
@@ -1182,13 +1171,13 @@ async def inform_subscribers(request):
                 logger.debug(f"Inform subscribers sending message to {user['tg_login']}, {user['tg_id']}, {data_json['text']}")
                 if user['tg_id'] and user['working_status'] != 'dismissed':
                     await send_message_to_tg_chat(chat_id=user['tg_id'], message=data_json['text'], 
-                                                  silence=True, parse_mode=ParseMode.HTML, emoji=emoji)
-            except BotBlocked:
-                logger.info('Error Inform subscribers bot was blocked by %s', user)
-            except ChatNotFound:
-                logger.error('Error Inform subscribers Chat not found: %s', user)        
+                                                  silence=True, parse_mode=ParseMode.HTML, emoji=emoji)    
             except Exception as e:
                 logger.exception('Error inform subscribers %s', e)
+    else:
+        return web.json_response(
+            data={"message": "notification parameter is required and has to be setted"}, status=400
+        )
     return web.json_response()
 
 

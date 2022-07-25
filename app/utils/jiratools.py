@@ -69,7 +69,11 @@ class JiraConnection:
             Add comment to Jira task
             :return:
         """
-        self.jira.add_comment(jira_issue_id, comment)
+        try:
+            logger.info('Leave comment to %s %s', jira_issue_id, comment )
+            self.jira.add_comment(jira_issue_id, comment)
+        except Exception as e:
+            logger.exception('Error send message to users when commenting jira task %s', str(e))
 
 
     def assign_issue(self, jira_issue_id, for_whom_assign):
