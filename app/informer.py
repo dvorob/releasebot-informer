@@ -1147,6 +1147,9 @@ async def inform_duty(request):
     data_json = await request.json()
     logger.info(f"-- INFORM DUTY {data_json}")
     if 'areas' in data_json:
+        if type(data_json['areas']) == str:
+            data_json['areas'] = [data_json['areas']]
+
         try:
             for area in data_json['areas']:
                 escape_html = data_json.get('escape_html', False)
