@@ -34,36 +34,36 @@ node('docker') {
             }
             stage('get secret from vault') {
                 docker.image("${dockerImageUrl}").inside() {
-                // set credential for get secret from Vault
-                withCredentials([usernamePassword(credentialsId: credentials.vault, usernameVariable: 'JenkinsUser', passwordVariable: 'JenkinsPassword')]) {
-                    env.VAULT_ADDR = 'https://vault.yooteam.ru'
-                    env.VAULT_AUTHTYPE = 'ldap'
-                    env.VAULT_USER = "${JenkinsUser}"
-                    env.VAULT_PASSWORD = "${JenkinsPassword}"
-                }
-                ansiblePlaybook credentialsId: credentials.jenkins,
-                                playbook: './ansible/site.yml',
-                                colorized: true
-                //notifyBitbucket(buildStatus: 'INPROGRESS')
+                    // set credential for get secret from Vault
+                    withCredentials([usernamePassword(credentialsId: credentials.vault, usernameVariable: 'JenkinsUser', passwordVariable: 'JenkinsPassword')]) {
+                        env.VAULT_ADDR = 'https://vault.yooteam.ru'
+                        env.VAULT_AUTHTYPE = 'ldap'
+                        env.VAULT_USER = "${JenkinsUser}"
+                        env.VAULT_PASSWORD = "${JenkinsPassword}"
+                    }
+                    ansiblePlaybook credentialsId: credentials.jenkins,
+                                    playbook: './ansible/site.yml',
+                                    colorized: true
+                    //notifyBitbucket(buildStatus: 'INPROGRESS')
                 }
             }
             stage('helm lint') {
                 docker.image("${dockerImageUrl}").inside() {
-                echo 'Linting helm'
-                sh '''
-                cd ./deploy &&
-                helm lint . --kubeconfig ../ansible/kubeconfig.yml -f values.yaml -f ../ansible/secret_values.yml -n releasebot
-                helm install --dry-run releasebot-informer . --kubeconfig ../ansible/kubeconfig.yml -f ../ansible/secret_values.yml -f ../tag-values.yaml -n releasebot
-                '''
-                notifyBitbucket(buildStatus: 'INPROGRESS')
+                    echo 'Linting helm'
+                    sh '''
+                    cd ./deploy &&
+                    helm lint . --kubeconfig ../ansible/kubeconfig.yml -f values.yaml -f ../ansible/secret_values.yml -n releasebot
+                    helm install --dry-run releasebot-informer . --kubeconfig ../ansible/kubeconfig.yml -f ../ansible/secret_values.yml -f ../tag-values.yaml -n releasebot
+                    '''
+                    notifyBitbucket(buildStatus: 'INPROGRESS')
                 }
             }
             stage('helm install') {
                 docker.image("${dockerImageUrl}").inside() {
-                sh '''
-                cd ./deploy &&
-                helm upgrade --install releasebot-informer . --kubeconfig ../ansible/kubeconfig.yml -f ../ansible/secret_values.yml -f ../tag-values.yaml -n releasebot
-                '''
+                    sh '''
+                    cd ./deploy &&
+                    helm upgrade --install releasebot-informer . --kubeconfig ../ansible/kubeconfig.yml -f ../ansible/secret_values.yml -f ../tag-values.yaml -n releasebot
+                    '''
                 }
             }
             //notifyBitbucket(buildStatus: 'SUCCESSFUL')
