@@ -958,7 +958,10 @@ async def get_user_info(message: types.Message):
                     msg += f'\n Почта: <strong>{user["email"]}</strong>'
                     msg += f'\n Телеграм: <strong>@{user["tg_login"]}</strong>'
                     msg += f'\n Телеграм ID: <strong>{user["tg_id"]}</strong>'
-                    msg += f'\n Рабочий статус: <strong>{user["working_status"]}</strong>'
+                    if user["working_status"] == 'dismissed':
+                        msg += f'\n Рабочий статус: <font color="red"><strong>Уволился</strong></font>'
+                    else:
+                        msg += f'\n Рабочий статус: <strong>{user["working_status"]}</strong>'
                     if user['team_name'] != None:
                         msg += f'\n Отдел: <strong>{user["team_name"]}</strong>'
                     if user['department'] != None:
