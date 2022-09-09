@@ -959,7 +959,7 @@ async def get_user_info(message: types.Message):
                     msg += f'\n Телеграм: <strong>@{user["tg_login"]}</strong>'
                     msg += f'\n Телеграм ID: <strong>{user["tg_id"]}</strong>'
                     if user["working_status"] == 'dismissed':
-                        msg += f'\n Рабочий статус: <font color="red"><strong>Уволился</strong></font>'
+                        msg += f'\n Рабочий статус: :broken_heart: <strong>Уволился</strong>'
                     else:
                         msg += f'\n Рабочий статус: <strong>{user["working_status"]}</strong>'
                     if user['team_name'] != None:
@@ -977,7 +977,7 @@ async def get_user_info(message: types.Message):
             logger.exception('Error GET USER INFO %s', e)
     else:
         msg = 'Пожалуйста, попробуйте еще раз: /who username'
-    await message.answer(text=msg, parse_mode=ParseMode.HTML)
+    await message.answer(text=emojize(msg), parse_mode=ParseMode.HTML)
 
 
 @initializeBot.dp.message_handler(filters.restricted, commands=['start'])
