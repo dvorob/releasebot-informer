@@ -49,6 +49,9 @@ search_issues_wait = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf
 issues_waiting = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" AND ' \
                  'status IN ("Waiting release") ORDER BY Rank ASC'
 
+issues_open = 'project in (DEPLOY) AND issuetype = "Release (conf)" AND ' \
+                 'status IN (Open) ORDER BY Rank ASC'
+
 issues_confirm_full_resolved = 'project in (ADMSYS, DEPLOY) AND issuetype = "Release (conf)" AND ' \
                                '(status IN (CONFIRM, "FULL DEPLOY") OR (status in (Resolved) AND updated >= startOfDay())) ' \
                                'ORDER BY Rank ASC'
@@ -77,3 +80,5 @@ class DaysOfWeek(Enum):
     Friday = 'Пятница'
     Saturday = 'Суббота'
     Sunday = 'Воскресенье'
+
+bplatform_specs_delivery = 'https://bitbucket.yooteam.ru/pages/PRODUCT-SPECS/backend-platform/master/browse/index.html#platform-delivery'
