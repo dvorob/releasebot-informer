@@ -878,7 +878,13 @@ async def app_info(message: types.Message):
                         msg += msg_additional
                         msg += f'\n Детали можно найти на <a href="https://jira.yooteam.ru/secure/RapidBoard.jspa?rapidView=1557">релизной доске</a>'
                     else:
-                        msg += f'\n :green_circle: Релизная очередь приложения свободна'                    
+                        msg += f'\n :green_circle: Релизная очередь приложения свободна'  
+                    rl_waiting_for_int = get_releases_in_waiting_status(app_name)
+                    logger.info(f'- - - - GO FOR WAITING RLS {rl_waiting_for_int}')
+                    if len(rl_waiting_for_int) > 0:
+                        msg += f'\n:yellow_circle: Есть релизы, ожидающие <a href=\"{config.bplatform_specs_delivery}\">завершения INT/LOAD-приёмок</a>):\n '
+                        for rl in rl_waiting_for_int:
+                            msg += f'<a href=\"https://jira.yooteam.ru/browse/{rl_waiting_for_int[rl]["jira_task"]}\">{rl_waiting_for_int[rl]["fullname"]}</a>   '
                     dev_team_name = app_info["dev_team"]
                 else:
                     msg = 'Приложение не найдено'
@@ -1232,6 +1238,22 @@ def get_lock_reasons(app_name):
     except Exception as e:
         logger.exception('Error in get lock reasons %s', e)
         return []
+
+
+def get_releases_in_waiting_status(app_name):
+    """
+    Возьмёт с релизной доски релизные таски по данному приложению в статусе Ожидание ПМа - такие релизы бот не берет в работу.
+    """
+    issues_open = JiraConnection().jira_search(config.issues_open)
+    app_releases_waits_for_int = {}
+    logger.info(issues_open)
+    for rl in issues_open:
+        app_name_version_json = _app_name_regex(rl.fields.summary)
+        logger.info(app_name_version_json)
+        if app_name_version_json['name'] == app_name:
+            app_releases_waits_for_int[rl.key] = {"fullname": rl.fields.summary, "jira_task": rl.key}
+    return app_releases_waits_for_int
+
 
 async def inform_today_duty(area: str, message: str, escape_html: bool = False, silence: bool = False):
     """
