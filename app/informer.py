@@ -614,7 +614,7 @@ async def take_duty_area_list(query: types.CallbackQuery, callback_data: dict):
                               parse_mode=ParseMode.HTML)
 
 
-@initializeBot.dp.callback_query_handler(keyboard.duty_cb.filter(action='take_duty_confirm'), filters.restricted, filters.is_ops)
+@initializeBot.dp.callback_query_handler(keyboard.duty_cb.filter(action='got_duty'), filters.restricted, filters.is_ops)
 async def take_duty_confirm(query: types.CallbackQuery, callback_data: dict):
     """
         Подтвердить взятие дежурства
@@ -1426,7 +1426,7 @@ async def on_startup(dispatcher):
         Start up function
     """
     try:
-        logger.info('- - - - Start bot - - - - -')
+        logger.info('- - - - START BOT - - - - -')
 
         scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
         scheduler.start()

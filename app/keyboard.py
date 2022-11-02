@@ -239,7 +239,7 @@ def take_duty_area_list(ddate: str, dutyman: str) -> types.InlineKeyboardMarkup:
         logger.info(f'-- KEYBOARD TAKE DUTY AREA LIST build menu for {area_list} {ddate}')
         for area in area_list:
             button_release_list.append(types.InlineKeyboardButton(f"{area}",
-                                       callback_data=duty_cb.new(action='take_duty_confirm', ddate=ddate, area=area, dutyman='1')))
+                                       callback_data=duty_cb.new(action='got_duty', ddate=ddate, area=area, dutyman='1')))
         to_admin = types.InlineKeyboardButton('Главное меню', callback_data=posts_cb.new(action='main', issue='1'))
         return types.InlineKeyboardMarkup(inline_keyboard=build_menu(button_release_list, n_cols=1, footer_buttons=to_admin))
     except Exception as e:
