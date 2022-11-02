@@ -23,7 +23,7 @@ async def get_session():
 def callback_filter() -> CallbackData:
     """
         Create callback filter
-        :return: callback data filter first argument - prefix (don't know for what this one),
+        :return: callback data filter first argument - prefix или a - обязательный префикс объекта, требование aiogram
         other strings as *args **kwargs - filter fields
     """
     return CallbackData("prefix", "issue", "action")
@@ -33,7 +33,7 @@ def duty_callback() -> CallbackData:
     """
         Create callback filter
     """
-    return CallbackData("prefix", "ddate", "area", "action", "dutyman")
+    return CallbackData("a", "ddate", "area", "action", "dutyman")
 
 
 async def admin(message: types.message) -> bool:
