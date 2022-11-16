@@ -1142,22 +1142,22 @@ async def inform_duty(request):
     """
     data_json = await request.json()
     logger.info(f"-- INFORM DUTY {data_json}")
-    if 'areas' in data_json or 'area' in data_json:
-        if type(data_json['areas']) == str:
-            data_json['areas'] = [data_json['areas']]
-
+    areas = data_json.get('areas', data_json.get('area', False))
+    if areas:
+        if type(areas) == str:
+            areas = [areas]
         try:
-            for area in data_json['areas']:
+            for area in areas:
                 escape_html = data_json.get('escape_html', False)
                 silence = data_json.get('silence', False)
                 await inform_today_duty(area=area, message=data_json['message'], escape_html=escape_html, silence=silence)
+                return web.json_response(
+                        data={"message": "Message was sent to duties"}, status=200)
         except Exception as e:
             logger.exception('Error inform duty %s', e)
     else:
         return web.json_response(
-            data={"message": "areas parameter is required and has to be setted"}, status=400
-        )
-    return web.json_response()
+                data={"message": "areas parameter is required and has to be setted"}, status=400)
 
 
 async def inform_subscribers(request):
