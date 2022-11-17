@@ -1151,13 +1151,14 @@ async def inform_duty(request):
                 escape_html = data_json.get('escape_html', False)
                 silence = data_json.get('silence', False)
                 await inform_today_duty(area=area, message=data_json['message'], escape_html=escape_html, silence=silence)
-                return web.json_response(
-                        data={"message": "Message was sent to duties"}, status=200)
+            return web.json_response(
+                    data={"message": "Message was sent to duties"}, status=200)
         except Exception as e:
             logger.exception('Error inform duty %s', e)
     else:
         return web.json_response(
-                data={"message": "areas parameter is required and has to be setted"}, status=400)
+            data={"message": "areas parameter is required and has to be setted"}, status=400
+        )
 
 
 async def inform_subscribers(request):
