@@ -108,6 +108,7 @@ async def duty_admin(message: types.Message):
         after_days = int(cli_args[1]) if (len(cli_args) == 2 and float(cli_args[1]).is_integer()) else 0
         duty_date = get_duty_date(datetime.today()) + timedelta(after_days)
         msg = await create_duty_message(duty_date)
+        msg += '\n· INT - Дежурного по приёмкам релизов знает <b>@YmIntBot</b>'
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
@@ -308,6 +309,7 @@ async def duty_button(query: types.CallbackQuery, callback_data: str):
             msg += messages.duty_morning_hello % datetime.today().strftime("%H:%M")
 
         msg += await create_duty_message(get_duty_date(datetime.today()))
+        msg += '\n· INT - Дежурного по приёмкам релизов знает <b>@YmIntBot</b>'
         msg += '\n\nЕсли вы хотите узнать дежурных через N дней, отправьте команду /duty N\n\n'
         await query.message.answer(text=msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception:
@@ -380,6 +382,21 @@ async def restart(query: types.CallbackQuery, callback_data: str):
         sys.exit(1)
     except Exception:
         logger.exception('restart')
+
+
+@initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='restart_rem'), filters.restricted, filters.admin)
+async def restart_rem(query: types.CallbackQuery, callback_data: str):
+    """
+        Restart pod with bot
+    """
+    try:
+        del callback_data
+        await returnHelper.return_one_second(query)
+        dp.stop_polling()
+        logger.warning('Remaster was restarted... by %s', returnHelper.return_name(query))
+        sys.exit(1)
+    except Exception as e:
+        logger.exception(f'Error in restart remaster {str(e)}')
 
 
 @initializeBot.dp.callback_query_handler(keyboard.posts_cb.filter(action='turn_off'), filters.restricted, filters.admin)
