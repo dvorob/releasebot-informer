@@ -122,6 +122,8 @@ def admin_menu() -> types.InlineKeyboardMarkup:
     button_admin_list = [
         types.InlineKeyboardButton('Рестарт Информера', callback_data=posts_cb.new(action='restart',
                                                                              issue='1')),
+        types.InlineKeyboardButton('Рестарт Ремастера', callback_data=posts_cb.new(action='restart_rem',
+                                                                             issue='1')),
         types.InlineKeyboardButton('Включить релизы', callback_data=posts_cb.new(action='turn_on',
                                                                              issue='1')),
         types.InlineKeyboardButton('Остановить релизы', callback_data=posts_cb.new(action='turn_off',
