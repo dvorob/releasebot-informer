@@ -319,7 +319,6 @@ async def duty_button(query: types.CallbackQuery, callback_data: str):
         msg = ''
         if int(datetime.today().strftime("%H")) < int(10):
             msg += messages.duty_morning_hello % datetime.today().strftime("%H:%M")
-
         is_asking_sysops = (db().get_user_rights('tg_login', str(query.message.from_user.username))).get('is_sysops_team', False)
         msg += await create_duty_message(get_duty_date(datetime.today()), is_asking_sysops)
         msg += '\n\nЕсли вы хотите узнать дежурных через N дней, отправьте команду /duty N\n\n'
