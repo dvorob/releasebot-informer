@@ -69,6 +69,7 @@ class Duty_List(BaseModel):
     account_name = CharField()
     full_text = CharField()
     tg_login = CharField()
+    staff_login = CharField()
 
 class Parameters(BaseModel):
     id = IntegerField(index=True)
