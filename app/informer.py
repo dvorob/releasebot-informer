@@ -180,7 +180,7 @@ async def create_duty_message(duty_date, is_asking_sysops) -> str:
         for d in dutymen_array:
             d['tg_login'] = '@' + d['tg_login'] if len(d['tg_login']) > 0 else ''
             if is_asking_sysops == 1:
-                msg += f"\n· {d['full_text']} <b>{d['tg_login']} </b>"
+                msg += f"\n· {d['area']} - {d['full_name'].split(' ')[0]} <b>{d['tg_login']} </b>"
                 if d["staff_login"]:
                     msg += f'<a href=\"{config.staff_url}/#/{d["staff_login"]}\"><strong> стафф</strong></a>'
             else:
