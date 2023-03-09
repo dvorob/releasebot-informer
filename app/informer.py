@@ -3,7 +3,6 @@
 """
 Telegram bot for employee of Yandex.Money
 """
-from ast import excepthandler
 import aiohttp
 import config
 import keyboard as keyboard
@@ -15,8 +14,8 @@ import requests
 import sys
 import warnings
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from aiogram import Dispatcher, executor, types
-from aiogram.types import ParseMode, ChatActions, Update, ContentType
+from aiogram import executor, types
+from aiogram.types import ParseMode, ChatActions, Update
 from aiogram.utils.emoji import emojize
 from aiogram.utils.exceptions import ChatNotFound, BotBlocked
 from aiogram.utils.markdown import bold
@@ -110,7 +109,6 @@ async def duty_admin(message: types.Message):
         is_asking_sysops = (db().get_user_rights('tg_login', 
                             str(message.from_user.username))).get('is_sysops_team', False)
         msg = await create_duty_message(duty_date, is_asking_sysops)
-        msg += '\n· INT - Дежурного по приёмкам релизов знает <b>@YmIntBot</b>'
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
@@ -190,6 +188,11 @@ async def create_duty_message(duty_date, is_asking_sysops) -> str:
                 if d["staff_login"]:
                     msg += f'<a href=\"{config.staff_url}/#/{d["staff_login"]}\"><strong> стафф</strong></a>'
 
+        msg += '\n· INT - Дежурного по приёмкам релизов знает <b>@YmIntBot</b>'
+        msg += f'\n\n :bangbang: Если рядом с зоной дежурства нет логина, скорее всего календарь заполнен не по формату. ' \
+            f'Смотрите в Exchange и следуйте ' \
+            f'<a href="{config.wiki_url}/display/admins/ReleaseBot.Assistant#ReleaseBot.Assistant-%D0%A1%D0%B8%D0%BD%D1%85%D1%80%D0%BE%D0%BD%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F%D0%B4%D0%B5%D0%B6%D1%83%D1%80%D1%81%D1%82%D0%B2">' \
+            f'инструкции</a> при заполнении.'
         logger.debug('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
     else:
         msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty.\n" + returnHelper.return_quotations()
@@ -319,7 +322,6 @@ async def duty_button(query: types.CallbackQuery, callback_data: str):
 
         is_asking_sysops = (db().get_user_rights('tg_login', str(query.message.from_user.username))).get('is_sysops_team', False)
         msg += await create_duty_message(get_duty_date(datetime.today()), is_asking_sysops)
-        msg += '\n· INT - Дежурного по приёмкам релизов знает <b>@YmIntBot</b>'
         msg += '\n\nЕсли вы хотите узнать дежурных через N дней, отправьте команду /duty N\n\n'
         await query.message.answer(text=msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception:
