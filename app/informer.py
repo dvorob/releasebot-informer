@@ -898,7 +898,7 @@ async def app_info(message: types.Message):
                         msg += f'\n :green_circle: Релизная очередь приложения свободна'  
                     rl_waiting_for_int = get_releases_in_waiting_status(app_name)
                     if len(rl_waiting_for_int) > 0:
-                        msg += f'\n :yellow_circle: Есть релизы, ожидающие <a href=\"{config.bplatform_specs_delivery}\">завершения INT/LOAD-приёмок</a>):\n '
+                        msg += f'\n :yellow_circle: Есть релизы, ожидающие <a href=\"{config.bplatform_specs_delivery}\">завершения INT/LOAD-приёмок</a>:\n '
                         for rl in rl_waiting_for_int:
                             msg += f'<a href=\"https://jira.yooteam.ru/browse/{rl_waiting_for_int[rl]["jira_task"]}\">{rl_waiting_for_int[rl]["fullname"]}</a>   '
                     dev_team_name = app_info["dev_team"]
@@ -961,6 +961,8 @@ async def get_user_info(message: types.Message):
     """
     logger.info('-- GET USER INFO started by %s', returnHelper.return_name(message))
     incoming = message.text.split()
+    message.from_user.username
+    is_asking_sysops = (db().get_user_rights('tg_login', str(message.from_user.username))).get('is_sysops_team', False)
     if (len(incoming) == 2) or (len(incoming) == 3):
         probably_username  = incoming[1:]
         try:
@@ -974,24 +976,25 @@ async def get_user_info(message: types.Message):
             if len(user_info) > 0:
                 msg = '<u><b>Нашёл</b></u>:'
                 for user in user_info:
-                    msg += f'\n Логин AD: <strong>{user["account_name"]}</strong>'
-                    msg += f'\n Имя: <strong>{user["full_name"]}</strong>'
                     msg += f'\n Стафф: <a href=\"{config.staff_url}/#/{user["staff_login"]}\"><strong>{user["staff_login"]}</strong></a>'
-                    msg += f'\n Почта: <strong>{user["email"]}</strong>'
-                    msg += f'\n Телеграм: <strong>@{user["tg_login"]}</strong>'
-                    msg += f'\n Телеграм ID: <strong>{user["tg_id"]}</strong>'
-                    if user["working_status"] == 'dismissed':
-                        msg += f'\n Рабочий статус: :broken_heart: <strong>Уволился</strong>'
-                    else:
-                        msg += f'\n Рабочий статус: <strong>{user["working_status"]}</strong>'
-                    if user['team_name'] != None:
-                        msg += f'\n Отдел: <strong>{user["team_name"]}</strong>'
-                    if user['department'] != None:
-                        msg += f'\n Департамент: <strong>{user["department"]}</strong>'
-                    user_teams = await get_user_membership(user["account_name"])
-                    if len(user_teams) > 0:
-                        for t in user_teams:
-                            msg += f'\n Команда: <strong>{t["dev_team"]} ({t["team_name"]})</strong>'
+                    if is_asking_sysops == 1:
+                        msg += f'\n Логин AD: <strong>{user["account_name"]}</strong>'
+                        msg += f'\n Имя: <strong>{user["full_name"]}</strong>'
+                        msg += f'\n Почта: <strong>{user["email"]}</strong>'
+                        msg += f'\n Телеграм: <strong>@{user["tg_login"]}</strong>'
+                        msg += f'\n Телеграм ID: <strong>{user["tg_id"]}</strong>'
+                        if user["working_status"] == 'dismissed':
+                            msg += f'\n Рабочий статус: :broken_heart: <strong>Уволился</strong>'
+                        else:
+                            msg += f'\n Рабочий статус: <strong>{user["working_status"]}</strong>'
+                        if user['team_name'] != None:
+                            msg += f'\n Отдел: <strong>{user["team_name"]}</strong>'
+                        if user['department'] != None:
+                            msg += f'\n Департамент: <strong>{user["department"]}</strong>'
+                        user_teams = await get_user_membership(user["account_name"])
+                        if len(user_teams) > 0:
+                            for t in user_teams:
+                                msg += f'\n Команда: <strong>{t["dev_team"]} ({t["team_name"]})</strong>'
                     msg += '\n'
             else:
                 msg = 'Пользователей в моей базе не найдено'
