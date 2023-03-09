@@ -180,7 +180,12 @@ async def create_duty_message(duty_date, is_asking_sysops) -> str:
         for d in dutymen_array:
             d['tg_login'] = '@' + d['tg_login'] if len(d['tg_login']) > 0 else ''
             if is_asking_sysops == 1:
-                msg += f"\n· {d['area']} - {d['full_name'].split(' ')[0]} <b>{d['tg_login']} </b>"
+                # Если юзер определился ботом (бот нашел его логин), 
+                # то выдадим всё красиво по полям. Иначе отдадим всю запись как есть
+                if d['tg_login']:
+                    msg += f"\n· {d['area']} - {d['full_name'].split(' ')[0]} <b>{d['tg_login']} </b>"
+                else:
+                    msg += f"\n· {d['area']} - {d['full_name']} <b>{d['tg_login']} </b>"
                 if d["staff_login"]:
                     msg += f'<a href=\"{config.staff_url}/#/{d["staff_login"]}\"><strong> стафф</strong></a>'
             else:
