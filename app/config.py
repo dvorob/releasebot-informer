@@ -31,6 +31,7 @@ api_get_timetable = f'{bot_api_url}/exchange/get_timetable'
 api_take_duty = f'{bot_api_url}/api/take_duty'
 
 staff_url = 'https://staff.yooteam.ru'
+wiki_url = 'https://wiki.yooteam.ru'
 
 jira_host = 'https://jira.yooteam.ru'
 jira_user = os.environ.get('jira_user')

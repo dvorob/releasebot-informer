@@ -3,7 +3,6 @@
 """
 Telegram bot for employee of Yandex.Money
 """
-from ast import excepthandler
 import aiohttp
 import config
 import keyboard as keyboard
@@ -15,8 +14,8 @@ import requests
 import sys
 import warnings
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from aiogram import Dispatcher, executor, types
-from aiogram.types import ParseMode, ChatActions, Update, ContentType
+from aiogram import executor, types
+from aiogram.types import ParseMode, ChatActions, Update
 from aiogram.utils.emoji import emojize
 from aiogram.utils.exceptions import ChatNotFound, BotBlocked
 from aiogram.utils.markdown import bold
@@ -107,8 +106,9 @@ async def duty_admin(message: types.Message):
         # если в /duty передан аргумент в виде кол-ва дней отступа, либо /duty без аргументов
         after_days = int(cli_args[1]) if (len(cli_args) == 2 and float(cli_args[1]).is_integer()) else 0
         duty_date = get_duty_date(datetime.today()) + timedelta(after_days)
-        msg = await create_duty_message(duty_date)
-        msg += '\n· INT - Дежурного по приёмкам релизов знает <b>@YmIntBot</b>'
+        is_asking_sysops = (db().get_user_rights('tg_login', 
+                            str(message.from_user.username))).get('is_sysops_team', False)
+        msg = await create_duty_message(duty_date, is_asking_sysops)
         await message.answer(msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception as e:
         logger.exception('error in duty admin %s', str(e))
@@ -169,7 +169,7 @@ async def timetable_personal(message: types.Message):
                                  reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
 
 
-async def create_duty_message(duty_date) -> str:
+async def create_duty_message(duty_date, is_asking_sysops) -> str:
     dutymen_array = await db().get_duty(duty_date)
     msg = ''
 
@@ -179,8 +179,20 @@ async def create_duty_message(duty_date) -> str:
         msg += f"<b>Дежурят на {duty_date.strftime('%Y-%m-%d')}:</b>\n"
         for d in dutymen_array:
             d['tg_login'] = '@' + d['tg_login'] if len(d['tg_login']) > 0 else ''
-            msg += f"\n· {d['full_text']} <b>{d['tg_login']}</b>"
+            if is_asking_sysops == 1:
+                msg += f"\n· {d['full_text']} <b>{d['tg_login']} </b>"
+                if d["staff_login"]:
+                    msg += f'<a href=\"{config.staff_url}/#/{d["staff_login"]}\"><strong> стафф</strong></a>'
+            else:
+                msg += f"\n· {d['area']} <b>{d['tg_login']}</b>"
+                if d["staff_login"]:
+                    msg += f'<a href=\"{config.staff_url}/#/{d["staff_login"]}\"><strong> стафф</strong></a>'
 
+        msg += '\n· INT - Дежурного по приёмкам релизов знает <b>@YmIntBot</b>'
+        msg += f'\n\n :bangbang: Если рядом с зоной дежурства нет логина, скорее всего календарь заполнен не по формату. ' \
+            f'Смотрите в Exchange и следуйте ' \
+            f'<a href="{config.wiki_url}/display/admins/ReleaseBot.Assistant#ReleaseBot.Assistant-%D0%A1%D0%B8%D0%BD%D1%85%D1%80%D0%BE%D0%BD%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F%D0%B4%D0%B5%D0%B6%D1%83%D1%80%D1%81%D1%82%D0%B2">' \
+            f'инструкции</a> при заполнении.'
         logger.debug('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
     else:
         msg = f"Никого не нашлось в базе бота, посмотрите в календарь AdminsOnDuty.\n" + returnHelper.return_quotations()
@@ -307,9 +319,8 @@ async def duty_button(query: types.CallbackQuery, callback_data: str):
         msg = ''
         if int(datetime.today().strftime("%H")) < int(10):
             msg += messages.duty_morning_hello % datetime.today().strftime("%H:%M")
-
-        msg += await create_duty_message(get_duty_date(datetime.today()))
-        msg += '\n· INT - Дежурного по приёмкам релизов знает <b>@YmIntBot</b>'
+        is_asking_sysops = (db().get_user_rights('tg_login', str(query.message.from_user.username))).get('is_sysops_team', False)
+        msg += await create_duty_message(get_duty_date(datetime.today()), is_asking_sysops)
         msg += '\n\nЕсли вы хотите узнать дежурных через N дней, отправьте команду /duty N\n\n'
         await query.message.answer(text=msg, reply_markup=to_main_menu(), parse_mode=ParseMode.HTML)
     except Exception:
@@ -671,7 +682,9 @@ async def dev_team_members_answer(query: types.CallbackQuery, callback_data: str
     #issue_key = callback_data['issue_key']
     logger.info('-- DEV TEAM MEMBERS started by %s %s', returnHelper.return_name(query), callback_data)
     try:
-        msg = await get_dev_team_members(callback_data['issue'])
+        is_asking_sysops = (db().get_user_rights('tg_login',
+                            str(query.message.from_user.username))).get('is_sysops_team', False)
+        msg = await get_dev_team_members(callback_data['issue'], is_asking_sysops)
     except Exception as e:
         logger.error('Error in DEV TEAM MEMBERS %s', e)
     logger.info(msg)
@@ -898,7 +911,7 @@ async def app_info(message: types.Message):
                         msg += f'\n :green_circle: Релизная очередь приложения свободна'  
                     rl_waiting_for_int = get_releases_in_waiting_status(app_name)
                     if len(rl_waiting_for_int) > 0:
-                        msg += f'\n :yellow_circle: Есть релизы, ожидающие <a href=\"{config.bplatform_specs_delivery}\">завершения INT/LOAD-приёмок</a>):\n '
+                        msg += f'\n :yellow_circle: Есть релизы, ожидающие <a href=\"{config.bplatform_specs_delivery}\">завершения INT/LOAD-приёмок</a>:\n '
                         for rl in rl_waiting_for_int:
                             msg += f'<a href=\"https://jira.yooteam.ru/browse/{rl_waiting_for_int[rl]["jira_task"]}\">{rl_waiting_for_int[rl]["fullname"]}</a>   '
                     dev_team_name = app_info["dev_team"]
@@ -925,7 +938,8 @@ async def dev_team_info(message: types.Message):
     try:
         if len(incoming) == 2:
             dev_team_name = incoming[1]
-            msg = await get_dev_team_members(dev_team_name)
+            is_asking_sysops = (db().get_user_rights('tg_login', str(message.from_user.username))).get('is_sysops_team', False)
+            msg = await get_dev_team_members(dev_team_name, is_asking_sysops)
         else:
             msg = 'Ошибка: задайте название одной команды'
         await message.answer(text=msg, parse_mode=ParseMode.HTML)
@@ -961,6 +975,7 @@ async def get_user_info(message: types.Message):
     """
     logger.info('-- GET USER INFO started by %s', returnHelper.return_name(message))
     incoming = message.text.split()
+    is_asking_sysops = (db().get_user_rights('tg_login', str(message.from_user.username))).get('is_sysops_team', False)
     if (len(incoming) == 2) or (len(incoming) == 3):
         probably_username  = incoming[1:]
         try:
@@ -974,24 +989,25 @@ async def get_user_info(message: types.Message):
             if len(user_info) > 0:
                 msg = '<u><b>Нашёл</b></u>:'
                 for user in user_info:
-                    msg += f'\n Логин AD: <strong>{user["account_name"]}</strong>'
-                    msg += f'\n Имя: <strong>{user["full_name"]}</strong>'
                     msg += f'\n Стафф: <a href=\"{config.staff_url}/#/{user["staff_login"]}\"><strong>{user["staff_login"]}</strong></a>'
-                    msg += f'\n Почта: <strong>{user["email"]}</strong>'
-                    msg += f'\n Телеграм: <strong>@{user["tg_login"]}</strong>'
-                    msg += f'\n Телеграм ID: <strong>{user["tg_id"]}</strong>'
-                    if user["working_status"] == 'dismissed':
-                        msg += f'\n Рабочий статус: :broken_heart: <strong>Уволился</strong>'
-                    else:
-                        msg += f'\n Рабочий статус: <strong>{user["working_status"]}</strong>'
-                    if user['team_name'] != None:
-                        msg += f'\n Отдел: <strong>{user["team_name"]}</strong>'
-                    if user['department'] != None:
-                        msg += f'\n Департамент: <strong>{user["department"]}</strong>'
-                    user_teams = await get_user_membership(user["account_name"])
-                    if len(user_teams) > 0:
-                        for t in user_teams:
-                            msg += f'\n Команда: <strong>{t["dev_team"]} ({t["team_name"]})</strong>'
+                    if is_asking_sysops == 1:
+                        msg += f'\n Логин AD: <strong>{user["account_name"]}</strong>'
+                        msg += f'\n Имя: <strong>{user["full_name"]}</strong>'
+                        msg += f'\n Почта: <strong>{user["email"]}</strong>'
+                        msg += f'\n Телеграм: <strong>@{user["tg_login"]}</strong>'
+                        msg += f'\n Телеграм ID: <strong>{user["tg_id"]}</strong>'
+                        if user["working_status"] == 'dismissed':
+                            msg += f'\n Рабочий статус: :broken_heart: <strong>Уволился</strong>'
+                        else:
+                            msg += f'\n Рабочий статус: <strong>{user["working_status"]}</strong>'
+                        if user['team_name'] != None:
+                            msg += f'\n Отдел: <strong>{user["team_name"]}</strong>'
+                        if user['department'] != None:
+                            msg += f'\n Департамент: <strong>{user["department"]}</strong>'
+                        user_teams = await get_user_membership(user["account_name"])
+                        if len(user_teams) > 0:
+                            for t in user_teams:
+                                msg += f'\n Команда: <strong>{t["dev_team"]} ({t["team_name"]})</strong>'
                     msg += '\n'
             else:
                 msg = 'Пользователей в моей базе не найдено'
@@ -1104,7 +1120,7 @@ async def inform_users_from_jira_ticket(data_json: dict, disable_notification: s
             JiraConnection().add_comment(JiraConnection().issue(task), data_json['text_jira'])
 
 
-async def get_dev_team_members(dev_team) -> str:
+async def get_dev_team_members(dev_team, is_asking_sysops) -> str:
     logger.info('GET DEV TEAM MEMBERS for %s', dev_team)
     msg = '<u><b>Результаты поиска</b></u>:'
     tt_api_uri = config.tt_api_url + f"?team={dev_team.upper()}&onlyActualTeamsData"
@@ -1114,14 +1130,15 @@ async def get_dev_team_members(dev_team) -> str:
         verify=False)
     for d in tt_api_response.json():
         msg += f"\n <u>Логин</u>: <a href='{config.staff_url}/#/{d['user']['login']}'><strong>{d['user']['login']}</strong></a>"
-        msg += f"\n Имя: <strong>{d['user']['name']}</strong>"
         msg += f"\n Позиция: <strong>{d['position']['name']}</strong>"
-        msg += f"\n Департамент: <strong>{d['department']['name']}</strong>"
-        # Поищем tg-логин пользователя
-        user_from_db = db().get_users('account_name', d['user']['login'])
-        if len(user_from_db) > 0:
-            if user_from_db[0]['tg_login'] != None and user_from_db[0]['working_status'] != 'dismissed':
-                msg += f"\n Telegram: <strong>@{user_from_db[0]['tg_login']}</strong>"
+        if is_asking_sysops == 1:
+            msg += f"\n Имя: <strong>{d['user']['name']}</strong>"
+            msg += f"\n Департамент: <strong>{d['department']['name']}</strong>"
+            # Поищем tg-логин пользователя
+            user_from_db = db().get_users('account_name', d['user']['login'])
+            if len(user_from_db) > 0:
+                if user_from_db[0]['tg_login'] != None and user_from_db[0]['working_status'] != 'dismissed':
+                    msg += f"\n Telegram: <strong>@{user_from_db[0]['tg_login']}</strong>"
         msg += f"\n"
     return msg
 

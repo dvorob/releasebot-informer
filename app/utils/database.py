@@ -69,6 +69,7 @@ class Duty_List(BaseModel):
     account_name = CharField()
     full_text = CharField()
     tg_login = CharField()
+    staff_login = CharField()
 
 class Parameters(BaseModel):
     id = IntegerField(index=True)
@@ -225,12 +226,11 @@ class PostgresPool:
 
 
     def get_user_rights(self, field, value) -> list:
-        # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
-        # например, найти Воробьева можно запросом get_users('account_name', 'ymvorobevda')
-        # всех админов - запросом get_users('is_admin', 1)
+        # Для определения доступов и возможностей пользователя
+        #
         logger.info(f'-- GET USER RIGHTS {field} {value}')
         user_from_db = []
-        user_rights = {'is_ops': 0, 'is_admin': 0, 'working_status': 'dismissed'}
+        user_rights = {'is_ops': 0, 'is_admin': 0, 'is_sysops_team': 0, 'working_status': 'dismissed'}
         try:
             self.db.connect(reuse_if_open=True)
             if field in ('tg_login', 'account_name'):
@@ -244,6 +244,9 @@ class PostgresPool:
                 user_rights['is_ops'] = user_from_db[0]['is_ops']
                 user_rights['is_admin'] = user_from_db[0]['is_admin']
                 user_rights['working_status'] = user_from_db[0]['working_status']
+                if (user_from_db[0]['team_name'] == 'Отдел сопровождения внешних систем'
+                    or user_from_db[0]['tg_login'] in ('vdmitrii')):
+                    user_rights['is_sysops_team'] = 1
             return user_rights
         except Exception:
             logger.exception(f'exception in db get user rights {str(e)}')
