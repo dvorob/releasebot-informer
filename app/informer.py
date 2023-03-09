@@ -184,11 +184,11 @@ async def create_duty_message(duty_date, is_asking_sysops) -> str:
             if is_asking_sysops == 1:
                 msg += f"\n· {d['full_text']} <b>{d['tg_login']} </b>"
                 if d["staff_login"]:
-                    msg += f'<a href=\"{config.staff_url}/#/{d["staff_login"]}\"><strong>Стафф: {d["staff_login"]}</strong></a>'
+                    msg += f'<a href=\"{config.staff_url}/#/{d["staff_login"]}\"><strong> стафф</strong></a>'
             else:
                 msg += f"\n· {d['area']} <b>{d['tg_login']}</b>"
                 if d["staff_login"]:
-                    msg += f'<a href=\"{config.staff_url}/#/{d["staff_login"]}\"><strong>Стафф: {d["staff_login"]}</strong></a>'
+                    msg += f'<a href=\"{config.staff_url}/#/{d["staff_login"]}\"><strong> стафф</strong></a>'
 
         logger.debug('I find duty admin for date %s %s', duty_date.strftime('%Y-%m-%d %H %M'), msg)
     else:
