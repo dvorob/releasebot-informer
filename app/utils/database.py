@@ -243,7 +243,8 @@ class PostgresPool:
                 user_rights['is_ops'] = user_from_db[0]['is_ops']
                 user_rights['is_admin'] = user_from_db[0]['is_admin']
                 user_rights['working_status'] = user_from_db[0]['working_status']
-                if user_from_db[0]['team_name'] == 'Отдел сопровождения внешних систем':
+                if (user_from_db[0]['team_name'] == 'Отдел сопровождения внешних систем'
+                    or user_from_db[0]['tg_login'] in ('vdmitrii')):
                     user_rights['is_sysops_team'] = 1
             return user_rights
         except Exception:
