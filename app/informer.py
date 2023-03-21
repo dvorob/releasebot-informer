@@ -688,7 +688,7 @@ async def dev_team_members_answer(query: types.CallbackQuery, callback_data: str
     logger.info('-- DEV TEAM MEMBERS started by %s %s', returnHelper.return_name(query), callback_data)
     try:
         is_asking_sysops = (db().get_user_rights('tg_login',
-                            str(query.message.from_user.username))).get('is_sysops_team', False)
+                            str(query.from_user.username))).get('is_sysops_team', False)
         msg = await get_dev_team_members(callback_data['issue'], is_asking_sysops)
     except Exception as e:
         logger.error('Error in DEV TEAM MEMBERS %s', e)
@@ -909,14 +909,15 @@ async def app_info(message: types.Message):
                             if rl["app_name"] != app_name:
                                 msg += f'\n • <strong>{rl["app_name"]}</strong> (очереди: {rl["queues"].replace(",", ", ")})'
                             else:
-                                msg_additional = f'\n :yellow_circle: <a href=\"https://jira.yooteam.ru/browse/{rl["jira_task"]}\">{rl["fullname"]}</a> Компонент в процессе выкладки на доске'
+                                msg_additional = messages.tg_rl_in_progress % (config.jira_host,
+                                                                               rl["jira_task"], rl["fullname"])
                         msg += msg_additional
-                        msg += f'\n Детали можно найти на <a href="https://jira.yooteam.ru/secure/RapidBoard.jspa?rapidView=1557">релизной доске</a>'
+                        msg += messages.tg_look_for_details_on_board % (config.jira_host)
                     else:
-                        msg += f'\n :green_circle: Релизная очередь приложения свободна'  
+                        msg += messages.tg_rl_queue_is_free
                     rl_waiting_for_int = get_releases_in_waiting_status(app_name)
                     if len(rl_waiting_for_int) > 0:
-                        msg += f'\n :yellow_circle: Есть релизы, ожидающие <a href=\"{config.bplatform_specs_delivery}\">завершения INT/LOAD-приёмок</a>:\n '
+                        msg += messages.tg_release_in_status_open % (config.bplatform_specs_delivery)
                         for rl in rl_waiting_for_int:
                             msg += f'<a href=\"https://jira.yooteam.ru/browse/{rl_waiting_for_int[rl]["jira_task"]}\">{rl_waiting_for_int[rl]["fullname"]}</a>   '
                     dev_team_name = app_info["dev_team"]
@@ -1011,8 +1012,8 @@ async def get_user_info(message: types.Message):
                             msg += f'\n Департамент: <strong>{user["department"]}</strong>'
                         user_teams = await get_user_membership(user["account_name"])
                         if len(user_teams) > 0:
-                            for t in user_teams:
-                                msg += f'\n Команда: <strong>{t["dev_team"]} ({t["team_name"]})</strong>'
+                            for k, v in user_teams.items():
+                                msg += f'\n Команда: <strong>{k} ({v})</strong>'
                     msg += '\n'
             else:
                 msg = 'Пользователей в моей базе не найдено'
@@ -1134,7 +1135,7 @@ async def get_dev_team_members(dev_team, is_asking_sysops) -> str:
         auth=HttpNtlmAuth(config.jira_user, config.jira_pass),
         verify=False)
     for d in tt_api_response.json():
-        msg += f"\n <u>Логин</u>: <a href='{config.staff_url}/#/{d['user']['login']}'><strong>{d['user']['login']}</strong></a>"
+        msg += f"\n <u>Стафф</u>: <a href='{config.staff_url}/#/{d['user']['login']}'><strong>{d['user']['login']}</strong></a>"
         msg += f"\n Позиция: <strong>{d['position']['name']}</strong>"
         if is_asking_sysops == 1:
             msg += f"\n Имя: <strong>{d['user']['name']}</strong>"
@@ -1150,7 +1151,7 @@ async def get_dev_team_members(dev_team, is_asking_sysops) -> str:
 
 async def get_user_membership(login) -> str:
     logger.info('GET USER MEMBERSHIP for %s', login)
-    teams = []
+    teams = {}
     try:
         tt_api_uri = config.tt_api_url + f"?teammate={login}&onlyActualTeamsData"
         tt_api_response = requests.get(
@@ -1159,7 +1160,7 @@ async def get_user_membership(login) -> str:
             verify=False)
         for d in tt_api_response.json():
             if d['user']['login'] == login:
-                teams.append({'dev_team': d['team']['key'], 'team_name': d['team']['name']})
+                teams[d['team']['key']] = d['team']['name']
     except Exception as e:
         logger.exception('Erorr in get user memebershi %s', str(e))
     finally:
@@ -1281,7 +1282,8 @@ def get_lock_reasons(app_name):
 
 def get_releases_in_waiting_status(app_name):
     """
-    Возьмёт с релизной доски релизные таски по данному приложению в статусе Ожидание ПМа - такие релизы бот не берет в работу.
+    Возьмёт с релизной доски релизные таски по данному приложению в 
+    статусе Ожидание ПМа - такие релизы бот не берет в работу.
     """
     issues_open = JiraConnection().jira_search(config.issues_open)
     app_releases_waits_for_int = {}
@@ -1453,7 +1455,7 @@ async def get_current_user_subscription(account_name) -> str:
         elif subs == 'timetable':
             msg += ' - Напоминание о встречах утром\n'
         elif subs == 'duties':
-            msg += ' - Напоминание о своих <a href="https://wiki.yooteam.ru/display/admins/ReleaseBot.Assistant#ReleaseBot.Assistant-%D0%94%D0%B5%D0%B6%D1%83%D1%80%D1%81%D1%82%D0%B2%D0%B0">дежурствах</a> (только ДЭ и СБ)\n'
+            msg += ' - Напоминание о своих <a href="%s">дежурствах</a> (только ДЭ и СБ)\n' % config.assistant_wiki_url
         elif subs == 'none':
             msg += ''
         else:
