@@ -107,3 +107,12 @@ bot_was_stopped_manually = ":warning: Релизный поезд останов
     "Если его ещё нет, и проблема длится более 1 часа, попросите Мониторинг завести задачу и взять её на контроль."
 
 bot_was_started_manually = ":railway_car: Релизный поезд запущен; запустил %s. \nРелизы катятся в штатном режиме. Спасибо, что продолжаете пользоваться нашими услугами."
+
+tg_release_in_status_open = '\n :yellow_circle: Есть релиз в статусе Open. Релизный бот не работает с этим статусом. ' \
+                            'Вероятно, релиз ожидает <a href="%s">завершения INT/LOAD-приёмок</a>:\n '
+
+tg_look_for_details_on_board = '\n Детали можно найти на <a href="%s/secure/RapidBoard.jspa?rapidView=1557">релизной доске</a>'
+
+tg_rl_in_progress = '\n :yellow_circle: <a href="%s/browse/%s">%s</a> Компонент в процессе выкладки на доске'
+
+tg_rl_queue_is_free = '\n :green_circle: Релизная очередь приложения свободна'  

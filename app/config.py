@@ -33,6 +33,8 @@ api_take_duty = f'{bot_api_url}/api/take_duty'
 staff_url = 'https://staff.yooteam.ru'
 wiki_url = 'https://wiki.yooteam.ru'
 
+assistant_wiki_url = wiki_url + "/display/admins/ReleaseBot.Assistant#ReleaseBot.Assistant-%D0%94%D0%B5%D0%B6%D1%83%D1%80%D1%81%D1%82%D0%B2%D0%B0"
+
 jira_host = 'https://jira.yooteam.ru'
 jira_user = os.environ.get('jira_user')
 jira_pass = os.environ.get('jira_pass')
