@@ -20,5 +20,7 @@ This part of YMReleaseBot is name informer. Essentially, a telegram wrapper.
 
 ### Author
 * **Ivan Bakurskiy** - *isbakurskii@yamoney.ru*
+* **Dmitry Vorobiov** - *dvorob@gmail.com*
 
 ### License
+GPLv2
